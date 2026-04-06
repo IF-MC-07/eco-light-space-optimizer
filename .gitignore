@@ -1,0 +1,94 @@
+# ============================================================
+#  Eco-Light & Space Optimizer — .gitignore
+# ============================================================
+
+
+# ─── CLIENT (Next.js) ───────────────────────────────────────
+client/node_modules/
+client/.next/
+client/out/
+client/.env.local
+client/.env*.local
+
+
+# ─── SERVER (FastAPI) ───────────────────────────────────────
+server/venv/
+server/.venv/
+server/__pycache__/
+server/**/__pycache__/
+server/*.pyc
+server/.env
+server/alembic/versions/*.py
+
+
+# ─── SERVICE AI ─────────────────────────────────────────────
+service_ai/venv/
+service_ai/.venv/
+service_ai/__pycache__/
+service_ai/**/__pycache__/
+service_ai/*.pyc
+service_ai/.env
+
+# Model files (ukuran besar, tidak perlu di-commit)
+service_ai/app/models/*.pkl
+service_ai/app/models/*.pt
+service_ai/app/models/*.h5
+service_ai/app/models/*.onnx
+service_ai/data/
+
+
+# ─── FIRMWARE (ESP32 / PlatformIO) ──────────────────────────
+firmware/.pio/
+firmware/.pioenvs/
+
+# Jangan commit kredensial WiFi & MQTT!
+firmware/include/config.h
+
+
+# ─── BROKER (Mosquitto) ─────────────────────────────────────
+broker/data/
+broker/log/
+
+# Jangan commit password MQTT!
+broker/config/passwd
+
+
+# ─── DOCKER ─────────────────────────────────────────────────
+.env
+*.env
+
+
+# ─── DATABASE ───────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+
+# ─── LOG & TEMP ─────────────────────────────────────────────
+*.log
+*.tmp
+*.temp
+tmp/
+temp/
+
+
+# ─── OS FILES ───────────────────────────────────────────────
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Mac
+.DS_Store
+.AppleDouble
+
+# Linux
+*~
+
+
+# ─── IDE ────────────────────────────────────────────────────
+.vscode/settings.json
+.vscode/launch.json
+.idea/
+*.suo
+*.user
