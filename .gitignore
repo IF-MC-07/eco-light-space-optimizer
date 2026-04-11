@@ -32,6 +32,7 @@ service_ai/.env
 # Model files (ukuran besar, tidak perlu di-commit)
 service_ai/app/models/*.pkl
 service_ai/app/models/*.pt
+!service_ai/app/models/best.pt
 service_ai/app/models/*.h5
 service_ai/app/models/*.onnx
 service_ai/data/
@@ -92,3 +93,16 @@ $RECYCLE.BIN/
 .idea/
 *.suo
 *.user
+
+# ─── RUNS (Hasil Training) ──────────────────────────────────
+service_ai/runs/
+!service_ai/runs/**/results.png
+!service_ai/runs/**/results.csv
+!service_ai/runs/**/confusion_matrix*.png
+!service_ai/runs/**/*curve*.png
+!service_ai/runs/**/args.yaml
+
+# ─── MODEL ──────────────────────────────────────────────────
+# Abaikan semua .pt kecuali best.pt
+service_ai/app/models/*.pt
+!service_ai/app/models/best.pt
