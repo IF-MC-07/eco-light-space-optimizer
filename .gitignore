@@ -96,14 +96,14 @@ $RECYCLE.BIN/
 
 # ─── RUNS (Hasil Training) ──────────────────────────────────
 service_ai/runs/
-!service_ai/runs/**/results.png
-!service_ai/runs/**/results.csv
-!service_ai/runs/**/confusion_matrix*.png
-!service_ai/runs/**/*curve*.png
-!service_ai/runs/**/args.yaml
-!service_ai/runs/**/BoxF1_curve.png
-!service_ai/runs/**/BoxP_curve.png
-!service_ai/runs/**/BoxR_curve.png
+!service_ai/runs/detect/deteksi_kelas/results.png
+!service_ai/runs/detect/deteksi_kelas/results.csv
+!service_ai/runs/detect/deteksi_kelas/confusion_matrix*.png
+!service_ai/runs/detect/deteksi_kelas/*curve*.png
+!service_ai/runs/detect/deteksi_kelas/args.yaml
+!service_ai/runs/detect/deteksi_kelas/BoxF1_curve.png
+!service_ai/runs/detect/deteksi_kelas/BoxP_curve.png
+!service_ai/runs/detect/deteksi_kelas/BoxR_curve.png
 
 # ─── MODEL ──────────────────────────────────────────────────
 # Abaikan semua .pt kecuali best.pt
