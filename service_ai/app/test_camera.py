@@ -24,9 +24,9 @@ while True:
 
     height, width = frame.shape[:2]
 
-    # ── Bagi frame jadi 3 zona HORIZONTAL ──────
-    zona1 = height // 3        # batas atas-tengah
-    zona2 = 2 * height // 3   # batas tengah-bawah
+    # ── Bagi frame jadi 3 zona VERTIKAL ──────
+    zona1 = width // 3       # batas kiri-tengah
+    zona2 = 2 * width // 3   # batas tengah-kanan
 
     results = model.predict(
         frame,
@@ -41,56 +41,53 @@ while True:
     annotated = results[0].plot()
 
     # Hitung orang per zona
-    count = {'atas': 0, 'tengah': 0, 'bawah': 0, 'total': 0}
+    count = {'kiri': 0, 'tengah': 0, 'kanan': 0, 'total': 0}
 
     for box in results[0].boxes:
         x1, y1, x2, y2 = map(int, box.xyxy[0])
-        cy = (y1 + y2) // 2  # titik tengah vertikal box
+        cx = (x1 + x2) // 2  # SEKARANG PAKAI TITIK TENGAH HORIZONTAL (X)
 
-        if cy < zona1:
-            count['atas'] += 1
-        elif cy < zona2:
+        if cx < zona1:
+            count['kiri'] += 1
+        elif cx < zona2:
             count['tengah'] += 1
         else:
-            count['bawah'] += 1
+            count['kanan'] += 1
 
         count['total'] += 1
 
-    # ── Gambar garis zona horizontal ────────────
-    cv2.line(annotated, (0, zona1), (width, zona1), (255, 255, 0), 2)
-    cv2.line(annotated, (0, zona2), (width, zona2), (255, 255, 0), 2)
+    # ── Gambar garis zona vertikal ────────────
+    cv2.line(annotated, (zona1, 0), (zona1, height), (255, 255, 0), 2)
+    cv2.line(annotated, (zona2, 0), (zona2, height), (255, 255, 0), 2)
 
     # ── Label nama zona di garis ────────────────
-    cv2.putText(annotated, "ZONA ATAS",
-                (10, zona1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+    cv2.putText(annotated, "ZONA KIRI",
+                (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
     cv2.putText(annotated, "ZONA TENGAH",
-                (10, zona2 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
-    cv2.putText(annotated, "ZONA BAWAH",
-                (10, height - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+                (zona1 + 10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+    cv2.putText(annotated, "ZONA KANAN",
+                (zona2 + 10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
 
-    # ── Info jumlah orang ───────────────────────
-    cv2.putText(annotated, f"Atas  : {count['atas']}",
-                (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-    cv2.putText(annotated, f"Tengah: {count['tengah']}",
-                (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-    cv2.putText(annotated, f"Bawah : {count['bawah']}",
-                (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-    cv2.putText(annotated, f"Total : {count['total']}",
-                (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+    # ── Info jumlah orang (Overlay Statis) ──────
+    cv2.putText(annotated, f"Kiri   : {count['kiri']}",
+                (10, height - 100), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+    cv2.putText(annotated, f"Tengah : {count['tengah']}",
+                (10, height - 70), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+    cv2.putText(annotated, f"Kanan  : {count['kanan']}",
+                (10, height - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+    cv2.putText(annotated, f"Total  : {count['total']}",
+                (10, height - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
 
     # Status lampu
     status = 'ON' if count['total'] > 0 else 'OFF'
-    cv2.putText(annotated, f"Lampu : {status}",
-                (10, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
-                (0, 255, 0) if status == 'ON' else (0, 0, 255), 2)
-
+    
     # ── Kirim MQTT setiap 2 detik ───────────────
     current_time = time.time()
     if count != prev_data and (current_time - last_send_time) > SEND_INTERVAL:
         payload = json.dumps({
-            'zona_atas': count['atas'],
+            'zona_kiri': count['kiri'],
             'zona_tengah': count['tengah'],
-            'zona_bawah': count['bawah'],
+            'zona_kanan': count['kanan'],
             'total': count['total'],
             'lampu': status
         })
