@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "module": "ESnext",
+    "target": "esnext",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"], 
+    "types": ["react", "react-dom"], 
+
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    "strict": true,
+    "jsx": "react-jsx",
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "noUncheckedSideEffectImports": true,
+    "moduleDetection": "force",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "moduleResolution": "bundler"
+  },
+  "include": ["src"]
+}

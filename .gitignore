@@ -110,3 +110,6 @@ service_ai/runs/detect/deteksi-kelas/*
 # Abaikan semua .pt kecuali best.pt
 service_ai/app/models/*.pt
 !service_ai/app/models/best.pt
+
+# ─── NODE_MODULES ───────────────────────────────────────────
+node_modules/
