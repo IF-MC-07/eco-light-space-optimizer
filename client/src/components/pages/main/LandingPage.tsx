@@ -1,12 +1,14 @@
+"use client";
+
 import React from 'react';
-import { 
+import {
   ChevronRight, Play, Activity, Settings2, ShieldAlert,
   CheckCircle2, Bell, Settings, User
 } from 'lucide-react';
-import { Button } from '../../components/ui/Button';
+import { Button } from '../../ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { Card } from '../../components/ui/Card';
-import { Input } from '../../components/ui/Input';
+import { Card } from '../../ui/Card';
+import { Input } from '../../ui/Input';
 
 export default function LandingPage() {
   return (
@@ -15,7 +17,7 @@ export default function LandingPage() {
       <header className="h-20 bg-white/80 backdrop-blur-md border-b border-neutral-border flex items-center justify-between px-8 sticky top-0 z-50">
         <div className="flex items-center gap-2">
           <svg className="w-6 h-6 text-primary" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM11 19.93C7.06 19.43 4 16.05 4 12C4 7.95 7.06 4.57 11 4.07V19.93ZM13 4.07C16.94 4.57 20 7.95 20 12C20 16.05 16.94 19.43 13 19.93V4.07Z" fill="currentColor"/>
+            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM11 19.93C7.06 19.43 4 16.05 4 12C4 7.95 7.06 4.57 11 4.07V19.93ZM13 4.07C16.94 4.57 20 7.95 20 12C20 16.05 16.94 19.43 13 19.93V4.07Z" fill="currentColor" />
           </svg>
           <div className="flex flex-col">
             <span className="text-neutral-900 font-extrabold tracking-tight text-lg leading-none">Eco-Light</span>
@@ -60,7 +62,7 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-wrap items-center gap-4 mb-14">
             <Button variant="primary" className="py-3 px-6 text-base shadow-elevated group">
-              Mulai Sekarang 
+              Mulai Sekarang
               <ChevronRight size={18} className="ml-1 group-hover:translate-x-1 transition-transform" />
             </Button>
             <Button variant="outlined" className="py-3 px-6 text-base bg-white border-neutral-border hover:bg-neutral">
@@ -82,43 +84,43 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-        
+
         <div className="relative z-10 flex justify-end">
           <div className="w-[540px] h-[480px] bg-[#111827] rounded-3xl shadow-2xl relative overflow-hidden border border-neutral-border/10 flex items-center justify-center">
             {/* Dashboard Mockup Placeholder */}
             <div className="w-[85%] h-[75%] bg-[#1F2937] rounded-xl border border-white/10 shadow-2xl overflow-hidden flex flex-col">
-               <div className="h-10 border-b border-white/5 flex items-center px-4 gap-2">
-                 <div className="flex gap-1.5">
-                   <div className="w-2.5 h-2.5 rounded-full bg-red-400/80"></div>
-                   <div className="w-2.5 h-2.5 rounded-full bg-yellow-400/80"></div>
-                   <div className="w-2.5 h-2.5 rounded-full bg-green-400/80"></div>
-                 </div>
-                 <Badge variant="primary" className="ml-2 bg-[#2E7D32]/20 text-[#4CAF50] border-none text-[8px] py-0">System Active</Badge>
-               </div>
-               <div className="flex-1 p-5 grid gap-4 grid-cols-2">
-                 <div className="col-span-2 h-24 bg-white/5 rounded-lg border border-white/5 flex items-end p-3 gap-2">
-                    <div className="w-1/6 h-[30%] bg-primary/40 rounded-sm"></div>
-                    <div className="w-1/6 h-[50%] bg-primary/60 rounded-sm"></div>
-                    <div className="w-1/6 h-[40%] bg-primary/40 rounded-sm"></div>
-                    <div className="w-1/6 h-[80%] bg-primary rounded-sm"></div>
-                    <div className="w-1/6 h-[60%] bg-primary/80 rounded-sm"></div>
-                    <div className="w-1/6 h-[90%] bg-primary rounded-sm"></div>
-                 </div>
-                 <div className="h-16 bg-white/5 rounded-lg border border-white/5 p-3 flex flex-col justify-center">
-                   <div className="w-1/2 h-2 bg-white/20 rounded mb-2"></div>
-                   <div className="w-3/4 h-3 bg-white/40 rounded"></div>
-                 </div>
-                 <div className="h-16 bg-white/5 rounded-lg border border-white/5 p-3 flex flex-col justify-center">
-                   <div className="w-1/2 h-2 bg-white/20 rounded mb-2"></div>
-                   <div className="w-3/4 h-3 bg-white/40 rounded"></div>
-                 </div>
-                 <div className="col-span-2 h-10 bg-white/5 rounded-lg border border-white/5 flex items-center px-4 justify-between">
-                    <div className="w-1/3 h-2 bg-white/20 rounded"></div>
-                    <div className="w-5 h-5 rounded-full bg-primary/40"></div>
-                 </div>
-               </div>
+              <div className="h-10 border-b border-white/5 flex items-center px-4 gap-2">
+                <div className="flex gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-400/80"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-yellow-400/80"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-green-400/80"></div>
+                </div>
+                <Badge variant="primary" className="ml-2 bg-[#2E7D32]/20 text-[#4CAF50] border-none text-[8px] py-0">System Active</Badge>
+              </div>
+              <div className="flex-1 p-5 grid gap-4 grid-cols-2">
+                <div className="col-span-2 h-24 bg-white/5 rounded-lg border border-white/5 flex items-end p-3 gap-2">
+                  <div className="w-1/6 h-[30%] bg-primary/40 rounded-sm"></div>
+                  <div className="w-1/6 h-[50%] bg-primary/60 rounded-sm"></div>
+                  <div className="w-1/6 h-[40%] bg-primary/40 rounded-sm"></div>
+                  <div className="w-1/6 h-[80%] bg-primary rounded-sm"></div>
+                  <div className="w-1/6 h-[60%] bg-primary/80 rounded-sm"></div>
+                  <div className="w-1/6 h-[90%] bg-primary rounded-sm"></div>
+                </div>
+                <div className="h-16 bg-white/5 rounded-lg border border-white/5 p-3 flex flex-col justify-center">
+                  <div className="w-1/2 h-2 bg-white/20 rounded mb-2"></div>
+                  <div className="w-3/4 h-3 bg-white/40 rounded"></div>
+                </div>
+                <div className="h-16 bg-white/5 rounded-lg border border-white/5 p-3 flex flex-col justify-center">
+                  <div className="w-1/2 h-2 bg-white/20 rounded mb-2"></div>
+                  <div className="w-3/4 h-3 bg-white/40 rounded"></div>
+                </div>
+                <div className="col-span-2 h-10 bg-white/5 rounded-lg border border-white/5 flex items-center px-4 justify-between">
+                  <div className="w-1/3 h-2 bg-white/20 rounded"></div>
+                  <div className="w-5 h-5 rounded-full bg-primary/40"></div>
+                </div>
+              </div>
             </div>
-            
+
             {/* Background glowing effects */}
             <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/20 rounded-full blur-[80px] pointer-events-none"></div>
             <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none"></div>
@@ -325,16 +327,16 @@ export default function LandingPage() {
             Hubungi tim kami untuk konsultasi gratis integrasi Eco-Optimizer dalam ekosistem ruang kelas kampus Anda.
           </p>
           <div className="flex w-full items-center justify-center mb-4 max-w-lg mx-auto">
-             <div className="relative flex w-full">
-               <input 
-                 type="email" 
-                 placeholder="Email perusahaan..." 
-                 className="w-full h-12 bg-neutral border border-neutral-border rounded-l-md px-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary shadow-sm"
-               />
-               <Button variant="primary" className="h-12 rounded-l-none rounded-r-md px-8 font-bold flex-shrink-0 shadow-sm shadow-primary/20">
-                 Minta Demo
-               </Button>
-             </div>
+            <div className="relative flex w-full">
+              <input
+                type="email"
+                placeholder="Email perusahaan..."
+                className="w-full h-12 bg-neutral border border-neutral-border rounded-l-md px-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary shadow-sm"
+              />
+              <Button variant="primary" className="h-12 rounded-l-none rounded-r-md px-8 font-bold flex-shrink-0 shadow-sm shadow-primary/20">
+                Minta Demo
+              </Button>
+            </div>
           </div>
         </div>
       </section>
@@ -345,7 +347,7 @@ export default function LandingPage() {
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-6">
               <svg className="w-6 h-6 text-primary" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM11 19.93C7.06 19.43 4 16.05 4 12C4 7.95 7.06 4.57 11 4.07V19.93ZM13 4.07C16.94 4.57 20 7.95 20 12C20 16.05 16.94 19.43 13 19.93V4.07Z" fill="currentColor"/>
+                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM11 19.93C7.06 19.43 4 16.05 4 12C4 7.95 7.06 4.57 11 4.07V19.93ZM13 4.07C16.94 4.57 20 7.95 20 12C20 16.05 16.94 19.43 13 19.93V4.07Z" fill="currentColor" />
               </svg>
               <div className="flex flex-col">
                 <span className="text-neutral-900 font-extrabold tracking-tight text-lg leading-none">Eco-Light</span>
@@ -371,10 +373,10 @@ export default function LandingPage() {
             <h4 className="font-bold text-sm text-neutral-900 mb-5">Hubungi Kami</h4>
             <ul className="space-y-3">
               <li className="text-xs font-semibold text-secondary flex items-start gap-2">
-                 <span className="mt-0.5">✉️</span> info@eco-light.id
+                <span className="mt-0.5">✉️</span> info@eco-light.id
               </li>
               <li className="text-xs font-semibold text-secondary leading-relaxed flex items-start gap-2">
-                 <span className="mt-0.5">🏢</span> Kampus Digital Arboretum <br /> Jakarta, Indonesia 12345
+                <span className="mt-0.5">🏢</span> Kampus Digital Arboretum <br /> Jakarta, Indonesia 12345
               </li>
             </ul>
           </div>

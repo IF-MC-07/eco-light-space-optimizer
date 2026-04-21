@@ -1,10 +1,10 @@
 import React from 'react';
 import { Layout } from '../../layout/Layout';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
+import { Card } from '../../ui/Card';
+import { Button } from '../../ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { 
-  TrendingUp, Sun, Focus, Thermometer, 
+import {
+  TrendingUp, Sun, Focus, Thermometer,
   Edit2, Moon, Briefcase, Zap, ChevronDown
 } from 'lucide-react';
 
@@ -32,64 +32,64 @@ export default function DeviceAutomation() {
         {/* Top 3 KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="bg-[#1B4D1E] border-none p-6 text-white relative overflow-hidden h-[150px]">
-             {/* Lightning watermark */}
-             <div className="absolute -right-4 -bottom-6 w-32 justify-end flex opacity-20 pointer-events-none">
-                <svg viewBox="0 0 24 24" fill="currentColor" className="w-32 h-32 text-[#4CAF50]">
-                  <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"></path>
-                </svg>
-             </div>
-             
-             <div className="relative z-10 flex flex-col justify-between h-full">
-               <h3 className="text-[#86B690] font-medium text-xs mb-1 tracking-wide">Active Optimizations</h3>
-               <div className="text-5xl font-heading font-extrabold mb-1">12</div>
-               <div className="flex items-center gap-1.5 text-xs text-[#86B690] font-semibold">
-                 <TrendingUp size={14} />
-                 <span>+4 since yesterday</span>
-               </div>
-             </div>
+            {/* Lightning watermark */}
+            <div className="absolute -right-4 -bottom-6 w-32 justify-end flex opacity-20 pointer-events-none">
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-32 h-32 text-[#4CAF50]">
+                <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"></path>
+              </svg>
+            </div>
+
+            <div className="relative z-10 flex flex-col justify-between h-full">
+              <h3 className="text-[#86B690] font-medium text-xs mb-1 tracking-wide">Active Optimizations</h3>
+              <div className="text-5xl font-heading font-extrabold mb-1">12</div>
+              <div className="flex items-center gap-1.5 text-xs text-[#86B690] font-semibold">
+                <TrendingUp size={14} />
+                <span>+4 since yesterday</span>
+              </div>
+            </div>
           </Card>
 
           <Card className="p-6 flex flex-col justify-between h-[150px]">
-             <h3 className="text-secondary font-medium text-xs tracking-wide">Scheduled Tasks</h3>
-             <div className="text-4xl font-heading font-extrabold text-neutral-900 mt-2">08</div>
-             
-             <div className="flex items-center mt-auto">
-               <div className="flex -space-x-1.5">
-                 <div className="w-6 h-6 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-blue-500">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                 </div>
-                 <div className="w-6 h-6 rounded-full bg-orange-100 border-2 border-white flex items-center justify-center text-orange-500">
-                    <div className="w-1.5 h-1.5 rounded-full bg-orange-400"></div>
-                 </div>
-                 <div className="w-6 h-6 rounded-full bg-green-100 border-2 border-white flex items-center justify-center text-primary">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary-light"></div>
-                 </div>
-               </div>
-             </div>
+            <h3 className="text-secondary font-medium text-xs tracking-wide">Scheduled Tasks</h3>
+            <div className="text-4xl font-heading font-extrabold text-neutral-900 mt-2">08</div>
+
+            <div className="flex items-center mt-auto">
+              <div className="flex -space-x-1.5">
+                <div className="w-6 h-6 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-blue-500">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                </div>
+                <div className="w-6 h-6 rounded-full bg-orange-100 border-2 border-white flex items-center justify-center text-orange-500">
+                  <div className="w-1.5 h-1.5 rounded-full bg-orange-400"></div>
+                </div>
+                <div className="w-6 h-6 rounded-full bg-green-100 border-2 border-white flex items-center justify-center text-primary">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary-light"></div>
+                </div>
+              </div>
+            </div>
           </Card>
 
           <Card className="p-6 flex flex-col justify-between h-[150px]">
-             <h3 className="text-secondary font-medium text-xs tracking-wide">Est. Savings Today</h3>
-             <div className="text-4xl font-heading font-extrabold text-neutral-900 mt-2">$4.20</div>
-             
-             <div className="w-full bg-[#E2E8F0] h-2 rounded-full mt-auto mb-1 overflow-hidden">
-               <div className="bg-[#1B4D1E] h-full" style={{ width: '65%' }}></div>
-             </div>
+            <h3 className="text-secondary font-medium text-xs tracking-wide">Est. Savings Today</h3>
+            <div className="text-4xl font-heading font-extrabold text-neutral-900 mt-2">$4.20</div>
+
+            <div className="w-full bg-[#E2E8F0] h-2 rounded-full mt-auto mb-1 overflow-hidden">
+              <div className="bg-[#1B4D1E] h-full" style={{ width: '65%' }}></div>
+            </div>
           </Card>
         </div>
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
+
           {/* Left Column (Active Rules & Recommended) */}
           <div className="lg:col-span-2 space-y-8">
-            
+
             {/* Active Rules List */}
             <div className="space-y-4">
               <div className="flex items-end justify-between mb-2">
                 <h2 className="text-xl font-heading font-bold text-neutral-900">Active Rules</h2>
                 <div className="flex items-center gap-2 text-xs font-bold text-secondary-dark cursor-pointer">
-                  <span className="text-secondary">SORT BY:</span> Most Frequent <ChevronDown size={14}/>
+                  <span className="text-secondary">SORT BY:</span> Most Frequent <ChevronDown size={14} />
                 </div>
               </div>
 
@@ -188,11 +188,11 @@ export default function DeviceAutomation() {
 
           {/* Right Column */}
           <div className="space-y-6">
-            
+
             {/* Quick Rule Setup */}
             <Card className="p-6 border-none shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
               <h3 className="text-base font-bold font-heading text-neutral-900 mb-6">Quick Rule Setup</h3>
-              
+
               <div className="mb-5">
                 <label className="text-[10px] font-bold text-secondary uppercase tracking-wider mb-2 block">When this happens</label>
                 <Select value="Time of day (08:00 AM)" />
@@ -211,7 +211,7 @@ export default function DeviceAutomation() {
             {/* Weekly Schedule */}
             <Card className="p-6 border-none shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
               <h3 className="text-xs font-bold text-secondary tracking-widest uppercase mb-6">Weekly Schedule</h3>
-              
+
               <div className="space-y-4 mb-6">
                 {/* MON */}
                 <div className="flex items-center gap-4 text-xs font-bold">
@@ -265,15 +265,15 @@ export default function DeviceAutomation() {
             {/* Energy Efficiency Vitality */}
             <Card className="p-6 bg-[#F8FAFC] border-none flex flex-col items-center text-center shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
               <h3 className="text-[10px] font-bold text-secondary tracking-widest uppercase mb-6">Energy Efficiency Vitality</h3>
-              
+
               <div className="relative w-32 h-32 mb-6">
                 <svg className="w-full h-full transform -rotate-90">
                   <circle cx="64" cy="64" r="56" fill="transparent" stroke="#E2E8F0" strokeWidth="8" />
                   <circle cx="64" cy="64" r="56" fill="transparent" stroke="#0A2612" strokeWidth="8" strokeDasharray="351.858" strokeDashoffset="70.37" strokeLinecap="round" />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                   <span className="text-2xl font-heading font-extrabold text-neutral-900 leading-none">80%</span>
-                   <span className="text-[8px] font-bold text-secondary-dark tracking-widest uppercase mt-1">Optimal</span>
+                  <span className="text-2xl font-heading font-extrabold text-neutral-900 leading-none">80%</span>
+                  <span className="text-[8px] font-bold text-secondary-dark tracking-widest uppercase mt-1">Optimal</span>
                 </div>
               </div>
 

@@ -1,8 +1,8 @@
 import React from 'react';
 import { Layout } from '../../layout/Layout';
-import { Card } from '../../components/ui/Card';
-import { 
-  Building2, Users, Zap, AlertTriangle, 
+import { Card } from '../../ui/Card';
+import {
+  Building2, Users, Zap, AlertTriangle,
   Sun, Thermometer, Clock, Shield,
   AlertCircle, CheckCircle2, Leaf
 } from 'lucide-react';
@@ -72,49 +72,49 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           {/* Energy Usage Trends Chart Area */}
           <Card className="lg:col-span-2 p-6 bg-[#F8FAFC] border-none shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] relative overflow-hidden flex flex-col h-[340px]">
-             <div className="flex justify-between items-start mb-8 z-10 relative">
-               <div>
-                 <h2 className="text-xl font-heading text-neutral-900 mb-1">Energy Usage Trends</h2>
-                 <p className="text-sm text-secondary">Consumption across all zones today</p>
-               </div>
-               <div className="flex bg-neutral-border/50 rounded-md p-1">
-                 <button className="px-4 py-1.5 bg-white shadow-sm rounded-sm text-xs font-bold text-secondary-dark">Day</button>
-                 <button className="px-4 py-1.5 text-xs font-semibold text-secondary hover:text-secondary-dark">Week</button>
-                 <button className="px-4 py-1.5 text-xs font-semibold text-secondary hover:text-secondary-dark">Month</button>
-               </div>
-             </div>
+            <div className="flex justify-between items-start mb-8 z-10 relative">
+              <div>
+                <h2 className="text-xl font-heading text-neutral-900 mb-1">Energy Usage Trends</h2>
+                <p className="text-sm text-secondary">Consumption across all zones today</p>
+              </div>
+              <div className="flex bg-neutral-border/50 rounded-md p-1">
+                <button className="px-4 py-1.5 bg-white shadow-sm rounded-sm text-xs font-bold text-secondary-dark">Day</button>
+                <button className="px-4 py-1.5 text-xs font-semibold text-secondary hover:text-secondary-dark">Week</button>
+                <button className="px-4 py-1.5 text-xs font-semibold text-secondary hover:text-secondary-dark">Month</button>
+              </div>
+            </div>
 
-             {/* Chart Placeholder SVG */}
-             <div className="flex-1 w-full relative z-0 mt-4">
-                <svg className="w-full h-[180px] overflow-visible" preserveAspectRatio="none" viewBox="0 0 800 150">
-                  <defs>
-                    <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#2E7D32" stopOpacity="0.2"/>
-                      <stop offset="100%" stopColor="#2E7D32" stopOpacity="0"/>
-                    </linearGradient>
-                  </defs>
-                  
-                  {/* The filled area gradient */}
-                  <path d="M0,100 C100,90 200,60 300,70 C400,80 430,95 500,95 C600,95 650,20 750,30 C780,35 800,80 800,80 L800,150 L0,150 Z" fill="url(#chartGradient)" />
-                  {/* The chart line */}
-                  <path d="M0,100 C100,90 200,60 300,70 C400,80 430,95 500,95 C600,95 650,20 750,30 C780,35 800,80 800,80" fill="none" stroke="#1B4D1E" strokeWidth="3" />
-                  
-                  {/* Tooltip Point */}
-                  <circle cx="430" cy="88" r="4" fill="#1B4D1E" />
-                  <rect x="415" y="65" width="45" height="16" rx="2" fill="#1E293B" />
-                  <text x="425" y="76" fill="white" fontSize="8" fontWeight="bold">12.4kWh</text>
-                </svg>
+            {/* Chart Placeholder SVG */}
+            <div className="flex-1 w-full relative z-0 mt-4">
+              <svg className="w-full h-[180px] overflow-visible" preserveAspectRatio="none" viewBox="0 0 800 150">
+                <defs>
+                  <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#2E7D32" stopOpacity="0.2" />
+                    <stop offset="100%" stopColor="#2E7D32" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
 
-                {/* X-Axis labels */}
-                <div className="absolute -bottom-6 w-full flex justify-between text-[10px] font-bold text-secondary-light">
-                  <span>08:00 AM</span>
-                  <span className="ml-[10%]">10:00 AM</span>
-                  <span className="ml-[10%]">12:00 PM</span>
-                  <span className="ml-[10%]">02:00 PM</span>
-                  <span className="ml-[10%]">04:00 PM</span>
-                  <span>06:00 PM</span>
-                </div>
-             </div>
+                {/* The filled area gradient */}
+                <path d="M0,100 C100,90 200,60 300,70 C400,80 430,95 500,95 C600,95 650,20 750,30 C780,35 800,80 800,80 L800,150 L0,150 Z" fill="url(#chartGradient)" />
+                {/* The chart line */}
+                <path d="M0,100 C100,90 200,60 300,70 C400,80 430,95 500,95 C600,95 650,20 750,30 C780,35 800,80 800,80" fill="none" stroke="#1B4D1E" strokeWidth="3" />
+
+                {/* Tooltip Point */}
+                <circle cx="430" cy="88" r="4" fill="#1B4D1E" />
+                <rect x="415" y="65" width="45" height="16" rx="2" fill="#1E293B" />
+                <text x="425" y="76" fill="white" fontSize="8" fontWeight="bold">12.4kWh</text>
+              </svg>
+
+              {/* X-Axis labels */}
+              <div className="absolute -bottom-6 w-full flex justify-between text-[10px] font-bold text-secondary-light">
+                <span>08:00 AM</span>
+                <span className="ml-[10%]">10:00 AM</span>
+                <span className="ml-[10%]">12:00 PM</span>
+                <span className="ml-[10%]">02:00 PM</span>
+                <span className="ml-[10%]">04:00 PM</span>
+                <span>06:00 PM</span>
+              </div>
+            </div>
           </Card>
 
           {/* System Health + Eco Score */}
@@ -122,7 +122,7 @@ export default function Dashboard() {
             {/* System Health */}
             <Card className="p-6 flex-1 flex flex-col justify-center">
               <h3 className="text-secondary-dark font-bold text-xs tracking-wider uppercase mb-5">System Health</h3>
-              
+
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between items-end mb-1">

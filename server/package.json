@@ -17,6 +17,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@supabase/supabase-js": "^2.104.0",
     "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -36,8 +37,7 @@
     "pg-hstore": "^2.3.4",
     "redis": "^5.0.1",
     "sequelize": "^6.37.7",
-    "uuid": "^11.1.0",
-    "xendit-node": "^6.4.0"
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@jest/globals": "^30.0.4",
@@ -45,4 +45,11 @@
     "jest": "^30.0.4",
     "sequelize-cli": "^6.6.2"
   }
+  {
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "migrate": "node migrations/migrate.js"
+  }
+}
 }

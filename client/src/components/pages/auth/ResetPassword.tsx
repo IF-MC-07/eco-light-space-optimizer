@@ -1,37 +1,37 @@
 import React from 'react';
 import { Eye, ArrowLeft, Leaf, CheckCircle2, Circle } from 'lucide-react';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
+import { Button } from '../../ui/Button';
+import { Input } from '../../ui/Input';
 
 export default function ResetPassword() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F8FAFC] via-[#F1F8F6] to-[#E8F5E9]/30 flex flex-col items-center justify-center p-4">
-      
+
       <div className="mb-6 flex flex-col items-center text-center">
         <div className="w-12 h-12 bg-[#0A2612] rounded-xl flex items-center justify-center text-white mb-4 shadow-lg shrink-0">
-           <Leaf size={22} strokeWidth={2.5}/>
+          <Leaf size={22} strokeWidth={2.5} />
         </div>
         <h1 className="text-2xl font-heading font-extrabold text-neutral-900 leading-tight">Eco-Light & Space Optimizer</h1>
         <p className="text-secondary text-xs mt-1 font-medium tracking-wide">Digital Arboretum Security</p>
       </div>
 
       <div className="bg-white rounded-xl shadow-elevated p-8 max-w-[420px] w-full text-center relative z-10 border border-white">
-        
+
         <h2 className="text-2xl font-heading font-extrabold text-neutral-900 mb-2 text-left">Reset Password</h2>
         <p className="text-secondary text-sm mb-8 tracking-wide text-left leading-relaxed">
           Choose a strong, unique password to secure your energy management ecosystem.
         </p>
 
         <form className="space-y-5 text-left" onSubmit={(e) => e.preventDefault()}>
-          
-          <Input 
+
+          <Input
             label="NEW PASSWORD"
             type="password"
             placeholder="••••••••••••"
             rightIcon={<Eye size={18} />}
           />
 
-          <Input 
+          <Input
             label="CONFIRM NEW PASSWORD"
             type="password"
             placeholder="••••••••••••"
@@ -64,17 +64,17 @@ export default function ResetPassword() {
           </Button>
 
           <div className="text-center mt-8">
-             <a href="#" className="inline-flex items-center gap-2 text-sm font-bold text-[#1B4D1E] hover:text-primary transition-colors">
-               <ArrowLeft size={16} /> Back to Security Login
-             </a>
+            <a href="#" className="inline-flex items-center gap-2 text-sm font-bold text-[#1B4D1E] hover:text-primary transition-colors">
+              <ArrowLeft size={16} /> Back to Security Login
+            </a>
           </div>
         </form>
       </div>
 
       <div className="mt-10 text-center">
-         <p className="text-[9px] font-bold text-secondary-light tracking-[0.2em] uppercase">
-            Secure Environment Enabled • AES-256 Encryption
-         </p>
+        <p className="text-[9px] font-bold text-secondary-light tracking-[0.2em] uppercase">
+          Secure Environment Enabled • AES-256 Encryption
+        </p>
       </div>
     </div>
   );

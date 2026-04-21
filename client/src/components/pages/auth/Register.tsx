@@ -1,17 +1,17 @@
 import React from 'react';
 import { Mail, User, Building, Lock, ShieldCheck, ArrowRight, ChevronDown, Leaf } from 'lucide-react';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
-import { Checkbox } from '../../components/ui/Checkbox';
+import { Button } from '../../ui/Button';
+import { Input } from '../../ui/Input';
+import { Checkbox } from '../../ui/Checkbox';
 
 export default function Register() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#E8F5E9]/50 via-[#F8FAFC] to-[#E3F2FD]/40 flex flex-col items-center justify-center p-4">
-      
+
       <div className="bg-white rounded-xl shadow-elevated p-10 max-w-[500px] w-full text-center relative z-10 border border-white">
-        
+
         <div className="w-12 h-12 bg-[#E8F5E9] rounded-xl flex items-center justify-center text-[#4CAF50] mx-auto mb-5 shadow-sm">
-           <Leaf size={24} strokeWidth={2.5}/>
+          <Leaf size={24} strokeWidth={2.5} />
         </div>
 
         <h1 className="text-3xl font-heading font-extrabold text-neutral-900 mb-2">Create Account</h1>
@@ -20,15 +20,15 @@ export default function Register() {
         </p>
 
         <form className="space-y-5 text-left" onSubmit={(e) => e.preventDefault()}>
-          
-          <Input 
+
+          <Input
             label="FULL NAME"
             type="text"
             placeholder="John Doe"
             leftIcon={<User size={18} />}
           />
 
-          <Input 
+          <Input
             label="EMAIL ADDRESS"
             type="email"
             placeholder="john@example.com"
@@ -54,13 +54,13 @@ export default function Register() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Input 
+            <Input
               label="PASSWORD"
               type="password"
               placeholder="••••••••"
               leftIcon={<Lock size={18} />}
             />
-            <Input 
+            <Input
               label="CONFIRM PASSWORD"
               type="password"
               placeholder="••••••••"
@@ -82,16 +82,16 @@ export default function Register() {
           </Button>
 
           <div className="text-center mt-6">
-             <span className="text-secondary text-sm">Already have an account? </span>
-             <a href="#" className="font-bold text-[#1B4D1E] hover:underline text-sm ml-1">Sign In</a>
+            <span className="text-secondary text-sm">Already have an account? </span>
+            <a href="#" className="font-bold text-[#1B4D1E] hover:underline text-sm ml-1">Sign In</a>
           </div>
         </form>
       </div>
 
       <div className="mt-8 text-center">
-         <p className="text-[9px] font-bold text-secondary-light tracking-[0.2em] uppercase">
-            Secure Environment Enabled • AES-256 Encryption
-         </p>
+        <p className="text-[9px] font-bold text-secondary-light tracking-[0.2em] uppercase">
+          Secure Environment Enabled • AES-256 Encryption
+        </p>
       </div>
     </div>
   );
