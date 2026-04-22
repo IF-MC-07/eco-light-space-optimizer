@@ -1,15 +1,19 @@
 import { Sequelize } from 'sequelize';
-import dotenv from 'dotenv';
-dotenv.config();
+import 'dotenv/config'; // Pastikan di server/app.js dipanggil pertama tapi untuk safety dipanggil di sini juga
 
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
+const isProduction = process.env.NODE_ENV === 'production';
+
+const dbUrl = process.env.DATABASE_URL || process.env.SUPABASE_DATABASE_URL;
+const sequelize = new Sequelize(dbUrl, {
   dialect: 'postgres',
-  dialectOptions: {
-    ssl: process.env.NODE_ENV === 'production'
-      ? { rejectUnauthorized: false }
-      : false,
-  },
-  logging: false, // set true kalau mau lihat query SQL di console
+  protocol: 'postgres',
+  dialectOptions: isProduction ? {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false
+    }
+  } : {},
+  logging: false, // Ubah ke console.log jika ingin melihat log query SQL
 });
 
 export default sequelize;
