@@ -1,10 +1,8 @@
 import React from 'react';
-import Register from './components/pages/auth/Register';
-// import ForgotPassword from './pages/auth/ForgotPassword';
-// import ResetPassword from './pages/auth/ResetPassword';
+import ZoneConfiguration from './components/pages/admin/ZoneConfiguration';
 
 export default function App() {
   return (
-    <Register />
+    <ZoneConfiguration />
   );
 }
