@@ -26,4 +26,5 @@ router.use('/log-deteksi', logDeteksiRoute);
 router.use('/kontrol-lampu', kontrolLampuRoute);
 router.use('/kontrol-ac', kontrolAcRoute);
 
+
 export default router;

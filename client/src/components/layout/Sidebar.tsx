@@ -9,7 +9,7 @@ import {
   HelpCircle, 
   LogOut 
 } from 'lucide-react';
-import { Button } from '../components/ui/Button';
+import { Button } from '../ui/Button';
 
 export function Sidebar() {
   const navItems = [

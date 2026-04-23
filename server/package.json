@@ -1,7 +1,7 @@
 {
   "name": "server",
   "version": "1.0.0",
-  "main": "src/server.js",
+  "main": "app/server.js",
   "type": "module",
   "scripts": {
     "test": "cross-env NODE_ENV=test NODE_OPTIONS='--experimental-vm-modules' jest --verbose",

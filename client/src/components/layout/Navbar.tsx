@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { Search, Bell, Settings } from 'lucide-react';
 
 interface NavbarProps {
@@ -27,12 +28,12 @@ export function Navbar({
             <a href="#tim" className="text-sm font-medium text-secondary hover:text-primary transition-colors">Tim</a>
           </nav>
           <div className="flex items-center gap-4">
-            <button className="text-secondary-light hover:text-secondary-dark transition-colors relative">
-              <Bell size={20} />
-            </button>
-            <div className="h-8 w-8 rounded-full bg-[#1E293B] flex items-center justify-center text-white overflow-hidden">
-               <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="Avatar" className="w-full h-full object-cover" />
-            </div>
+            <Link href="/login" className="text-sm font-medium text-primary hover:text-primary-dark transition-colors">
+              Masuk
+            </Link>
+            <Link href="/register" className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors">
+              Daftar
+            </Link>
           </div>
         </>
       ) : (

@@ -16,24 +16,18 @@ export default function Login() {
             </svg>
           </div>
 
-          <div className="flex items-center space-x-2 mb-16 relative z-10">
-            <div className="text-primary">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-            </div>
-            <div>
-              <span className="font-heading font-bold text-lg text-secondary-dark block leading-none">Eco-Light</span>
-              <span className="text-[10px] text-primary font-semibold tracking-wider block">Space Optimizer</span>
-            </div>
+          <div className="flex justify-start mb-8 relative z-10">
+            <img
+              src="images/Logo Eco-Light.png"
+              alt="Logo"
+              className="w-48 h-auto"
+            />
           </div>
 
           <div className="relative z-10 space-y-6">
             <h1 className="font-heading text-5xl font-bold leading-tight text-secondary-dark">
-              Cultivating <br/>
-              <span className="text-primary">Sustainable</span><br/>
+              Cultivating <br />
+              <span className="text-primary">Sustainable</span><br />
               Intelligence.
             </h1>
             <p className="text-secondary-light text-base leading-relaxed max-w-sm">

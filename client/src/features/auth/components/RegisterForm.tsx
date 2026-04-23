@@ -38,24 +38,6 @@ export function RegisterForm() {
           leftIcon={<Mail className="w-4 h-4" />}
         />
 
-        <div className="w-full flex flex-col gap-1.5">
-          <label className="text-sm font-semibold text-secondary-dark uppercase">Department</label>
-          <div className="relative flex items-center w-full">
-            <div className="absolute left-3 text-secondary-light flex items-center pointer-events-none">
-              <Building className="w-4 h-4" />
-            </div>
-            <select className="w-full bg-[#E2E8F0] bg-opacity-40 border-none rounded-md text-sm text-secondary-dark focus:outline-none focus:ring-1 focus:ring-primary appearance-none pl-10 pr-10 py-3 cursor-pointer">
-              <option value="" disabled selected>Select Department</option>
-              <option value="engineering">Engineering</option>
-              <option value="hr">Human Resources</option>
-              <option value="facilities">Facilities Management</option>
-            </select>
-            <div className="absolute right-3 text-secondary-light flex items-center pointer-events-none">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-            </div>
-          </div>
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <Input
             label="PASSWORD"
@@ -88,7 +70,7 @@ export function RegisterForm() {
 
       <p className="text-center text-sm font-medium text-secondary-light mt-8">
         Already have an account?{" "}
-        <a href="#" className="font-bold text-primary hover:text-primary-dark transition-colors">
+        <a href="login" className="font-bold text-primary hover:text-primary-dark transition-colors">
           Sign In
         </a>
       </p>

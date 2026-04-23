@@ -78,7 +78,7 @@ export function LoginForm() {
 
       <p className="text-center text-xs font-medium text-secondary-light">
         Don't have an account?{" "}
-        <a href="#" className="font-bold text-primary hover:text-primary-dark transition-colors">
+        <a href="register" className="font-bold text-primary hover:text-primary-dark transition-colors">
           Register here
         </a>
       </p>
