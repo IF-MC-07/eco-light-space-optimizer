@@ -47,3 +47,23 @@ export const remove = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+export const toggle = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { suhu_setting } = req.body;
+    const item = await kontrolAcService.getById(id);
+    if (!item) return res.status(404).json({ success: false, message: 'Kontrol AC not found' });
+    
+    const newStatus = item.status_ac === 'on' ? 'off' : 'on';
+    
+    const payload = { status_ac: newStatus };
+    if (suhu_setting) payload.suhu_setting = suhu_setting;
+
+    const data = await kontrolAcService.update(id, payload);
+    
+    res.status(200).json({ success: true, message: `AC turned ${newStatus}`, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

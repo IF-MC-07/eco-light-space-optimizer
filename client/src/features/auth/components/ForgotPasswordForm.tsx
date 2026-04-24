@@ -1,9 +1,24 @@
-import React from "react";
+import React, { useState } from "react";
 import { Mail, ArrowLeft, RotateCcw } from "lucide-react";
 import { Input } from "../../../components/ui/Input";
 import { Button } from "../../../components/ui/Button";
+import { useAuth } from "../../../hooks/useAuth";
 
 export function ForgotPasswordForm() {
+  const [email, setEmail] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const { forgotPassword, loading, error } = useAuth();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+
+    const res = await forgotPassword(email);
+    if (res.success) {
+      setSuccessMsg(res.message);
+    }
+  };
+
   return (
     <div className="w-full">
       <div className="text-center mb-8">
@@ -20,21 +35,29 @@ export function ForgotPasswordForm() {
         </p>
       </div>
 
-      <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+      <form className="space-y-6" onSubmit={handleSubmit}>
+        {error && <div className="text-red-500 text-sm">{error}</div>}
+        {successMsg && <div className="text-green-500 text-sm">{successMsg}</div>}
         <Input
           label="Email Address"
           type="email"
           placeholder="name@company.com"
           leftIcon={<Mail className="w-4 h-4" />}
+          value={email}
+          onChange={(e: any) => setEmail(e.target.value)}
         />
 
-        <Button className="w-full bg-primary hover:bg-primary-dark text-white py-6 text-sm font-semibold rounded-md shadow-sm transition-all">
-          Send Verification Code
+        <Button 
+          type="submit"
+          disabled={loading}
+          className="w-full bg-primary hover:bg-primary-dark text-white py-6 text-sm font-semibold rounded-md shadow-sm transition-all"
+        >
+          {loading ? "Sending..." : "Send Verification Code"}
         </Button>
       </form>
 
       <div className="mt-8 text-center">
-        <a href="#" className="inline-flex items-center space-x-2 text-sm font-bold text-primary hover:text-primary-dark transition-colors">
+        <a href="login" className="inline-flex items-center space-x-2 text-sm font-bold text-primary hover:text-primary-dark transition-colors">
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Login</span>
         </a>

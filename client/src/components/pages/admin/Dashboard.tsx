@@ -5,46 +5,45 @@ import { SystemHealth } from "../../../features/dashboard/components/SystemHealt
 import { EcoScore } from "../../../features/dashboard/components/EcoScore";
 import { QuickActions } from "../../../features/dashboard/components/QuickActions";
 import { ActivityFeed } from "../../../features/dashboard/components/ActivityFeed";
-import { Building, Users, Zap, AlertTriangle } from "lucide-react";
+import { Building, Users, Zap, AlertTriangle, Monitor, Camera } from "lucide-react";
+import { useDashboard } from "../../../hooks/useDashboard";
 
 export default function Dashboard() {
+  const { data, loading, error } = useDashboard();
   return (
     <div className="w-full h-full flex flex-col space-y-6 max-w-7xl mx-auto p-6 md:p-8 bg-neutral">
       
       {/* Row 1: Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
-          title="Total Rooms" 
-          value="128" 
-          subtitle="4 newly configured" 
+          title="Total Ruangan" 
+          value={data?.total_ruangan?.toString() || "0"} 
+          subtitle="All configured rooms" 
           icon={<Building className="w-6 h-6" />} 
           iconBgClass="bg-[#E2E8F0]" 
           iconColorClass="text-secondary-dark"
         />
         <StatCard 
-          title="Occupied Now" 
-          value="84" 
-          subtitle="12% from last hour" 
-          trend="up"
-          trendColorClass="text-primary-light"
+          title="Total Zona" 
+          value={data?.total_zona?.toString() || "0"} 
+          subtitle="All configured zones" 
           icon={<Users className="w-6 h-6" />} 
           iconBgClass="bg-[#D1FAE5]" 
           iconColorClass="text-primary"
           leftBorderClass="border-primary"
         />
         <StatCard 
-          title="Energy Saved" 
-          value="42.8 kWh" 
-          subtitle="Equivalent to 3 trees planted" 
-          icon={<Zap className="w-6 h-6 text-white" />} 
+          title="Total Perangkat" 
+          value={data?.total_perangkat?.toString() || "0"} 
+          subtitle="IoT devices connected" 
+          icon={<Monitor className="w-6 h-6 text-white" />} 
           iconBgClass="bg-primary" 
         />
         <StatCard 
-          title="Active Alerts" 
-          value="02" 
-          subtitle="Priority action required" 
-          trendColorClass="text-tertiary"
-          icon={<AlertTriangle className="w-6 h-6" />} 
+          title="Total Kamera" 
+          value={data?.total_kamera?.toString() || "0"} 
+          subtitle="Surveillance cameras" 
+          icon={<Camera className="w-6 h-6" />} 
           iconBgClass="bg-[#FCE7F3]" 
           iconColorClass="text-tertiary"
         />

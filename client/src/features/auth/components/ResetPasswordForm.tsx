@@ -2,9 +2,40 @@ import React, { useState } from "react";
 import { ArrowLeft, Eye, EyeOff, CheckCircle2, Circle } from "lucide-react";
 import { Input } from "../../../components/ui/Input";
 import { Button } from "../../../components/ui/Button";
+import { useAuth } from "../../../hooks/useAuth";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export function ResetPasswordForm() {
   const [showPassword, setShowPassword] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  
+  const { resetPassword, loading, error } = useAuth();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const token = searchParams?.get('token');
+  const id = searchParams?.get('id');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!password) return;
+    if (password !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+    if (!token || !id) {
+      alert("Invalid reset link");
+      return;
+    }
+
+    const res = await resetPassword(id, token, password);
+    if (res.success) {
+      setSuccessMsg("Password reset successfully. Redirecting to login...");
+      setTimeout(() => router.push("/login"), 2000);
+    }
+  };
 
   return (
     <div className="w-full">
@@ -15,11 +46,15 @@ export function ResetPasswordForm() {
         </p>
       </div>
 
-      <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+      <form className="space-y-5" onSubmit={handleSubmit}>
+        {error && <div className="text-red-500 text-sm">{error}</div>}
+        {successMsg && <div className="text-green-500 text-sm">{successMsg}</div>}
         <Input
           label="NEW PASSWORD"
           type={showPassword ? "text" : "password"}
           placeholder="••••••••••••"
+          value={password}
+          onChange={(e: any) => setPassword(e.target.value)}
           rightIcon={
             <button 
               type="button" 
@@ -35,6 +70,8 @@ export function ResetPasswordForm() {
           label="CONFIRM NEW PASSWORD"
           type="password"
           placeholder="••••••••••••"
+          value={confirmPassword}
+          onChange={(e: any) => setConfirmPassword(e.target.value)}
         />
 
         {/* Security Standards Box */}
@@ -60,13 +97,17 @@ export function ResetPasswordForm() {
           </ul>
         </div>
 
-        <Button className="w-full bg-primary hover:bg-primary-dark text-white py-6 text-sm font-semibold rounded-md shadow-sm transition-all mt-8">
-          Reset Password
+        <Button 
+          type="submit"
+          disabled={loading}
+          className="w-full bg-primary hover:bg-primary-dark text-white py-6 text-sm font-semibold rounded-md shadow-sm transition-all mt-8"
+        >
+          {loading ? "Resetting..." : "Reset Password"}
         </Button>
       </form>
 
       <div className="mt-8 text-center">
-        <a href="#" className="inline-flex items-center space-x-2 text-sm font-bold text-primary hover:text-primary-dark transition-colors">
+        <a href="login" className="inline-flex items-center space-x-2 text-sm font-bold text-primary hover:text-primary-dark transition-colors">
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Security Login</span>
         </a>

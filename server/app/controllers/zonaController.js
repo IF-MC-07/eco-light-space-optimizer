@@ -47,3 +47,46 @@ export const remove = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+import db from '../models/index.js';
+
+export const getDetail = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const zona = await db.Zona.findByPk(id, {
+      include: [
+        { model: db.Ruangan, as: 'ruangan' }
+      ]
+    });
+    
+    if (!zona) return res.status(404).json({ success: false, message: 'Zona not found' });
+
+    // get latest log deteksi
+    const log_deteksi = await db.LogDeteksi.findOne({
+      where: { id_zona: id },
+      order: [['waktu_deteksi', 'DESC']]
+    });
+
+    // get kontrol lampu
+    const kontrol_lampu = await db.KontrolLampu.findAll({
+      include: [
+        { 
+          model: db.PerangkatIot, 
+          as: 'perangkat_iot',
+          where: { id_zona: id }
+        }
+      ]
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        ...zona.toJSON(),
+        log_deteksi,
+        kontrol_lampu
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

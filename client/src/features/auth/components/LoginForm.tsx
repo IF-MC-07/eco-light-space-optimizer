@@ -5,9 +5,25 @@ import { Button } from "../../../components/ui/Button";
 import { Checkbox } from "../../../components/ui/Checkbox";
 import { FcGoogle } from "react-icons/fc";
 import { FaApple } from "react-icons/fa";
+import { useAuth } from "../../../hooks/useAuth";
+import { useRouter } from "next/navigation";
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const { login, loading, error } = useAuth();
+  const router = useRouter();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) return;
+    
+    const res = await login(email, password);
+    if (res.success) {
+      router.push("/dashboard");
+    }
+  };
 
   return (
     <div className="w-full max-w-sm mx-auto flex flex-col justify-center h-full">
@@ -16,30 +32,35 @@ export function LoginForm() {
         Please enter your credentials to manage your ecosystem.
       </p>
 
-      <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+      <form className="space-y-5" onSubmit={handleSubmit}>
+        {error && <div className="text-red-500 text-sm">{error}</div>}
         <Input
           label="Email Address"
           type="email"
           placeholder="name@company.com"
           leftIcon={<Mail className="w-4 h-4" />}
+          value={email}
+          onChange={(e: any) => setEmail(e.target.value)}
         />
 
         <div className="space-y-4">
-          <Input
-            label="Password"
-            type={showPassword ? "text" : "password"}
-            placeholder="••••••••"
-            leftIcon={<Lock className="w-4 h-4" />}
-            rightIcon={
-              <button 
-                type="button" 
-                onClick={() => setShowPassword(!showPassword)}
-                className="hover:text-secondary-dark transition-colors focus:outline-none"
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            }
-          />
+            <Input
+              label="Password"
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••"
+              leftIcon={<Lock className="w-4 h-4" />}
+              value={password}
+              onChange={(e: any) => setPassword(e.target.value)}
+              rightIcon={
+                <button 
+                  type="button" 
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="hover:text-secondary-dark transition-colors focus:outline-none"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              }
+            />
 
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
@@ -48,14 +69,18 @@ export function LoginForm() {
                 Remember me
               </label>
             </div>
-            <a href="#" className="text-xs font-bold text-primary hover:text-primary-dark transition-colors">
+            <a href="forgot-password" className="text-xs font-bold text-primary hover:text-primary-dark transition-colors">
               Forgot password?
             </a>
           </div>
         </div>
 
-        <Button className="w-full bg-primary hover:bg-primary-dark text-white py-6 text-sm rounded-md shadow-sm transition-all mt-4">
-          Login
+        <Button 
+          type="submit"
+          disabled={loading}
+          className="w-full bg-primary hover:bg-primary-dark text-white py-6 text-sm rounded-md shadow-sm transition-all mt-4"
+        >
+          {loading ? "Logging in..." : "Login"}
         </Button>
       </form>
 
