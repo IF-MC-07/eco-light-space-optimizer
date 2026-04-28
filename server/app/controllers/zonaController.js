@@ -1,4 +1,5 @@
 import * as zonaService from '../services/zonaService.js';
+import { simpanZonaValidation } from '../validations/zona.validation.js';
 
 export const getAll = async (req, res) => {
   try {
@@ -14,6 +15,29 @@ export const getById = async (req, res) => {
     const data = await zonaService.getById(req.params.id);
     if (!data) return res.status(404).json({ success: false, message: 'Zona not found' });
     res.status(200).json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getByKamera = async (req, res) => {
+  try {
+    const data = await zonaService.getZonaByKamera(req.params.idKamera);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const simpan = async (req, res) => {
+  try {
+    const { error, value } = simpanZonaValidation.validate(req.body);
+    if (error) {
+      return res.status(400).json({ success: false, message: error.details[0].message });
+    }
+
+    await zonaService.upsertZona(value);
+    res.status(200).json({ success: true, message: 'Zonas saved successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -38,9 +62,9 @@ export const update = async (req, res) => {
   }
 };
 
-export const remove = async (req, res) => {
+export const deleteZona = async (req, res) => {
   try {
-    const isDeleted = await zonaService.remove(req.params.id);
+    const isDeleted = await zonaService.deleteZona(req.params.id);
     if (!isDeleted) return res.status(404).json({ success: false, message: 'Zona not found' });
     res.status(200).json({ success: true, message: 'Zona deleted successfully' });
   } catch (error) {

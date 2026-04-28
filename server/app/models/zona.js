@@ -19,6 +19,39 @@ export default (sequelize, DataTypes) => {
     status_zona: {
       type: DataTypes.STRING(20),
       defaultValue: 'aktif'
+    },
+    x1_pct: {
+      type: DataTypes.FLOAT,
+      allowNull: true
+    },
+    y1_pct: {
+      type: DataTypes.FLOAT,
+      allowNull: true
+    },
+    x2_pct: {
+      type: DataTypes.FLOAT,
+      allowNull: true
+    },
+    y2_pct: {
+      type: DataTypes.FLOAT,
+      allowNull: true
+    },
+    warna: {
+      type: DataTypes.STRING(20),
+      allowNull: true
+    },
+    urutan: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 1
+    },
+    dibuat_pada: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
+    },
+    diperbarui_pada: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
     }
   }, {
     tableName: 'zona',
