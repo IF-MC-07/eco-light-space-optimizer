@@ -7,7 +7,7 @@ export function DashboardStats() {
     <div className="grid grid-cols-4 gap-6">
       {/* Total Rooms */}
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-6 mt-5">
           <div className="flex justify-between items-start mb-4">
             <div className="p-2 bg-blue-50 text-blue-600 rounded-md">
               <Building className="w-5 h-5" />
@@ -23,7 +23,7 @@ export function DashboardStats() {
 
       {/* Occupied Now */}
       <Card className="border-l-4 border-l-primary relative overflow-hidden">
-        <CardContent className="p-6">
+        <CardContent className="p-6 mt-5">
           <div className="flex justify-between items-start mb-4">
             <div className="p-2 bg-[#bbf7d0] text-primary rounded-md">
               <Users className="w-5 h-5" />
@@ -41,7 +41,7 @@ export function DashboardStats() {
 
       {/* Energy Saved */}
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-6 mt-5">
           <div className="flex justify-between items-start mb-4">
             <div className="p-2 bg-[#bbf7d0] text-primary rounded-md">
               <Zap className="w-5 h-5" />
@@ -60,7 +60,7 @@ export function DashboardStats() {
 
       {/* Active Alerts */}
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-6 mt-5">
           <div className="flex justify-between items-start mb-4">
             <div className="p-2 bg-tertiary/10 text-tertiary rounded-md">
               <AlertTriangle className="w-5 h-5" />

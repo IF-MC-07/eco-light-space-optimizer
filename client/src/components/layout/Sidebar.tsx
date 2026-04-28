@@ -20,12 +20,12 @@ export function Sidebar() {
   const pathname = usePathname();
   
   const navItems = [
-    { label: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/admin/dashboard' },
-    { label: 'Energy Monitor', icon: <Activity size={20} />, href: '/admin/energy-monitor' },
-    { label: 'Lighting & AC', icon: <Lightbulb size={20} />, href: '/admin/lighting-ac' },
-    { label: 'Savings Report', icon: <BarChart2 size={20} />, href: '/admin/savings-report' },
-    { label: 'Automation', icon: <Bot size={20} />, href: '/admin/automation' },
-    { label: 'Room Availability', icon: <DoorOpen size={20} />, href: '/admin/room-availability' },
+    { label: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/dashboard' },
+    { label: 'Energy Monitor', icon: <Activity size={20} />, href: '/energy-monitor' },
+    { label: 'Lighting & AC', icon: <Lightbulb size={20} />, href: '/lighting-ac' },
+    { label: 'Savings Report', icon: <BarChart2 size={20} />, href: '/savings-report' },
+    { label: 'Automation', icon: <Bot size={20} />, href: '/automation' },
+    { label: 'Room Availability', icon: <DoorOpen size={20} />, href: '/room-availability' },
   ];
 
   return (
@@ -34,13 +34,7 @@ export function Sidebar() {
         {/* Logo Area */}
         <div className="h-20 flex items-center px-6 mb-4">
           <div className="flex items-center gap-2">
-            <svg className="w-6 h-6 text-primary" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM11 19.93C7.06 19.43 4 16.05 4 12C4 7.95 7.06 4.57 11 4.07V19.93ZM13 4.07C16.94 4.57 20 7.95 20 12C20 16.05 16.94 19.43 13 19.93V4.07Z" fill="currentColor"/>
-            </svg>
-            <div className="flex flex-col">
-              <span className="text-neutral-900 font-extrabold tracking-tight text-lg leading-none">Eco-Light</span>
-              <span className="text-[10px] text-primary-light font-medium tracking-wide uppercase leading-tight">Space Optimizer</span>
-            </div>
+            <img src="images/Logo Eco-Light.png" alt="Logo-Eco-Light" className="w-full h-full object-contain"/>
           </div>
         </div>
 

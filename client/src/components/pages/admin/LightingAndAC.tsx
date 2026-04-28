@@ -6,7 +6,7 @@ import { TargetClimate } from '../../../features/monitoring/components/TargetCli
 
 export default function LightingAndAC() {
   return (
-    <div className="flex flex-col space-y-6 w-full max-w-6xl mx-auto">
+    <div className="flex flex-col space-y-6 w-full max-w-6xl mx-auto mt-5">
       {/* Top Stat Cards */}
       <LightingACStats />
 

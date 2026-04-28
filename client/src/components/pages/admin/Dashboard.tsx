@@ -8,7 +8,7 @@ import { ActivityFeed } from "../../../features/dashboard/components/ActivityFee
 
 export default function Dashboard() {
   return (
-    <div className="flex flex-col space-y-6 w-full max-w-6xl mx-auto pb-10">
+    <div className="flex flex-col space-y-6 w-full max-w-6xl mx-auto pb-10 mt-10">
       
       {/* Row 1: Stat Cards */}
       <DashboardStats />

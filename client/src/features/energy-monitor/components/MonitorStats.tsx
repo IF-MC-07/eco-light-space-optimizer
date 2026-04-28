@@ -6,7 +6,7 @@ export function MonitorStats() {
   return (
     <div className="grid grid-cols-4 gap-6 mb-6">
       <Card className="border-transparent shadow-sm">
-        <CardContent className="p-5">
+        <CardContent className="p-5 mt-5">
           <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-2">Total Consumption</p>
           <div className="flex items-baseline gap-2 mb-1">
             <h3 className="text-2xl font-heading font-bold text-black">420 kWh</h3>
@@ -17,7 +17,7 @@ export function MonitorStats() {
       </Card>
 
       <Card className="border-transparent shadow-sm">
-        <CardContent className="p-5">
+        <CardContent className="p-5 mt-5">
           <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-2">Peak Usage Time</p>
           <div className="flex items-center gap-2 mb-1">
             <Clock className="w-5 h-5 text-primary-dark" />
@@ -28,7 +28,7 @@ export function MonitorStats() {
       </Card>
 
       <Card className="border-transparent shadow-sm">
-        <CardContent className="p-5">
+        <CardContent className="p-5 mt-5">
           <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-2">Cost Estimate</p>
           <div className="mb-1">
             <h3 className="text-2xl font-heading font-bold text-black">$45 saved</h3>
@@ -38,7 +38,7 @@ export function MonitorStats() {
       </Card>
 
       <Card className="border-transparent shadow-sm">
-        <CardContent className="p-5">
+        <CardContent className="p-5 mt-5">
           <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-2">System Efficiency</p>
           <div className="flex items-center gap-3 mb-1">
             <h3 className="text-3xl font-heading font-bold text-black">92%</h3>

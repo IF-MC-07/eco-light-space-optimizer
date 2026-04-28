@@ -14,7 +14,7 @@ export function QuickActions() {
     <div className="grid grid-cols-4 gap-6 w-full">
       {actions.map((action, idx) => (
         <Card key={idx} className="border-transparent shadow-sm hover:border-neutral-border cursor-pointer transition-colors bg-white">
-          <CardContent className="p-6 flex flex-col items-center justify-center space-y-3">
+          <CardContent className="p-6 flex flex-col items-center justify-center space-y-3 mt-5">
             {action.icon}
             <span className="font-bold text-black text-sm whitespace-nowrap">{action.label}</span>
           </CardContent>

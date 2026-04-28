@@ -17,7 +17,7 @@ export function RoomCard({ room }: { room: Room }) {
 
   return (
     <Card className="hover:shadow-md transition-shadow cursor-pointer">
-      <CardContent className="p-5 flex flex-col h-full">
+      <CardContent className="p-5 flex flex-col h-full mt-5">
         <div className="flex justify-between items-start mb-2">
           <h3 className="text-xl font-heading font-bold text-black">{room.name}</h3>
           <Badge 
@@ -34,7 +34,7 @@ export function RoomCard({ room }: { room: Room }) {
           {room.location}
         </div>
 
-        <div className="mt-auto space-y-2">
+        <div className="mt-auto space-y-2 mb-5">
           {isAvailable ? (
             <div className="text-xs font-bold text-primary">
               {room.timeInfo}

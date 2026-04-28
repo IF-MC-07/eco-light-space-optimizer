@@ -4,7 +4,7 @@ import { Card, CardContent } from '../../../components/ui/Card';
 export function EfficiencyVitality() {
   return (
     <Card className="bg-[#F8FAFC]">
-      <CardContent className="p-6 flex flex-col items-center text-center">
+      <CardContent className="p-6 flex flex-col items-center text-center mt-5">
         <p className="text-[10px] text-secondary font-bold uppercase tracking-widest mb-6">Energy Efficiency Vitality</p>
         
         <div className="relative w-32 h-32 mb-6">

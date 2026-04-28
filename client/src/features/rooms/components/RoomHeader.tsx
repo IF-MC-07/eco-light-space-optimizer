@@ -3,7 +3,7 @@ import { ChevronDown, Layers, Clock } from 'lucide-react';
 
 export function RoomHeader() {
   return (
-    <div className="flex flex-row items-start justify-between w-full">
+    <div className="flex flex-row items-start justify-between w-full mt-5">
       <div>
         <h1 className="text-3xl font-heading font-extrabold text-black tracking-tight">Room Availability</h1>
         <p className="text-sm text-secondary font-medium mt-1">Optimizing workplace efficiency in real-time.</p>

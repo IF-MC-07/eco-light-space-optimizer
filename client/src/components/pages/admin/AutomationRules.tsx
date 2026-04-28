@@ -8,7 +8,7 @@ import { EfficiencyVitality } from '../../../features/automation/components/Effi
 
 export default function AutomationRules() {
   return (
-    <div className="flex flex-col space-y-8 w-full max-w-6xl mx-auto pb-10">
+    <div className="flex flex-col space-y-8 w-full max-w-6xl mx-auto pb-10 mt-5">
       <AutomationStats />
 
       <div className="grid grid-cols-3 gap-8">

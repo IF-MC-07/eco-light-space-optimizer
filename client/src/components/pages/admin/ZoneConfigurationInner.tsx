@@ -318,9 +318,7 @@ export default function ZoneConfiguration() {
   const selectedZonaData = zonas.find(z => z.id_zona === selectedId);
 
   return (
-    <Layout navbarTitle="Zone Configuration" searchPlaceholder="Search systems...">
-      <div className="max-w-[1400px] mx-auto w-full pb-10">
-        
+      <div className="max-w-[1400px] mx-auto w-full pb-10 mt-10">
         {/* Header & Controls */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <div>
@@ -546,6 +544,5 @@ export default function ZoneConfiguration() {
           </div>
         </div>
       </div>
-    </Layout>
   );
 }

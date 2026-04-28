@@ -50,7 +50,7 @@ export function ActiveRulesList() {
       <div className="space-y-4">
         {rules.map((rule) => (
           <Card key={rule.id} className="border border-neutral-border shadow-sm">
-            <CardContent className="p-4 flex items-center justify-between">
+            <CardContent className="p-4 flex items-center justify-between mt-5">
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 rounded-md bg-neutral flex items-center justify-center text-secondary shrink-0 border border-neutral-border/60">
                   <rule.icon size={20} />

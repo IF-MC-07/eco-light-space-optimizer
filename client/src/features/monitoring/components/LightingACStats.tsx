@@ -46,7 +46,7 @@ export function LightingACStats() {
           <div className="absolute -top-4 -right-4 opacity-[0.03] pointer-events-none">
             <stat.icon size={120} />
           </div>
-          <CardContent className="p-6 relative z-10 flex flex-col justify-between h-full">
+          <CardContent className="p-6 relative z-10 flex flex-col justify-between h-full mt-5">
             <div className={`w-8 h-8 rounded-md flex items-center justify-center mb-6 ${stat.iconColor}`}>
               <stat.icon size={16} />
             </div>
@@ -55,7 +55,7 @@ export function LightingACStats() {
               <div className="flex items-end mb-4">
                 <h3 className="text-3xl font-heading font-bold text-black">{stat.value}</h3>
               </div>
-              <Badge className={`text-[10px] font-bold px-2 py-0.5 uppercase tracking-wide border-transparent ${stat.badgeColor}`}>
+              <Badge className={`text-[10px] font-bold px-2 py-0.5 uppercase tracking-wide border-transparent mb-6 ${stat.badgeColor}`}>
                 {stat.badgeText}
               </Badge>
             </div>

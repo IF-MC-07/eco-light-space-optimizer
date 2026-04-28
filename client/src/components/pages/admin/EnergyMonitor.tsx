@@ -9,12 +9,9 @@ import { Button } from '../../ui/Button';
 
 export default function EnergyMonitor() {
   return (
-    <div className="w-full max-w-6xl mx-auto flex flex-col p-6 md:p-8 space-y-6">
+    <div className="w-full max-w-6xl mx-auto flex flex-col p-6 md:p-8 space-y-6 mt-5">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
         <div>
-          <div className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-2">
-            Campus Management <span className="text-primary-light mx-1">&gt;</span> <span className="text-primary-dark">Energy Monitor</span>
-          </div>
           <h1 className="text-3xl font-heading font-bold text-black tracking-tight mb-1">Energy Monitor</h1>
           <p className="text-sm font-medium text-secondary-light">Live telemetry from Arboretum HQ Campus</p>
         </div>
@@ -27,7 +24,6 @@ export default function EnergyMonitor() {
           </Button>
         </div>
       </div>
-
       <MonitorStats />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

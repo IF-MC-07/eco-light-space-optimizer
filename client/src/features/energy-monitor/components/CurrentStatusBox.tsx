@@ -5,7 +5,7 @@ import { Leaf } from 'lucide-react';
 export function CurrentStatusBox() {
   return (
     <Card className="border-transparent shadow-sm mb-6">
-      <CardContent className="p-6">
+      <CardContent className="p-6 mt-5">
         <p className="text-[11px] font-bold text-black uppercase tracking-widest mb-6">Current Status</p>
         <div className="flex flex-col items-center justify-center py-6">
           <div className="bg-white rounded-xl shadow-sm border border-neutral-border p-8 mb-6 text-center w-3/4">
