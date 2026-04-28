@@ -10,6 +10,7 @@ router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password', authController.resetPassword);
 
 // Protected route
+router.get('/me', authenticate, authController.getProfile);
 router.get('/profile', authenticate, authController.getProfile);
 
 export default router;

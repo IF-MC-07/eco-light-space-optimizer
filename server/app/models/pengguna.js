@@ -14,11 +14,11 @@ export default (sequelize, DataTypes) => {
       allowNull: false,
       unique: true
     },
-    password: {
+    kata_sandi: {
       type: DataTypes.STRING(255),
       allowNull: false
     },
-    role: {
+    peran: {
       type: DataTypes.STRING(20),
       defaultValue: 'user'
     }
