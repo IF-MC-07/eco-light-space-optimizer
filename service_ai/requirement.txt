@@ -13,4 +13,7 @@ ultralytics>=8.0.0
 flask>=3.0.0
 werkzeug>=3.0.0
 paho-mqtt
-pymsyql
+ultralytics
+pymysql
+psycopg2-binary 
+python-dotenv

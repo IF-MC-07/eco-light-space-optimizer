@@ -1,30 +1,45 @@
-import pymysql
+import psycopg2
+import psycopg2.extras
 import os
+from dotenv import load_dotenv
+
+# Load env variables from ../server/.env if exists
+env_path = os.path.join(os.path.dirname(__file__), '../../server/.env')
+if os.path.exists(env_path):
+    load_dotenv(env_path)
+
+def get_db_connection():
+    db_type = os.environ.get('DB_TYPE', 'local')
+    if db_type == 'supabase' and os.environ.get('SUPABASE_DATABASE_URL'):
+        return psycopg2.connect(os.environ.get('SUPABASE_DATABASE_URL'))
+    
+    return psycopg2.connect(
+        host=os.environ.get('DB_HOST', 'localhost'),
+        user=os.environ.get('DB_USER', 'postgres'),
+        password=os.environ.get('DB_PASSWORD', 'root'),
+        dbname=os.environ.get('DB_NAME', 'eco-light'),
+        port=os.environ.get('DB_PORT', '5432')
+    )
 
 def ambil_zona_dari_db(id_kamera: int) -> list[dict]:
-    # Use environment variables if available, fallback to defaults
-    db_host = os.environ.get('DB_HOST', 'localhost')
-    db_user = os.environ.get('DB_USER', 'root')
-    db_pass = os.environ.get('DB_PASS', '') # Assuming empty or specific in ecolight
-    db_name = os.environ.get('DB_NAME', 'ecolight')
-
     try:
-        conn = pymysql.connect(host=db_host, user=db_user, password=db_pass, db=db_name)
-        with conn.cursor(pymysql.cursors.DictCursor) as cur:
+        conn = get_db_connection()
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
             cur.execute("""
-                SELECT * FROM ZONA 
+                SELECT * FROM zona 
                 WHERE id_ruangan = (
-                    SELECT id_ruangan FROM KAMERA WHERE id_kamera = %s
+                    SELECT id_ruangan FROM kamera WHERE id_kamera = %s
                 )
                 AND status_zona = 'aktif'
                 ORDER BY urutan
             """, (id_kamera,))
-            return cur.fetchall()
+            rows = cur.fetchall()
+            return [dict(row) for row in rows]
     except Exception as e:
         print(f"Error fetching zones: {e}")
         return []
     finally:
-        if 'conn' in locals() and conn.open:
+        if 'conn' in locals() and not conn.closed:
             conn.close()
 
 def titik_di_zona(cx_rel: float, cy_rel: float, zona: dict) -> bool:

@@ -87,16 +87,7 @@ export default function ZoneConfiguration() {
     fabricRef.current = canvas;
 
     // Load background
-    // Pointing to Python FastAPI snapshot endpoint directly since it runs on port 8000
-    // But since the Python service is likely not exposed to client directly in production, 
-    // ideally Express proxies it. We'll use absolute URL for local demo.
-    fabric.Image.fromURL(`http://localhost:8000/kamera/${selectedCameraId}/snapshot`, (img) => {
-      if (img) {
-        // scale to fit canvas
-        img.scaleToWidth(containerWidth);
-        canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
-      }
-    });
+    // Removed because background is now an <img> tag
 
     const handleResize = () => {
       if (!containerRef.current || !fabricRef.current) return;
@@ -130,12 +121,7 @@ export default function ZoneConfiguration() {
     // Clear old rects/texts
     canvas.clear();
     // Reapply background (since clear removes it)
-    fabric.Image.fromURL(`http://localhost:8000/kamera/${selectedCameraId}/snapshot`, (img) => {
-      if (img) {
-        img.scaleToWidth(canvas.getWidth());
-        canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
-      }
-    });
+    // Removed because background is now an <img> tag
 
     const cw = canvas.getWidth();
     const ch = canvas.getHeight();
@@ -410,8 +396,19 @@ export default function ZoneConfiguration() {
             </div>
 
             {/* Canvas / Image Area */}
-            <div ref={containerRef} className="relative w-full bg-[#0F172A] rounded-2xl overflow-hidden shadow-elevated border border-neutral-border border-opacity-50">
-               <canvas ref={canvasRef} />
+            <div ref={containerRef} className="relative w-full bg-[#0F172A] rounded-2xl overflow-hidden shadow-elevated border border-neutral-border border-opacity-50 min-h-[400px]">
+               {/* Stream Background */}
+               <img 
+                 key={selectedCameraId}
+                 src={`http://localhost:8000/kamera/${selectedCameraId}/stream`}
+                 className="absolute inset-0 w-full h-full object-fill pointer-events-none"
+                 alt="Camera Stream"
+               />
+
+               {/* Fabric overlay */}
+               <div className={`relative w-full h-full z-10 ${mode === 'preview' ? 'hidden' : 'block'}`}>
+                 <canvas ref={canvasRef} />
+               </div>
                
                {mode === 'draw' && (
                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md text-white px-5 py-3 rounded-lg flex items-center gap-3 text-sm font-semibold border border-white/10 shadow-2xl z-20 pointer-events-none">
