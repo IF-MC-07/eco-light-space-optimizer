@@ -28,17 +28,17 @@ export function middleware(request: NextRequest) {
                           request.nextUrl.pathname.startsWith('/zona-konfigurasi');
 
   // If we have a token and trying to access auth pages, redirect to dashboard
-  if (token && isAuthPage) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
+  // if (token && isAuthPage) {
+  //   return NextResponse.redirect(new URL('/dashboard', request.url));
+  // }
 
   // If we don't have a token and trying to access dashboard pages, redirect to login
-  if (!token && isDashboardPage) {
-    // Note: since we're using localStorage in this setup primarily, 
-    // this middleware might not trigger if no token cookie is set. 
-    // We will set the cookie in the login function as well so this middleware works.
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
+  // if (!token && isDashboardPage) {
+  //   // Note: since we're using localStorage in this setup primarily, 
+  //   // this middleware might not trigger if no token cookie is set. 
+  //   // We will set the cookie in the login function as well so this middleware works.
+  //   return NextResponse.redirect(new URL('/login', request.url));
+  // }
 
   return NextResponse.next();
 }

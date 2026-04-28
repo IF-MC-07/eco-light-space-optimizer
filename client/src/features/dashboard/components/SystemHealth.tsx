@@ -1,37 +1,36 @@
-import React from "react";
-import { Card, CardContent } from "../../../components/ui/Card";
-import { Progress } from "../../../components/ui/Progress";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
+import { Progress } from '../../../components/ui/Progress';
 
 export function SystemHealth() {
   return (
-    <Card className="h-full border-none shadow-none">
-      <CardContent className="p-6 h-full flex flex-col justify-between space-y-6">
-        <h3 className="font-heading text-xs font-bold text-secondary-light uppercase tracking-wider">
-          System Health
-        </h3>
-
-        <div className="space-y-2 flex-1">
-          <div className="flex justify-between text-sm">
-            <span className="font-semibold text-secondary-dark font-body">AC Efficiency</span>
-            <span className="font-bold text-secondary-dark">92%</span>
+    <Card className="h-full border-transparent shadow-sm">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-[11px] text-secondary font-bold uppercase tracking-widest">System Health</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div>
+          <div className="flex justify-between items-end mb-2">
+            <span className="text-xs font-bold text-black">AC Efficiency</span>
+            <span className="text-xs font-bold text-black">92%</span>
           </div>
-          <Progress value={92} indicatorColor="bg-primary-dark" className="h-[6px]" />
+          <Progress value={92} indicatorColor="bg-primary-dark" className="h-2 bg-neutral-border" />
+        </div>
+        
+        <div>
+          <div className="flex justify-between items-end mb-2">
+            <span className="text-xs font-bold text-black">Light Optimization</span>
+            <span className="text-xs font-bold text-black">78%</span>
+          </div>
+          <Progress value={78} indicatorColor="bg-primary-dark" className="h-2 bg-neutral-border" />
         </div>
 
-        <div className="space-y-2 flex-1">
-          <div className="flex justify-between text-sm">
-            <span className="font-semibold text-secondary-dark font-body">Light Optimization</span>
-            <span className="font-bold text-secondary-dark">78%</span>
+        <div>
+          <div className="flex justify-between items-end mb-2">
+            <span className="text-xs font-bold text-black">Grid Stability</span>
+            <span className="text-xs font-bold text-black">98%</span>
           </div>
-          <Progress value={78} indicatorColor="bg-primary-dark" className="h-[6px]" />
-        </div>
-
-        <div className="space-y-2 flex-1">
-          <div className="flex justify-between text-sm">
-            <span className="font-semibold text-secondary-dark font-body">Grid Stability</span>
-            <span className="font-bold text-secondary-dark">98%</span>
-          </div>
-          <Progress value={98} indicatorColor="bg-primary-dark" className="h-[6px]" />
+          <Progress value={98} indicatorColor="bg-primary-dark" className="h-2 bg-neutral-border" />
         </div>
       </CardContent>
     </Card>

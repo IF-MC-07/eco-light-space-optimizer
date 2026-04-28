@@ -62,13 +62,13 @@ export function Navbar({
           </div>
 
           {/* Profile */}
-          <div className="h-9 w-9 rounded-full overflow-hidden border border-neutral-border">
+          <Link href="/admin/profile" className="block h-9 w-9 rounded-full overflow-hidden border border-neutral-border hover:ring-2 hover:ring-primary transition-all">
             <img 
               src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
               alt="User profile" 
               className="w-full h-full object-cover"
             />
-          </div>
+          </Link>
         </div>
       )}
     </header>

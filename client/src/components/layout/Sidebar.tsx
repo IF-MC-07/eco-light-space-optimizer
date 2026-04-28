@@ -1,3 +1,4 @@
+"use client";
 import React from 'react';
 import { 
   LayoutDashboard, 
@@ -7,17 +8,24 @@ import {
   DoorOpen, 
   Plus, 
   HelpCircle, 
-  LogOut 
+  LogOut,
+  Activity
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+
 export function Sidebar() {
+  const pathname = usePathname();
+  
   const navItems = [
-    { label: 'Dashboard', icon: <LayoutDashboard size={20} />, active: false },
-    { label: 'Lighting & AC', icon: <Lightbulb size={20} />, active: false },
-    { label: 'Savings Report', icon: <BarChart2 size={20} />, active: true },
-    { label: 'Automation', icon: <Bot size={20} />, active: false },
-    { label: 'Room Availability', icon: <DoorOpen size={20} />, active: false },
+    { label: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/admin/dashboard' },
+    { label: 'Energy Monitor', icon: <Activity size={20} />, href: '/admin/energy-monitor' },
+    { label: 'Lighting & AC', icon: <Lightbulb size={20} />, href: '/admin/lighting-ac' },
+    { label: 'Savings Report', icon: <BarChart2 size={20} />, href: '/admin/savings-report' },
+    { label: 'Automation', icon: <Bot size={20} />, href: '/admin/automation' },
+    { label: 'Room Availability', icon: <DoorOpen size={20} />, href: '/admin/room-availability' },
   ];
 
   return (
@@ -38,22 +46,25 @@ export function Sidebar() {
 
         {/* Navigation */}
         <nav className="flex flex-col gap-1 px-3">
-          {navItems.map((item) => (
-            <a 
-              key={item.label}
-              href="#"
-              className={`flex items-center gap-3 px-3 py-3 rounded-md text-sm font-semibold transition-colors ${
-                item.active 
-                  ? 'bg-[#F0FDF4] text-primary shadow-[inset_4px_0_0_0_#2E7D32]' 
-                  : 'text-secondary hover:bg-neutral hover:text-secondary-dark'
-              }`}
-            >
-              <div className={item.active ? 'text-primary' : 'text-secondary-light'}>
-                {item.icon}
-              </div>
-              {item.label}
-            </a>
-          ))}
+          {navItems.map((item) => {
+            const isActive = pathname?.startsWith(item.href);
+            return (
+              <Link 
+                key={item.label}
+                href={item.href}
+                className={`flex items-center gap-3 px-3 py-3 rounded-md text-sm font-semibold transition-colors ${
+                  isActive 
+                    ? 'bg-[#F0FDF4] text-primary shadow-[inset_4px_0_0_0_#2E7D32]' 
+                    : 'text-secondary hover:bg-neutral hover:text-secondary-dark'
+                }`}
+              >
+                <div className={isActive ? 'text-primary' : 'text-secondary-light'}>
+                  {item.icon}
+                </div>
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
       </div>
 

@@ -10,7 +10,7 @@ export function EcoScore() {
         <div className="absolute -right-4 -top-4 opacity-10">
           <Leaf size={120} strokeWidth={1} />
         </div>
-        
+
         <div>
           <h3 className="font-heading text-lg font-bold">Eco Score</h3>
           <p className="text-primary-light text-xs mt-1">Building optimization level</p>
