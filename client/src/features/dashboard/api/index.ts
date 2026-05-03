@@ -10,7 +10,7 @@ export interface LogEnergi {
 
 export interface LogDeteksi {
   id_log_deteksi: string;
-  id_kamera: string;
+  id_camera: string;
   jumlah_orang: number;
   waktu_deteksi: string;
   gambar_bukti?: string;

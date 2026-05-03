@@ -6,7 +6,7 @@ import {
   ChevronDown, Move, Eye, Trash2, 
   MousePointer2, Info, History, Plus, Database 
 } from 'lucide-react';
-import { useZona } from '../../../features/zona/hooks/useZona';
+import { useZone } from '../../../features/zone/hooks/useZone';
 import type { Canvas, Rect } from 'fabric';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -36,7 +36,7 @@ export default function ZoneConfiguration() {
     selectZona,
     clearAll,
     saveAll
-  } = useZona(selectedCameraId);
+  } = useZone(selectedCameraId);
 
   // Load fabric client-side and initialize the canvas only in the browser
   useEffect(() => {
@@ -398,7 +398,7 @@ export default function ZoneConfiguration() {
                {/* Stream Background */}
                <img 
                  key={selectedCameraId}
-                 src={`http://localhost:8000/kamera/${selectedCameraId}/stream`}
+                 src={`http://localhost:8000/camera/${selectedCameraId}/stream`}
                  className="absolute inset-0 w-full h-full object-fill pointer-events-none"
                  alt="Camera Stream"
                />

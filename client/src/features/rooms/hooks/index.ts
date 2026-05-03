@@ -10,14 +10,14 @@ export const ruanganKeys = {
 };
 
 // --- Ruangan Hooks ---
-export const useRuanganList = (params?: any) => {
+export const useRoomList = (params?: any) => {
   return useQuery({
     queryKey: ruanganKeys.list(params),
     queryFn: () => api.getRuangan(params),
   });
 };
 
-export const useRuanganDetail = (id: string) => {
+export const useRoomDetail = (id: string) => {
   return useQuery({
     queryKey: ruanganKeys.detail(id),
     queryFn: () => api.getRuanganById(id),

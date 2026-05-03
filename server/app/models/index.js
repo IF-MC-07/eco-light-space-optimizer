@@ -2,31 +2,31 @@ import { Sequelize, DataTypes } from 'sequelize';
 import sequelize from '../config/database.js';
 
 // Import semua model
-import ruanganModel from './ruangan.js';
-import penggunaModel from './pengguna.js';
-import zonaModel from './zona.js';
-import kameraModel from './kamera.js';
-import perangkatIotModel from './perangkat_iot.js';
-import sensorDayaModel from './sensor_daya.js';
-import logEnergiModel from './log_energi.js';
-import jadwalOtomatisasiModel from './jadwal_otomatisasi.js';
-import logDeteksiModel from './log_deteksi.js';
-import kontrolLampuModel from './kontrol_lampu.js';
-import kontrolAcModel from './kontrol_ac.js';
+import roomModel from './room.js';
+import userModel from './user.js';
+import zoneModel from './zone.js';
+import cameraModel from './camera.js';
+import iotDeviceModel from './iot_device.js';
+import powerSensorModel from './power_sensor.js';
+import energyLogModel from './energy_log.js';
+import automationScheduleModel from './automation_schedule.js';
+import detectionLogModel from './detection_log.js';
+import lightControlModel from './light_control.js';
+import acControlModel from './ac_control.js';
 
 // Inisialisasi model
 const db = {
-  Room: ruanganModel(sequelize, DataTypes),
-  User: penggunaModel(sequelize, DataTypes),
-  Zone: zonaModel(sequelize, DataTypes),
-  Camera: kameraModel(sequelize, DataTypes),
-  IotDevice: perangkatIotModel(sequelize, DataTypes),
-  PowerSensor: sensorDayaModel(sequelize, DataTypes),
-  EnergyLog: logEnergiModel(sequelize, DataTypes),
-  AutomationSchedule: jadwalOtomatisasiModel(sequelize, DataTypes),
-  DetectionLog: logDeteksiModel(sequelize, DataTypes),
-  LightControl: kontrolLampuModel(sequelize, DataTypes),
-  AcControl: kontrolAcModel(sequelize, DataTypes)
+  Room: roomModel(sequelize, DataTypes),
+  User: userModel(sequelize, DataTypes),
+  Zone: zoneModel(sequelize, DataTypes),
+  Camera: cameraModel(sequelize, DataTypes),
+  IotDevice: iotDeviceModel(sequelize, DataTypes),
+  PowerSensor: powerSensorModel(sequelize, DataTypes),
+  EnergyLog: energyLogModel(sequelize, DataTypes),
+  AutomationSchedule: automationScheduleModel(sequelize, DataTypes),
+  DetectionLog: detectionLogModel(sequelize, DataTypes),
+  LightControl: lightControlModel(sequelize, DataTypes),
+  AcControl: acControlModel(sequelize, DataTypes)
 };
 
 // Jalankan asosiasi model jika ada

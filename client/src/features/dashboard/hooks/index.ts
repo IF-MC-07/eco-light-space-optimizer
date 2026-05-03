@@ -64,7 +64,7 @@ export const useCreateLogDeteksi = () => {
 };
 
 // --- Kontrol Lampu Hooks ---
-export const useKontrolLampuList = (params?: any) => {
+export const useControlLampuList = (params?: any) => {
   return useQuery({
     queryKey: dashboardKeys.kontrolLampuList(params),
     queryFn: () => api.getKontrolLampu(params),
@@ -82,7 +82,7 @@ export const useCreateKontrolLampu = () => {
 };
 
 // --- Kontrol AC Hooks ---
-export const useKontrolACList = (params?: any) => {
+export const useControlACList = (params?: any) => {
   return useQuery({
     queryKey: dashboardKeys.kontrolACList(params),
     queryFn: () => api.getKontrolAC(params),

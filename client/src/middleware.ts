@@ -22,10 +22,10 @@ export function middleware(request: NextRequest) {
                      
   const isDashboardPage = request.nextUrl.pathname.startsWith('/dashboard') ||
                           request.nextUrl.pathname.startsWith('/ruangan') ||
-                          request.nextUrl.pathname.startsWith('/zona') ||
+                          request.nextUrl.pathname.startsWith('/zone') ||
                           request.nextUrl.pathname.startsWith('/kontrol') ||
                           request.nextUrl.pathname.startsWith('/monitoring') ||
-                          request.nextUrl.pathname.startsWith('/zona-konfigurasi');
+                          request.nextUrl.pathname.startsWith('/zone-konfigurasi');
 
   // If we have a token and trying to access auth pages, redirect to dashboard
   // if (token && isAuthPage) {
@@ -51,9 +51,9 @@ export const config = {
     '/reset-password',
     '/dashboard/:path*',
     '/ruangan/:path*',
-    '/zona/:path*',
+    '/zone/:path*',
     '/kontrol/:path*',
     '/monitoring/:path*',
-    '/zona-konfigurasi/:path*'
+    '/zone-konfigurasi/:path*'
   ],
 };
