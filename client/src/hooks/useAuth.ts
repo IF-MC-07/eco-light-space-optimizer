@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import api from '../lib/axios';
+import { setAuthCookie, removeAuthCookie } from '../features/auth/actions';
 
 export const useAuth = () => {
   const [loading, setLoading] = useState(false);
@@ -12,11 +13,9 @@ export const useAuth = () => {
       const response = await api.post('/auth/login', { email, kata_sandi });
       const { token, user } = response.data.data;
       
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('token', token);
-        // Also set a cookie for middleware
-        document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}`; 
-      }
+      // Set HTTP-only cookie via Server Action
+      await setAuthCookie(token);
+      
       return { success: true, user };
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login gagal');
@@ -68,9 +67,13 @@ export const useAuth = () => {
     }
   };
 
-  const logout = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('token');
+  const logout = async () => {
+    try {
+      await removeAuthCookie();
+      window.location.href = '/login';
+    } catch (err) {
+      console.error('Logout failed', err);
+      // Fallback for client side
       document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
       window.location.href = '/login';
     }

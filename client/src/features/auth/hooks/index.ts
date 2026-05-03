@@ -4,8 +4,8 @@ import * as api from '../api';
 export const authKeys = {
   all: ['auth'] as const,
   me: () => [...authKeys.all, 'me'] as const,
-  penggunaList: () => [...authKeys.all, 'pengguna'] as const,
-  penggunaDetail: (id: string) => [...authKeys.all, 'pengguna', id] as const,
+  userList: () => [...authKeys.all, 'users'] as const,
+  userDetail: (id: string) => [...authKeys.all, 'users', id] as const,
 };
 
 // --- Auth Hooks ---
@@ -41,49 +41,49 @@ export const useMe = () => {
   });
 };
 
-// --- Pengguna Hooks ---
-export const usePenggunaList = () => {
+// --- User Hooks ---
+export const useUserList = () => {
   return useQuery({
-    queryKey: authKeys.penggunaList(),
-    queryFn: api.getPengguna,
+    queryKey: authKeys.userList(),
+    queryFn: api.getUsers,
   });
 };
 
-export const usePenggunaDetail = (id: string) => {
+export const useUserDetail = (id: string) => {
   return useQuery({
-    queryKey: authKeys.penggunaDetail(id),
-    queryFn: () => api.getPenggunaById(id),
+    queryKey: authKeys.userDetail(id),
+    queryFn: () => api.getUserById(id),
     enabled: !!id,
   });
 };
 
-export const useCreatePengguna = () => {
+export const useCreateUser = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: api.createPengguna,
+    mutationFn: api.createUser,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: authKeys.penggunaList() });
+      queryClient.invalidateQueries({ queryKey: authKeys.userList() });
     },
   });
 };
 
-export const useUpdatePengguna = () => {
+export const useUpdateUser = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => api.updatePengguna(id, data),
+    mutationFn: ({ id, data }: { id: string; data: any }) => api.updateUser(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: authKeys.penggunaList() });
-      queryClient.invalidateQueries({ queryKey: authKeys.penggunaDetail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: authKeys.userList() });
+      queryClient.invalidateQueries({ queryKey: authKeys.userDetail(variables.id) });
     },
   });
 };
 
-export const useDeletePengguna = () => {
+export const useDeleteUser = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: api.deletePengguna,
+    mutationFn: api.deleteUser,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: authKeys.penggunaList() });
+      queryClient.invalidateQueries({ queryKey: authKeys.userList() });
     },
   });
 };

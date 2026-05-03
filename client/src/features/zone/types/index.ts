@@ -1,14 +1,7 @@
-export interface Zona {
-  id_zona?: number;
-  id_camera: number;
-  nama_zona: string;
-  x1_pct: number;
-  y1_pct: number;
-  x2_pct: number;
-  y2_pct: number;
-  warna: string;
-  status_zona?: 'aktif' | 'nonaktif';
-  urutan?: number;
+import { Zone as GlobalZone } from '@/types';
+
+export interface Zone extends GlobalZone {
+  description?: string;
 }
 
-export type ZonaPayload = Omit<Zona, 'status_zona'>;
+export type ZonePayload = Omit<Zone, 'created_at' | 'updated_at'>;

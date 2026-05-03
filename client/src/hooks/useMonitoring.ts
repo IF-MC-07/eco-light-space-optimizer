@@ -5,40 +5,40 @@ export const useMonitoring = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchEnergi = useCallback(async (id_ruangan?: number | string, tanggal?: string) => {
+  const fetchEnergy = useCallback(async (roomId?: number | string, date?: string) => {
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams();
-      if (id_ruangan) params.append('id_ruangan', String(id_ruangan));
-      if (tanggal) params.append('tanggal', tanggal);
+      if (roomId) params.append('room_id', String(roomId));
+      if (date) params.append('date', date);
       
-      const response = await api.get(`/monitoring/energi?${params.toString()}`);
+      const response = await api.get(`/monitoring/energy?${params.toString()}`);
       return { success: true, data: response.data.data };
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Gagal mengambil data energi');
+      setError(err.response?.data?.message || 'Failed to fetch energy data');
       return { success: false, message: err.response?.data?.message };
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const fetchSensor = useCallback(async (id_ruangan?: number | string) => {
+  const fetchSensor = useCallback(async (roomId?: number | string) => {
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams();
-      if (id_ruangan) params.append('id_ruangan', String(id_ruangan));
+      if (roomId) params.append('room_id', String(roomId));
       
       const response = await api.get(`/monitoring/sensor?${params.toString()}`);
       return { success: true, data: response.data.data };
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Gagal mengambil data sensor');
+      setError(err.response?.data?.message || 'Failed to fetch sensor data');
       return { success: false, message: err.response?.data?.message };
     } finally {
       setLoading(false);
     }
   }, []);
 
-  return { fetchEnergi, fetchSensor, loading, error };
+  return { fetchEnergy, fetchSensor, loading, error };
 };

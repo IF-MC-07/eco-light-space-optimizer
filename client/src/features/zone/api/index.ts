@@ -1,37 +1,28 @@
 import { serverAPI } from '@/lib/api';
+import { Zone } from '@/types';
 
-// --- Types ---
-export interface Zona {
-  id_zona: string;
-  id_ruangan: string;
-  nama_zona: string;
-  deskripsi?: string;
-  waktu_dibuat?: string;
-  waktu_diperbarui?: string;
-}
-
-// --- Zona Endpoints ---
-export const getZona = async (params?: any): Promise<Zona[]> => {
-  const response = await serverAPI.get('/zone', { params });
+// --- Zone Endpoints ---
+export const getZones = async (params?: any): Promise<Zone[]> => {
+  const response = await serverAPI.get('/zones', { params });
   return response.data.data || response.data;
 };
 
-export const getZonaById = async (id: string): Promise<Zona> => {
-  const response = await serverAPI.get(`/zone/${id}`);
+export const getZoneById = async (id: string): Promise<Zone> => {
+  const response = await serverAPI.get(`/zones/${id}`);
   return response.data.data || response.data;
 };
 
-export const createZona = async (data: any): Promise<Zona> => {
-  const response = await serverAPI.post('/zone', data);
+export const createZone = async (data: any): Promise<Zone> => {
+  const response = await serverAPI.post('/zones', data);
   return response.data.data || response.data;
 };
 
-export const updateZona = async (id: string, data: any): Promise<Zona> => {
-  const response = await serverAPI.put(`/zone/${id}`, data);
+export const updateZone = async (id: string, data: any): Promise<Zone> => {
+  const response = await serverAPI.put(`/zones/${id}`, data);
   return response.data.data || response.data;
 };
 
-export const deleteZona = async (id: string): Promise<any> => {
-  const response = await serverAPI.delete(`/zone/${id}`);
+export const deleteZone = async (id: string): Promise<any> => {
+  const response = await serverAPI.delete(`/zones/${id}`);
   return response.data;
 };

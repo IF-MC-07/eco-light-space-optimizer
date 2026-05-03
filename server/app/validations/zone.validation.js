@@ -1,6 +1,6 @@
 import Joi from 'joi';
 
-const zonaPayloadSchema = Joi.object({
+const zonePayloadSchema = Joi.object({
   zone_id: Joi.number().optional().allow(null), // optional, absent or negative for new zones
   camera_id: Joi.number().required(),
   zone_name: Joi.string().max(100).required(),
@@ -12,4 +12,4 @@ const zonaPayloadSchema = Joi.object({
   sort_order: Joi.number().optional().allow(null)
 });
 
-export const simpanZonaValidation = Joi.array().items(zonaPayloadSchema).required();
+export const saveZoneValidation = Joi.array().items(zonePayloadSchema).required();

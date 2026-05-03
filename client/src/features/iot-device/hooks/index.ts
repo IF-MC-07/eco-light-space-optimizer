@@ -1,57 +1,57 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as api from '../api';
 
-export const perangkatIotKeys = {
+export const iotDeviceKeys = {
   all: ['iot-device'] as const,
-  lists: () => [...perangkatIotKeys.all, 'list'] as const,
-  list: (params?: any) => [...perangkatIotKeys.lists(), params] as const,
-  details: () => [...perangkatIotKeys.all, 'detail'] as const,
-  detail: (id: string) => [...perangkatIotKeys.details(), id] as const,
+  lists: () => [...iotDeviceKeys.all, 'list'] as const,
+  list: (params?: any) => [...iotDeviceKeys.lists(), params] as const,
+  details: () => [...iotDeviceKeys.all, 'detail'] as const,
+  detail: (id: string) => [...iotDeviceKeys.details(), id] as const,
 };
 
-// --- Perangkat IoT Hooks ---
-export const usePerangkatIoTList = (params?: any) => {
+// --- IoT Device Hooks ---
+export const useIoTDeviceList = (params?: any) => {
   return useQuery({
-    queryKey: perangkatIotKeys.list(params),
-    queryFn: () => api.getPerangkatIoT(params),
+    queryKey: iotDeviceKeys.list(params),
+    queryFn: () => api.getIoTDevices(params),
   });
 };
 
-export const usePerangkatIoTDetail = (id: string) => {
+export const useIoTDeviceDetail = (id: string) => {
   return useQuery({
-    queryKey: perangkatIotKeys.detail(id),
-    queryFn: () => api.getPerangkatIoTById(id),
+    queryKey: iotDeviceKeys.detail(id),
+    queryFn: () => api.getIoTDeviceById(id),
     enabled: !!id,
   });
 };
 
-export const useCreatePerangkatIoT = () => {
+export const useCreateIoTDevice = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: api.createPerangkatIoT,
+    mutationFn: api.createIoTDevice,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: perangkatIotKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: iotDeviceKeys.lists() });
     },
   });
 };
 
-export const useUpdatePerangkatIoT = () => {
+export const useUpdateIoTDevice = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => api.updatePerangkatIoT(id, data),
+    mutationFn: ({ id, data }: { id: string; data: any }) => api.updateIoTDevice(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: perangkatIotKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: perangkatIotKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: iotDeviceKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: iotDeviceKeys.detail(variables.id) });
     },
   });
 };
 
-export const useDeletePerangkatIoT = () => {
+export const useDeleteIoTDevice = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: api.deletePerangkatIoT,
+    mutationFn: api.deleteIoTDevice,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: perangkatIotKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: iotDeviceKeys.lists() });
     },
   });
 };

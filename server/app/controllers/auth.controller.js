@@ -98,7 +98,7 @@ export const resetPassword = async (req, res, next) => {
       message: result.message,
     });
   } catch (error) {
-    if (error.message === 'Token tidak valid atau telah kadaluarsa.' || error.message === 'Pengguna tidak valid.') {
+    if (error.message === 'Invalid or expired token.' || error.message === 'Invalid user.') {
       return res.status(400).json({ success: false, message: error.message });
     }
     next(error);

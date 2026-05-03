@@ -1,20 +1,5 @@
 import { serverAPI } from '@/lib/api';
-
-// --- Types ---
-export interface Pengguna {
-  id_pengguna: string;
-  nama: string;
-  email: string;
-  peran: string;
-  waktu_dibuat?: string;
-  waktu_diperbarui?: string;
-}
-
-export interface AuthResponse {
-  message: string;
-  token?: string;
-  user?: Pengguna;
-}
+import type { User, AuthResponse } from '@/types';
 
 // --- Auth Endpoints ---
 export const login = async (data: any): Promise<AuthResponse> => {
@@ -37,33 +22,33 @@ export const resetPassword = async (data: any): Promise<any> => {
   return response.data;
 };
 
-export const me = async (): Promise<{ user: Pengguna }> => {
+export const me = async (): Promise<{ user: User }> => {
   const response = await serverAPI.get('/auth/me');
   return response.data;
 };
 
-// --- Pengguna CRUD Endpoints ---
-export const getPengguna = async (): Promise<Pengguna[]> => {
-  const response = await serverAPI.get('/pengguna');
+// --- User CRUD Endpoints ---
+export const getUsers = async (): Promise<User[]> => {
+  const response = await serverAPI.get('/users');
   return response.data.data || response.data;
 };
 
-export const getPenggunaById = async (id: string): Promise<Pengguna> => {
-  const response = await serverAPI.get(`/pengguna/${id}`);
+export const getUserById = async (id: string): Promise<User> => {
+  const response = await serverAPI.get(`/users/${id}`);
   return response.data.data || response.data;
 };
 
-export const createPengguna = async (data: any): Promise<Pengguna> => {
-  const response = await serverAPI.post('/pengguna', data);
+export const createUser = async (data: any): Promise<User> => {
+  const response = await serverAPI.post('/users', data);
   return response.data.data || response.data;
 };
 
-export const updatePengguna = async (id: string, data: any): Promise<Pengguna> => {
-  const response = await serverAPI.put(`/pengguna/${id}`, data);
+export const updateUser = async (id: string, data: any): Promise<User> => {
+  const response = await serverAPI.put(`/users/${id}`, data);
   return response.data.data || response.data;
 };
 
-export const deletePengguna = async (id: string): Promise<any> => {
-  const response = await serverAPI.delete(`/pengguna/${id}`);
+export const deleteUser = async (id: string): Promise<any> => {
+  const response = await serverAPI.delete(`/users/${id}`);
   return response.data;
 };

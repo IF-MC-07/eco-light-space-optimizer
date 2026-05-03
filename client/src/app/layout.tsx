@@ -1,5 +1,6 @@
 import './globals.css';
 import Providers from './providers';
+import { Layout } from '@/components/layout/Layout';
 
 export const metadata = {
   title: 'Eco-light Space Optimizer',
@@ -15,7 +16,9 @@ export default function RootLayout({
     <html lang="id" suppressHydrationWarning>
       <body>
         <Providers>
-          {children}
+          <Layout>
+            {children}
+          </Layout>
         </Providers>
       </body>
     </html>

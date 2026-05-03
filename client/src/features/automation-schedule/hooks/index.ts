@@ -1,57 +1,57 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as api from '../api';
 
-export const jadwalOtomatisasiKeys = {
-  all: ['automation-schedule'] as const,
-  lists: () => [...jadwalOtomatisasiKeys.all, 'list'] as const,
-  list: (params?: any) => [...jadwalOtomatisasiKeys.lists(), params] as const,
-  details: () => [...jadwalOtomatisasiKeys.all, 'detail'] as const,
-  detail: (id: string) => [...jadwalOtomatisasiKeys.details(), id] as const,
+export const automationScheduleKeys = {
+  all: ['automation-schedules'] as const,
+  lists: () => [...automationScheduleKeys.all, 'list'] as const,
+  list: (params?: any) => [...automationScheduleKeys.lists(), params] as const,
+  details: () => [...automationScheduleKeys.all, 'detail'] as const,
+  detail: (id: string) => [...automationScheduleKeys.details(), id] as const,
 };
 
-// --- Jadwal Otomatisasi Hooks ---
-export const useJadwalOtomatisasiList = (params?: any) => {
+// --- Automation Schedule Hooks ---
+export const useAutomationScheduleList = (params?: any) => {
   return useQuery({
-    queryKey: jadwalOtomatisasiKeys.list(params),
-    queryFn: () => api.getJadwalOtomatisasi(params),
+    queryKey: automationScheduleKeys.list(params),
+    queryFn: () => api.getAutomationSchedules(params),
   });
 };
 
-export const useJadwalOtomatisasiDetail = (id: string) => {
+export const useAutomationScheduleDetail = (id: string) => {
   return useQuery({
-    queryKey: jadwalOtomatisasiKeys.detail(id),
-    queryFn: () => api.getJadwalOtomatisasiById(id),
+    queryKey: automationScheduleKeys.detail(id),
+    queryFn: () => api.getAutomationScheduleById(id),
     enabled: !!id,
   });
 };
 
-export const useCreateJadwalOtomatisasi = () => {
+export const useCreateAutomationSchedule = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: api.createJadwalOtomatisasi,
+    mutationFn: api.createAutomationSchedule,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: jadwalOtomatisasiKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: automationScheduleKeys.lists() });
     },
   });
 };
 
-export const useUpdateJadwalOtomatisasi = () => {
+export const useUpdateAutomationSchedule = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => api.updateJadwalOtomatisasi(id, data),
+    mutationFn: ({ id, data }: { id: string; data: any }) => api.updateAutomationSchedule(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: jadwalOtomatisasiKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: jadwalOtomatisasiKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: automationScheduleKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: automationScheduleKeys.detail(variables.id) });
     },
   });
 };
 
-export const useDeleteJadwalOtomatisasi = () => {
+export const useDeleteAutomationSchedule = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: api.deleteJadwalOtomatisasi,
+    mutationFn: api.deleteAutomationSchedule,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: jadwalOtomatisasiKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: automationScheduleKeys.lists() });
     },
   });
 };

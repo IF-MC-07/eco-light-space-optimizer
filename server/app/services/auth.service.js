@@ -50,7 +50,7 @@ export const getProfile = async (user_id) => {
     attributes: { exclude: ['password'] },
   });
   if (!user) {
-    throw new Error('Pengguna tidak ditemukan.');
+    throw new Error('User not found.');
   }
   return user;
 };
@@ -90,7 +90,7 @@ export const forgotPassword = async (email) => {
 export const resetPassword = async (user_id, token, new_password) => {
   const user = await User.findByPk(user_id);
   if (!user) {
-    throw new Error('Pengguna tidak valid.');
+    throw new Error('Invalid user.');
   }
 
   const secret = process.env.JWT_SECRET + user.password;

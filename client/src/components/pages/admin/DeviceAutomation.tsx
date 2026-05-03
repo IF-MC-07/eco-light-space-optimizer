@@ -1,8 +1,7 @@
 import React from 'react';
-import { Layout } from '../../layout/Layout';
 import { Card } from '../../ui/Card';
 import { Button } from '../../ui/Button';
-import { Badge } from '../../components/ui/Badge';
+import { Badge } from '../../ui/Badge';
 import {
   TrendingUp, Sun, Focus, Thermometer,
   Edit2, Moon, Briefcase, Zap, ChevronDown
@@ -27,9 +26,8 @@ function Select({ value }: { value: string }) {
 
 export default function DeviceAutomation() {
   return (
-    <Layout navbarTitle="Automation Rules" searchPlaceholder="Search routines...">
-      <div className="max-w-[1200px] mx-auto w-full">
-        {/* Top 3 KPI Cards */}
+    <div className="max-w-[1200px] mx-auto w-full">
+      {/* Top 3 KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="bg-[#1B4D1E] border-none p-6 text-white relative overflow-hidden h-[150px]">
             {/* Lightning watermark */}
@@ -285,6 +283,5 @@ export default function DeviceAutomation() {
           </div>
         </div>
       </div>
-    </Layout>
   );
 }

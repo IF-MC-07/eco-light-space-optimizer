@@ -16,11 +16,6 @@ const pythonAPI = axios.create({
   },
 });
 
-// Auto attach token jika ada
-serverAPI.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+// Authentication is handled via HTTP-only cookies (withCredentials: true)
 
 export { serverAPI, pythonAPI };

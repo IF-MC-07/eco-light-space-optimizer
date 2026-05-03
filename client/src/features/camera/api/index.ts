@@ -1,38 +1,28 @@
 import { serverAPI } from '@/lib/api';
+import { Camera } from '@/types';
 
-// --- Types ---
-export interface Kamera {
-  id_camera: string;
-  id_zona: string;
-  nama_camera: string;
-  url_stream: string;
-  status: string; // 'AKTIF' | 'NONAKTIF'
-  waktu_dibuat?: string;
-  waktu_diperbarui?: string;
-}
-
-// --- Kamera Endpoints ---
-export const getKamera = async (params?: any): Promise<Kamera[]> => {
-  const response = await serverAPI.get('/camera', { params });
+// --- Camera Endpoints ---
+export const getCameras = async (params?: any): Promise<Camera[]> => {
+  const response = await serverAPI.get('/cameras', { params });
   return response.data.data || response.data;
 };
 
-export const getKameraById = async (id: string): Promise<Kamera> => {
-  const response = await serverAPI.get(`/camera/${id}`);
+export const getCameraById = async (id: string): Promise<Camera> => {
+  const response = await serverAPI.get(`/cameras/${id}`);
   return response.data.data || response.data;
 };
 
-export const createKamera = async (data: any): Promise<Kamera> => {
-  const response = await serverAPI.post('/camera', data);
+export const createCamera = async (data: any): Promise<Camera> => {
+  const response = await serverAPI.post('/cameras', data);
   return response.data.data || response.data;
 };
 
-export const updateKamera = async (id: string, data: any): Promise<Kamera> => {
-  const response = await serverAPI.put(`/camera/${id}`, data);
+export const updateCamera = async (id: string, data: any): Promise<Camera> => {
+  const response = await serverAPI.put(`/cameras/${id}`, data);
   return response.data.data || response.data;
 };
 
-export const deleteKamera = async (id: string): Promise<any> => {
-  const response = await serverAPI.delete(`/camera/${id}`);
+export const deleteCamera = async (id: string): Promise<any> => {
+  const response = await serverAPI.delete(`/cameras/${id}`);
   return response.data;
 };

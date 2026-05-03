@@ -20,7 +20,7 @@ export const update = async (id, data) => {
   return await zone.update(data);
 };
 
-export const getZonaByKamera = async (cameraId) => {
+export const getZoneByCamera = async (cameraId) => {
   const camera = await db.Camera.findByPk(cameraId);
   if (!camera || !camera.room_id) return [];
   
@@ -33,12 +33,12 @@ export const getZonaByKamera = async (cameraId) => {
   });
 };
 
-export const upsertZona = async (zonaList) => {
+export const upsertZone = async (zoneList) => {
   // If list is empty, nothing to do
-  if (!zonaList || zonaList.length === 0) return;
+  if (!zoneList || zoneList.length === 0) return;
   
   // They all belong to the same camera, get room_id
-  const cameraId = zonaList[0].camera_id;
+  const cameraId = zoneList[0].camera_id;
   const camera = await db.Camera.findByPk(cameraId);
   if (!camera || !camera.room_id) throw new Error('Camera or room not found');
   
@@ -46,8 +46,8 @@ export const upsertZona = async (zonaList) => {
 
   // Process inside a transaction
   await db.sequelize.transaction(async (t) => {
-    for (let i = 0; i < zonaList.length; i++) {
-      const z = zonaList[i];
+    for (let i = 0; i < zoneList.length; i++) {
+      const z = zoneList[i];
       const payload = {
         room_id: roomId,
         zone_name: z.zone_name,
@@ -70,7 +70,7 @@ export const upsertZona = async (zonaList) => {
   });
 };
 
-export const deleteZona = async (zoneId) => {
+export const deleteZone = async (zoneId) => {
   const zone = await Zone.findByPk(zoneId);
   if (!zone) return null;
   await zone.update({ zone_status: 'nonaktif' });

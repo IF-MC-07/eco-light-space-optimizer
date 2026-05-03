@@ -1,6 +1,5 @@
 "use client";
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Layout } from '../../layout/Layout';
 import { Button } from '../../ui/Button';
 import { 
   ChevronDown, Move, Eye, Trash2, 
@@ -32,7 +31,7 @@ export default function ZoneConfiguration() {
     lastSaved,
     addZona,
     updateZona,
-    deleteZona,
+    deleteZone,
     selectZona,
     clearAll,
     saveAll
@@ -86,16 +85,12 @@ export default function ZoneConfiguration() {
     
     fabricRef.current = canvas;
 
-    // Load background
-    // Removed because background is now an <img> tag
-
     const handleResize = () => {
       if (!containerRef.current || !fabricRef.current) return;
       const newWidth = containerRef.current.clientWidth;
       const newHeight = (newWidth * 9) / 16;
       fabricRef.current.setWidth(newWidth);
       fabricRef.current.setHeight(newHeight);
-      // Background re-scale would be needed here for production robustness
       fabricRef.current.renderAll();
     };
 
@@ -114,14 +109,9 @@ export default function ZoneConfiguration() {
     if (!fabric) return;
 
     const canvas = fabricRef.current;
-
-    // Keep track of which zones exist on canvas
-    const existingObjects = canvas.getObjects('rect');
     
     // Clear old rects/texts
     canvas.clear();
-    // Reapply background (since clear removes it)
-    // Removed because background is now an <img> tag
 
     const cw = canvas.getWidth();
     const ch = canvas.getHeight();
@@ -132,27 +122,27 @@ export default function ZoneConfiguration() {
         top: z.y1_pct * ch,
         width: (z.x2_pct - z.x1_pct) * cw,
         height: (z.y2_pct - z.y1_pct) * ch,
-        fill: `${z.warna}33`, // 20% opacity hex
-        stroke: z.warna,
+        fill: `${z.color}33`, // 20% opacity hex
+        stroke: z.color,
         strokeWidth: 2,
         strokeDashArray: [5, 5],
-        cornerColor: z.warna,
+        cornerColor: z.color,
         cornerSize: 8,
         transparentCorners: false,
         selectable: mode === 'edit',
         evented: mode === 'edit',
         lockRotation: true,
-        data: { id: z.id_zona }
+        data: { id: z.zone_id }
       });
 
       canvas.add(rect);
 
       // Add label
-      const text = new fabric.Text(`${z.nama_zona} | x:${Math.round(z.x1_pct * 1920)}, y:${Math.round(z.y1_pct * 1080)}${mode==='preview'?' | Orang: ?':''}`, {
+      const text = new fabric.Text(`${z.zone_name} | x:${Math.round(z.x1_pct * 1920)}, y:${Math.round(z.y1_pct * 1080)}${mode==='preview'?' | Orang: ?':''}`, {
         left: z.x1_pct * cw,
         top: (z.y1_pct * ch) - 20,
         fontSize: 12,
-        backgroundColor: z.warna,
+        backgroundColor: z.color,
         fill: '#fff',
         selectable: false,
         evented: false
@@ -239,12 +229,12 @@ export default function ZoneConfiguration() {
           // Only add if it's large enough
           if (width > 10 && height > 10) {
             addZona({
-              nama_zona: `Zona ${zonas.length + 1}`,
+              zone_name: `Zone ${zonas.length + 1}`,
               x1_pct: left / cw,
               y1_pct: top / ch,
               x2_pct: (left + width) / cw,
               y2_pct: (top + height) / ch,
-              warna: '#4CAF50'
+              color: '#4CAF50'
             });
           }
           canvas.remove(tempRect.current);
@@ -315,7 +305,7 @@ export default function ZoneConfiguration() {
     }
   };
 
-  const selectedZonaData = zonas.find(z => z.id_zona === selectedId);
+  const selectedZoneData = zonas.find(z => z.zone_id === selectedId);
 
   return (
       <div className="max-w-[1400px] mx-auto w-full pb-10 mt-10">
@@ -440,16 +430,16 @@ export default function ZoneConfiguration() {
               <div className="space-y-2 mb-4 max-h-[300px] overflow-y-auto pr-2">
                 {zonas.map(z => (
                   <div 
-                    key={z.id_zona}
-                    onClick={() => selectZona(z.id_zona!)}
-                    className={`flex items-center justify-between p-3.5 bg-white border-2 rounded-lg cursor-pointer transition-colors shadow-sm ${selectedId === z.id_zona ? 'border-[#2E7D32] shadow-[0_2px_8px_rgba(46,125,50,0.1)]' : 'border-transparent hover:border-neutral-border'}`}
+                    key={z.zone_id}
+                    onClick={() => selectZona(z.zone_id!)}
+                    className={`flex items-center justify-between p-3.5 bg-white border-2 rounded-lg cursor-pointer transition-colors shadow-sm ${selectedId === z.zone_id ? 'border-[#2E7D32] shadow-[0_2px_8px_rgba(46,125,50,0.1)]' : 'border-transparent hover:border-neutral-border'}`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: z.warna }}></div>
-                      <span className={`text-sm font-semibold ${selectedId === z.id_zona ? 'text-[#1B4D1E] font-bold' : 'text-secondary-dark'}`}>{z.nama_zona}</span>
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: z.color }}></div>
+                      <span className={`text-sm font-semibold ${selectedId === z.zone_id ? 'text-[#1B4D1E] font-bold' : 'text-secondary-dark'}`}>{z.zone_name}</span>
                     </div>
                     <button 
-                      onClick={(e) => { e.stopPropagation(); deleteZona(z.id_zona!); }}
+                      onClick={(e) => { e.stopPropagation(); deleteZone(z.zone_id!); }}
                       className="text-secondary-light hover:text-tertiary transition-colors"
                     >
                       <Trash2 size={16} />
@@ -462,9 +452,9 @@ export default function ZoneConfiguration() {
               <button 
                 onClick={() => {
                   addZona({
-                    nama_zona: `Zona ${zonas.length + 1}`,
+                    zone_name: `Zone ${zonas.length + 1}`,
                     x1_pct: 0.2, y1_pct: 0.2, x2_pct: 0.5, y2_pct: 0.5,
-                    warna: '#4CAF50'
+                    color: '#4CAF50'
                   });
                   setMode('edit');
                 }}
@@ -480,14 +470,14 @@ export default function ZoneConfiguration() {
             <div>
                <h3 className="font-bold text-neutral-900 text-sm mb-6">Detail Zona Terpilih</h3>
                
-               {selectedZonaData ? (
+               {selectedZoneData ? (
                  <>
                    <div className="mb-5">
                      <label className="text-[10px] font-extrabold text-secondary uppercase tracking-widest mb-2 block">Nama Zona</label>
                      <input 
                        className="w-full bg-[#E2E8F0]/60 border-none rounded-md px-3 py-2.5 text-sm font-bold text-neutral-900 focus:ring-1 focus:ring-primary outline-none transition-shadow"
-                       value={selectedZonaData.nama_zona}
-                       onChange={(e) => updateZona(selectedId!, { nama_zona: e.target.value })}
+                       value={selectedZoneData.zone_name}
+                       onChange={(e) => updateZona(selectedId!, { zone_name: e.target.value })}
                      />
                    </div>
 
@@ -496,19 +486,19 @@ export default function ZoneConfiguration() {
                      <div className="grid grid-cols-2 gap-3">
                         <div className="bg-[#E2E8F0]/60 p-2.5 rounded-md">
                           <span className="text-[9px] font-bold text-secondary uppercase tracking-wider block">X1</span>
-                          <div className="font-extrabold text-neutral-900 text-sm mt-0.5 leading-none">{Math.round(selectedZonaData.x1_pct * 1920)}</div>
+                          <div className="font-extrabold text-neutral-900 text-sm mt-0.5 leading-none">{Math.round(selectedZoneData.x1_pct * 1920)}</div>
                         </div>
                         <div className="bg-[#E2E8F0]/60 p-2.5 rounded-md">
                           <span className="text-[9px] font-bold text-secondary uppercase tracking-wider block">Y1</span>
-                          <div className="font-extrabold text-neutral-900 text-sm mt-0.5 leading-none">{Math.round(selectedZonaData.y1_pct * 1080)}</div>
+                          <div className="font-extrabold text-neutral-900 text-sm mt-0.5 leading-none">{Math.round(selectedZoneData.y1_pct * 1080)}</div>
                         </div>
                         <div className="bg-[#E2E8F0]/60 p-2.5 rounded-md">
                           <span className="text-[9px] font-bold text-secondary uppercase tracking-wider block">X2</span>
-                          <div className="font-extrabold text-neutral-900 text-sm mt-0.5 leading-none">{Math.round(selectedZonaData.x2_pct * 1920)}</div>
+                          <div className="font-extrabold text-neutral-900 text-sm mt-0.5 leading-none">{Math.round(selectedZoneData.x2_pct * 1920)}</div>
                         </div>
                         <div className="bg-[#E2E8F0]/60 p-2.5 rounded-md">
                           <span className="text-[9px] font-bold text-secondary uppercase tracking-wider block">Y2</span>
-                          <div className="font-extrabold text-neutral-900 text-sm mt-0.5 leading-none">{Math.round(selectedZonaData.y2_pct * 1080)}</div>
+                          <div className="font-extrabold text-neutral-900 text-sm mt-0.5 leading-none">{Math.round(selectedZoneData.y2_pct * 1080)}</div>
                         </div>
                      </div>
                    </div>
@@ -519,9 +509,9 @@ export default function ZoneConfiguration() {
                         {['#1B4D1E', '#3B82F6', '#F59E0B', '#A855F7'].map(color => (
                           <div 
                             key={color}
-                            onClick={() => updateZona(selectedId!, { warna: color })}
-                            className={`w-8 h-8 rounded-full cursor-pointer transition-transform ${selectedZonaData.warna === color ? 'ring-2 ring-offset-2 border border-white scale-110' : 'hover:scale-105'}`}
-                            style={{ backgroundColor: color, borderColor: selectedZonaData.warna === color ? color : undefined }}
+                            onClick={() => updateZona(selectedId!, { color: color })}
+                            className={`w-8 h-8 rounded-full cursor-pointer transition-transform ${selectedZoneData.color === color ? 'ring-2 ring-offset-2 border border-white scale-110' : 'hover:scale-105'}`}
+                            style={{ backgroundColor: color, borderColor: selectedZoneData.color === color ? color : undefined }}
                           ></div>
                         ))}
                      </div>

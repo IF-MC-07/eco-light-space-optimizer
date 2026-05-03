@@ -1,14 +1,7 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
 
 export default function RequiresAuth({ children }: { children: React.ReactNode }) {
-  // Real token-based auth check
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const isAuthenticated = Boolean(token);
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
+  // Authentication is now primarily handled by middleware.ts using HTTP-only cookies.
+  // This component remains as a wrapper to maintain compatibility with existing page structures.
   return <>{children}</>;
 }

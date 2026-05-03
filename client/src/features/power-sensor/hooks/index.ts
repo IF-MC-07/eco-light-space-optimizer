@@ -1,57 +1,57 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as api from '../api';
 
-export const sensorDayaKeys = {
-  all: ['power-sensor'] as const,
-  lists: () => [...sensorDayaKeys.all, 'list'] as const,
-  list: (params?: any) => [...sensorDayaKeys.lists(), params] as const,
-  details: () => [...sensorDayaKeys.all, 'detail'] as const,
-  detail: (id: string) => [...sensorDayaKeys.details(), id] as const,
+export const powerSensorKeys = {
+  all: ['power-sensors'] as const,
+  lists: () => [...powerSensorKeys.all, 'list'] as const,
+  list: (params?: any) => [...powerSensorKeys.lists(), params] as const,
+  details: () => [...powerSensorKeys.all, 'detail'] as const,
+  detail: (id: string) => [...powerSensorKeys.details(), id] as const,
 };
 
-// --- Sensor Daya Hooks ---
-export const useSensorDayaList = (params?: any) => {
+// --- Power Sensor Hooks ---
+export const usePowerSensorList = (params?: any) => {
   return useQuery({
-    queryKey: sensorDayaKeys.list(params),
-    queryFn: () => api.getSensorDaya(params),
+    queryKey: powerSensorKeys.list(params),
+    queryFn: () => api.getPowerSensors(params),
   });
 };
 
-export const useSensorDayaDetail = (id: string) => {
+export const usePowerSensorDetail = (id: string) => {
   return useQuery({
-    queryKey: sensorDayaKeys.detail(id),
-    queryFn: () => api.getSensorDayaById(id),
+    queryKey: powerSensorKeys.detail(id),
+    queryFn: () => api.getPowerSensorById(id),
     enabled: !!id,
   });
 };
 
-export const useCreateSensorDaya = () => {
+export const useCreatePowerSensor = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: api.createSensorDaya,
+    mutationFn: api.createPowerSensor,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: sensorDayaKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: powerSensorKeys.lists() });
     },
   });
 };
 
-export const useUpdateSensorDaya = () => {
+export const useUpdatePowerSensor = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => api.updateSensorDaya(id, data),
+    mutationFn: ({ id, data }: { id: string; data: any }) => api.updatePowerSensor(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: sensorDayaKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: sensorDayaKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: powerSensorKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: powerSensorKeys.detail(variables.id) });
     },
   });
 };
 
-export const useDeleteSensorDaya = () => {
+export const useDeletePowerSensor = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: api.deleteSensorDaya,
+    mutationFn: api.deletePowerSensor,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: sensorDayaKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: powerSensorKeys.lists() });
     },
   });
 };

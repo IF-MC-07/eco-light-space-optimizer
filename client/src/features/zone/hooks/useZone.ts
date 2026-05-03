@@ -1,53 +1,53 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Zona, ZonaPayload } from '../types';
-import { getZonaByKamera, simpanZona as apiSimpanZona, deleteZona as apiDeleteZona } from '../api/zoneApi';
+import { Zone } from '@/types';
+import { getZoneByCamera, saveZone as apiSaveZone, deleteZone as apiDeleteZone } from '../api/zoneApi';
 
-export const useZone = (idKamera: number) => {
-  const [zonas, setZonas] = useState<Zona[]>([]);
+export const useZone = (cameraId: number) => {
+  const [zonas, setZonas] = useState<Zone[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   const fetchZonas = useCallback(async () => {
-    if (!idKamera) return;
+    if (!cameraId) return;
     try {
-      const data = await getZonaByKamera(idKamera);
+      const data = await getZoneByCamera(cameraId);
       setZonas(data);
     } catch (error) {
       console.error('Failed to fetch zones', error);
     }
-  }, [idKamera]);
+  }, [cameraId]);
 
   useEffect(() => {
     fetchZonas();
   }, [fetchZonas]);
 
-  const addZona = (zona: Omit<Zona, 'id_zona' | 'id_camera'>) => {
-    const newZona: Zona = {
+  const addZona = (zona: Omit<Zone, 'zone_id' | 'camera_id'>) => {
+    const newZona: Zone = {
       ...zona,
-      id_camera: idKamera,
+      camera_id: cameraId,
       // Create a temporary negative ID for new zones before they are saved to DB
-      id_zona: -Date.now()
+      zone_id: -Date.now()
     };
     setZonas(prev => [...prev, newZona]);
-    setSelectedId(newZona.id_zona!);
+    setSelectedId(newZona.zone_id!);
   };
 
-  const updateZona = (id: number, changes: Partial<Zona>) => {
-    setZonas(prev => prev.map(z => z.id_zona === id ? { ...z, ...changes } : z));
+  const updateZona = (id: number, changes: Partial<Zone>) => {
+    setZonas(prev => prev.map(z => z.zone_id === id ? { ...z, ...changes } : z));
   };
 
-  const deleteZona = async (id: number) => {
+  const deleteZone = async (id: number) => {
     // If it's a temporary zone (negative ID), just remove from state
     if (id < 0) {
-      setZonas(prev => prev.filter(z => z.id_zona !== id));
+      setZonas(prev => prev.filter(z => z.zone_id !== id));
       if (selectedId === id) setSelectedId(null);
       return;
     }
 
     try {
-      await apiDeleteZona(id);
-      setZonas(prev => prev.filter(z => z.id_zona !== id));
+      await apiDeleteZone(id);
+      setZonas(prev => prev.filter(z => z.zone_id !== id));
       if (selectedId === id) setSelectedId(null);
     } catch (error) {
       console.error('Failed to delete zone', error);
@@ -60,10 +60,10 @@ export const useZone = (idKamera: number) => {
   const clearAll = async () => {
     try {
       // Pisahkan zona yang sudah ada di DB (id positif) vs zona temporary (id negatif)
-      const savedZonas = zonas.filter(z => z.id_zona && z.id_zona > 0);
+      const savedZonas = zonas.filter(z => z.zone_id && z.zone_id > 0);
 
       // Hapus semua zona yang ada di DB secara paralel
-      await Promise.all(savedZonas.map(z => apiDeleteZona(z.id_zona!)));
+      await Promise.all(savedZonas.map(z => apiDeleteZone(z.zone_id!)));
 
       // Baru kosongkan state lokal
       setZonas([]);
@@ -76,13 +76,13 @@ export const useZone = (idKamera: number) => {
   const saveAll = async () => {
     setIsSaving(true);
     try {
-      const payload: ZonaPayload[] = zonas.map(z => {
-        // Strip out the temporary negative id_zona for new entries
-        const { id_zona, status_zona, ...rest } = z;
-        return (id_zona && id_zona > 0) ? { id_zona, ...rest } : rest;
-      }) as ZonaPayload[];
+      const payload: Partial<Zone>[] = zonas.map(z => {
+        // Strip out the temporary negative zone_id for new entries
+        const { zone_id, ...rest } = z;
+        return (zone_id && zone_id > 0) ? { zone_id, ...rest } : rest;
+      });
 
-      await apiSimpanZona(payload);
+      await apiSaveZone(payload);
       setLastSaved(new Date());
       // Re-fetch to get real DB IDs for newly added zones
       await fetchZonas();
@@ -100,7 +100,7 @@ export const useZone = (idKamera: number) => {
     lastSaved,
     addZona,
     updateZona,
-    deleteZona,
+    deleteZone,
     selectZona,
     clearAll,
     saveAll

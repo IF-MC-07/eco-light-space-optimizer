@@ -1,57 +1,57 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as api from '../api';
 
-export const ruanganKeys = {
-  all: ['ruangan'] as const,
-  lists: () => [...ruanganKeys.all, 'list'] as const,
-  list: (params?: any) => [...ruanganKeys.lists(), params] as const,
-  details: () => [...ruanganKeys.all, 'detail'] as const,
-  detail: (id: string) => [...ruanganKeys.details(), id] as const,
+export const roomKeys = {
+  all: ['rooms'] as const,
+  lists: () => [...roomKeys.all, 'list'] as const,
+  list: (params?: any) => [...roomKeys.lists(), params] as const,
+  details: () => [...roomKeys.all, 'detail'] as const,
+  detail: (id: string) => [...roomKeys.details(), id] as const,
 };
 
-// --- Ruangan Hooks ---
+// --- Room Hooks ---
 export const useRoomList = (params?: any) => {
   return useQuery({
-    queryKey: ruanganKeys.list(params),
-    queryFn: () => api.getRuangan(params),
+    queryKey: roomKeys.list(params),
+    queryFn: () => api.getRooms(params),
   });
 };
 
 export const useRoomDetail = (id: string) => {
   return useQuery({
-    queryKey: ruanganKeys.detail(id),
-    queryFn: () => api.getRuanganById(id),
+    queryKey: roomKeys.detail(id),
+    queryFn: () => api.getRoomById(id),
     enabled: !!id,
   });
 };
 
-export const useCreateRuangan = () => {
+export const useCreateRoom = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: api.createRuangan,
+    mutationFn: api.createRoom,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ruanganKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: roomKeys.lists() });
     },
   });
 };
 
-export const useUpdateRuangan = () => {
+export const useUpdateRoom = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => api.updateRuangan(id, data),
+    mutationFn: ({ id, data }: { id: string; data: any }) => api.updateRoom(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ruanganKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: ruanganKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: roomKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: roomKeys.detail(variables.id) });
     },
   });
 };
 
-export const useDeleteRuangan = () => {
+export const useDeleteRoom = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: api.deleteRuangan,
+    mutationFn: api.deleteRoom,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ruanganKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: roomKeys.lists() });
     },
   });
 };

@@ -1,89 +1,56 @@
 import { serverAPI } from '@/lib/api';
+import { EnergyLog, DetectionLog, LightControl, ACControl } from '@/types';
 
-// --- Types ---
-export interface LogEnergi {
-  id_log_energi: string;
-  id_sensor: string;
-  konsumsi_wh: number;
-  waktu_log: string;
-}
-
-export interface LogDeteksi {
-  id_log_deteksi: string;
-  id_camera: string;
-  jumlah_orang: number;
-  waktu_deteksi: string;
-  gambar_bukti?: string;
-}
-
-export interface KontrolLampu {
-  id_kontrol_lampu: string;
-  id_perangkat: string;
-  status: string; // 'ON' | 'OFF'
-  tingkat_kecerahan?: number;
-  waktu_kontrol: string;
-  dikontrol_oleh?: string;
-}
-
-export interface KontrolAC {
-  id_kontrol_ac: string;
-  id_perangkat: string;
-  status: string; // 'ON' | 'OFF'
-  suhu?: number;
-  waktu_kontrol: string;
-  dikontrol_oleh?: string;
-}
-
-// --- Log Energi Endpoints ---
-export const getLogEnergi = async (params?: any): Promise<LogEnergi[]> => {
-  const response = await serverAPI.get('/log-energi', { params });
+// --- Energy Log Endpoints ---
+export const getEnergyLogs = async (params?: any): Promise<EnergyLog[]> => {
+  const response = await serverAPI.get('/energy-logs', { params });
   return response.data.data || response.data;
 };
 
-export const getLogEnergiById = async (id: string): Promise<LogEnergi> => {
-  const response = await serverAPI.get(`/log-energi/${id}`);
+export const getEnergyLogById = async (id: string): Promise<EnergyLog> => {
+  const response = await serverAPI.get(`/energy-logs/${id}`);
   return response.data.data || response.data;
 };
 
-export const createLogEnergi = async (data: any): Promise<LogEnergi> => {
-  const response = await serverAPI.post('/log-energi', data);
+export const createEnergyLog = async (data: any): Promise<EnergyLog> => {
+  const response = await serverAPI.post('/energy-logs', data);
   return response.data.data || response.data;
 };
 
-// --- Log Deteksi Endpoints ---
-export const getLogDeteksi = async (params?: any): Promise<LogDeteksi[]> => {
-  const response = await serverAPI.get('/log-deteksi', { params });
+// --- Detection Log Endpoints ---
+export const getDetectionLogs = async (params?: any): Promise<DetectionLog[]> => {
+  const response = await serverAPI.get('/detection-logs', { params });
   return response.data.data || response.data;
 };
 
-export const getLogDeteksiById = async (id: string): Promise<LogDeteksi> => {
-  const response = await serverAPI.get(`/log-deteksi/${id}`);
+export const getDetectionLogById = async (id: string): Promise<DetectionLog> => {
+  const response = await serverAPI.get(`/detection-logs/${id}`);
   return response.data.data || response.data;
 };
 
-export const createLogDeteksi = async (data: any): Promise<LogDeteksi> => {
-  const response = await serverAPI.post('/log-deteksi', data);
+export const createDetectionLog = async (data: any): Promise<DetectionLog> => {
+  const response = await serverAPI.post('/detection-logs', data);
   return response.data.data || response.data;
 };
 
-// --- Kontrol Lampu Endpoints ---
-export const getKontrolLampu = async (params?: any): Promise<KontrolLampu[]> => {
-  const response = await serverAPI.get('/kontrol-lampu', { params });
+// --- Light Control Endpoints ---
+export const getLightControls = async (params?: any): Promise<LightControl[]> => {
+  const response = await serverAPI.get('/light-controls', { params });
   return response.data.data || response.data;
 };
 
-export const createKontrolLampu = async (data: any): Promise<KontrolLampu> => {
-  const response = await serverAPI.post('/kontrol-lampu', data);
+export const createLightControl = async (data: any): Promise<LightControl> => {
+  const response = await serverAPI.post('/light-controls', data);
   return response.data.data || response.data;
 };
 
-// --- Kontrol AC Endpoints ---
-export const getKontrolAC = async (params?: any): Promise<KontrolAC[]> => {
-  const response = await serverAPI.get('/kontrol-ac', { params });
+// --- AC Control Endpoints ---
+export const getACControls = async (params?: any): Promise<ACControl[]> => {
+  const response = await serverAPI.get('/ac-controls', { params });
   return response.data.data || response.data;
 };
 
-export const createKontrolAC = async (data: any): Promise<KontrolAC> => {
-  const response = await serverAPI.post('/kontrol-ac', data);
+export const createACControl = async (data: any): Promise<ACControl> => {
+  const response = await serverAPI.post('/ac-controls', data);
   return response.data.data || response.data;
 };

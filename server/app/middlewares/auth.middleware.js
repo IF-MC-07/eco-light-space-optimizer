@@ -20,7 +20,7 @@ export const authenticate = async (req, res, next) => {
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Pengguna tidak valid.',
+        message: 'Invalid user.',
       });
     }
 
