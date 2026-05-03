@@ -1,11 +1,11 @@
 export default (sequelize, DataTypes) => {
-  const Pengguna = sequelize.define('Pengguna', {
-    id_pengguna: {
+  const User = sequelize.define('User', {
+    user_id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true
     },
-    nama: {
+    name: {
       type: DataTypes.STRING(100),
       allowNull: false
     },
@@ -14,22 +14,22 @@ export default (sequelize, DataTypes) => {
       allowNull: false,
       unique: true
     },
-    kata_sandi: {
+    password: {
       type: DataTypes.STRING(255),
       allowNull: false
     },
-    peran: {
+    role: {
       type: DataTypes.STRING(20),
       defaultValue: 'user'
     }
   }, {
-    tableName: 'pengguna',
+    tableName: 'users',
     timestamps: false,
   });
 
-  Pengguna.associate = (models) => {
-    Pengguna.hasMany(models.JadwalOtomatisasi, { foreignKey: 'id_pengguna', onDelete: 'SET NULL' });
+  User.associate = (models) => {
+    User.hasMany(models.AutomationSchedule, { foreignKey: 'user_id', onDelete: 'SET NULL' });
   };
 
-  return Pengguna;
+  return User;
 };

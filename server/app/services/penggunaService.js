@@ -1,48 +1,48 @@
 import bcrypt from 'bcrypt';
 import db from '../models/index.js';
 
-const { Pengguna } = db;
+const { User } = db;
 const SALT_ROUNDS = 10;
 
 export const getAll = async () => {
-  return await Pengguna.findAll({
-    attributes: { exclude: ['kata_sandi'] }
+  return await User.findAll({
+    attributes: { exclude: ['password'] }
   });
 };
 
 export const getById = async (id) => {
-  return await Pengguna.findByPk(id, {
-    attributes: { exclude: ['kata_sandi'] }
+  return await User.findByPk(id, {
+    attributes: { exclude: ['password'] }
   });
 };
 
 export const create = async (data) => {
-  if (data.kata_sandi) {
-    data.kata_sandi = await bcrypt.hash(data.kata_sandi, SALT_ROUNDS);
+  if (data.password) {
+    data.password = await bcrypt.hash(data.password, SALT_ROUNDS);
   }
-  const pengguna = await Pengguna.create(data);
-  const result = pengguna.toJSON();
-  delete result.kata_sandi;
+  const user = await User.create(data);
+  const result = user.toJSON();
+  delete result.password;
   return result;
 };
 
 export const update = async (id, data) => {
-  const pengguna = await Pengguna.findByPk(id);
-  if (!pengguna) return null;
+  const user = await User.findByPk(id);
+  if (!user) return null;
 
-  if (data.kata_sandi) {
-    data.kata_sandi = await bcrypt.hash(data.kata_sandi, SALT_ROUNDS);
+  if (data.password) {
+    data.password = await bcrypt.hash(data.password, SALT_ROUNDS);
   }
 
-  await pengguna.update(data);
-  const result = pengguna.toJSON();
-  delete result.kata_sandi;
+  await user.update(data);
+  const result = user.toJSON();
+  delete result.password;
   return result;
 };
 
 export const remove = async (id) => {
-  const pengguna = await Pengguna.findByPk(id);
-  if (!pengguna) return null;
-  await pengguna.destroy();
+  const user = await User.findByPk(id);
+  if (!user) return null;
+  await user.destroy();
   return true;
 };

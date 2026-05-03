@@ -1,22 +1,22 @@
 export default (sequelize, DataTypes) => {
-  const Kamera = sequelize.define('Kamera', {
-    id_kamera: {
+  const Camera = sequelize.define('Camera', {
+    camera_id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true
     },
-    id_ruangan: {
+    room_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'ruangan',
-        key: 'id_ruangan'
+        model: 'rooms',
+        key: 'room_id'
       }
     },
     ip_address: {
       type: DataTypes.STRING(50)
     },
-    resolusi: {
+    resolution: {
       type: DataTypes.STRING(20)
     },
     status: {
@@ -24,14 +24,14 @@ export default (sequelize, DataTypes) => {
       defaultValue: 'aktif'
     }
   }, {
-    tableName: 'kamera',
+    tableName: 'cameras',
     timestamps: false,
   });
 
-  Kamera.associate = (models) => {
-    Kamera.belongsTo(models.Ruangan, { foreignKey: 'id_ruangan', onDelete: 'CASCADE' });
-    Kamera.hasMany(models.LogDeteksi, { foreignKey: 'id_kamera', onDelete: 'CASCADE' });
+  Camera.associate = (models) => {
+    Camera.belongsTo(models.Room, { foreignKey: 'room_id', onDelete: 'CASCADE' });
+    Camera.hasMany(models.DetectionLog, { foreignKey: 'camera_id', onDelete: 'CASCADE' });
   };
 
-  return Kamera;
+  return Camera;
 };

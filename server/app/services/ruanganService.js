@@ -1,28 +1,28 @@
 import db from '../models/index.js';
 
-const { Ruangan } = db;
+const { Room } = db;
 
 export const getAll = async () => {
-  return await Ruangan.findAll();
+  return await Room.findAll();
 };
 
 export const getById = async (id) => {
-  return await Ruangan.findByPk(id);
+  return await Room.findByPk(id);
 };
 
 export const create = async (data) => {
-  return await Ruangan.create(data);
+  return await Room.create(data);
 };
 
 export const update = async (id, data) => {
-  const ruangan = await Ruangan.findByPk(id);
-  if (!ruangan) return null;
-  return await ruangan.update(data);
+  const room = await Room.findByPk(id);
+  if (!room) return null;
+  return await room.update(data);
 };
 
 export const remove = async (id) => {
-  const ruangan = await Ruangan.findByPk(id);
-  if (!ruangan) return null;
-  await ruangan.destroy();
+  const room = await Room.findByPk(id);
+  if (!room) return null;
+  await room.destroy();
   return true;
 };

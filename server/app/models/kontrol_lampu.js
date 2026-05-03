@@ -1,46 +1,46 @@
 export default (sequelize, DataTypes) => {
-  const KontrolLampu = sequelize.define('KontrolLampu', {
-    id_kontrol: {
+  const LightControl = sequelize.define('LightControl', {
+    control_id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true
     },
-    id_zona: {
+    zone_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'zona',
-        key: 'id_zona'
+        model: 'zones',
+        key: 'zone_id'
       }
     },
-    id_perangkat: {
+    device_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'perangkat_iot',
-        key: 'id_perangkat'
+        model: 'iot_devices',
+        key: 'device_id'
       }
     },
     relay_channel: {
       type: DataTypes.INTEGER
     },
-    status_lampu: {
+    light_status: {
       type: DataTypes.STRING(20),
       defaultValue: 'off'
     },
-    diperbarui_pada: {
+    updated_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
     }
   }, {
-    tableName: 'kontrol_lampu',
+    tableName: 'light_controls',
     timestamps: false,
   });
 
-  KontrolLampu.associate = (models) => {
-    KontrolLampu.belongsTo(models.Zona, { foreignKey: 'id_zona', onDelete: 'CASCADE' });
-    KontrolLampu.belongsTo(models.PerangkatIot, { foreignKey: 'id_perangkat', onDelete: 'CASCADE' });
+  LightControl.associate = (models) => {
+    LightControl.belongsTo(models.Zone, { foreignKey: 'zone_id', onDelete: 'CASCADE' });
+    LightControl.belongsTo(models.IotDevice, { foreignKey: 'device_id', onDelete: 'CASCADE' });
   };
 
-  return KontrolLampu;
+  return LightControl;
 };

@@ -22,17 +22,16 @@ const router = Router();
 router.use('/auth', authRoute);
 router.use('/dashboard', authenticate, dashboardRoute);
 router.use('/monitoring', authenticate, monitoringRoute);
-router.use('/ruangan', authenticate, ruanganRoute);
-router.use('/pengguna', authenticate, requireRole('admin'), penggunaRoute); // Users should probably be managed by admin
-router.use('/zona', authenticate, zonaRoute);
-router.use('/kamera', authenticate, kameraRoute);
-router.use('/perangkat-iot', authenticate, perangkatIotRoute);
-router.use('/sensor-daya', authenticate, sensorDayaRoute);
-router.use('/log-energi', authenticate, logEnergiRoute);
-router.use('/jadwal-otomatisasi', authenticate, requireRole('admin'), jadwalOtomatisasiRoute);
-router.use('/log-deteksi', authenticate, logDeteksiRoute);
-router.use('/kontrol-lampu', authenticate, requireRole('admin'), kontrolLampuRoute);
-router.use('/kontrol-ac', authenticate, requireRole('admin'), kontrolAcRoute);
-
+router.use('/rooms', authenticate, ruanganRoute);
+router.use('/users', authenticate, requireRole('admin'), penggunaRoute);
+router.use('/zones', authenticate, zonaRoute);
+router.use('/cameras', authenticate, kameraRoute);
+router.use('/iot-devices', authenticate, perangkatIotRoute);
+router.use('/power-sensors', authenticate, sensorDayaRoute);
+router.use('/energy-logs', authenticate, logEnergiRoute);
+router.use('/automation-schedules', authenticate, requireRole('admin'), jadwalOtomatisasiRoute);
+router.use('/detection-logs', authenticate, logDeteksiRoute);
+router.use('/light-controls', authenticate, requireRole('admin'), kontrolLampuRoute);
+router.use('/ac-controls', authenticate, requireRole('admin'), kontrolAcRoute);
 
 export default router;

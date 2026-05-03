@@ -1,35 +1,35 @@
 import db from '../models/index.js';
 
-const { Zona } = db;
+const { Zone } = db;
 
 export const getAll = async () => {
-  return await Zona.findAll();
+  return await Zone.findAll();
 };
 
 export const getById = async (id) => {
-  return await Zona.findByPk(id);
+  return await Zone.findByPk(id);
 };
 
 export const create = async (data) => {
-  return await Zona.create(data);
+  return await Zone.create(data);
 };
 
 export const update = async (id, data) => {
-  const zona = await Zona.findByPk(id);
-  if (!zona) return null;
-  return await zona.update(data);
+  const zone = await Zone.findByPk(id);
+  if (!zone) return null;
+  return await zone.update(data);
 };
 
-export const getZonaByKamera = async (idKamera) => {
-  const kamera = await db.Kamera.findByPk(idKamera);
-  if (!kamera || !kamera.id_ruangan) return [];
+export const getZonaByKamera = async (cameraId) => {
+  const camera = await db.Camera.findByPk(cameraId);
+  if (!camera || !camera.room_id) return [];
   
-  return await Zona.findAll({
+  return await Zone.findAll({
     where: { 
-      id_ruangan: kamera.id_ruangan,
-      status_zona: 'aktif'
+      room_id: camera.room_id,
+      zone_status: 'aktif'
     },
-    order: [['urutan', 'ASC']]
+    order: [['sort_order', 'ASC']]
   });
 };
 
@@ -37,42 +37,42 @@ export const upsertZona = async (zonaList) => {
   // If list is empty, nothing to do
   if (!zonaList || zonaList.length === 0) return;
   
-  // They all belong to the same camera, get id_ruangan
-  const idKamera = zonaList[0].id_kamera;
-  const kamera = await db.Kamera.findByPk(idKamera);
-  if (!kamera || !kamera.id_ruangan) throw new Error('Camera or room not found');
+  // They all belong to the same camera, get room_id
+  const cameraId = zonaList[0].camera_id;
+  const camera = await db.Camera.findByPk(cameraId);
+  if (!camera || !camera.room_id) throw new Error('Camera or room not found');
   
-  const idRuangan = kamera.id_ruangan;
+  const roomId = camera.room_id;
 
   // Process inside a transaction
   await db.sequelize.transaction(async (t) => {
     for (let i = 0; i < zonaList.length; i++) {
       const z = zonaList[i];
       const payload = {
-        id_ruangan: idRuangan,
-        nama_zona: z.nama_zona,
+        room_id: roomId,
+        zone_name: z.zone_name,
         x1_pct: z.x1_pct,
         y1_pct: z.y1_pct,
         x2_pct: z.x2_pct,
         y2_pct: z.y2_pct,
-        warna: z.warna,
-        urutan: i + 1,
-        status_zona: 'aktif',
-        diperbarui_pada: new Date()
+        color: z.color,
+        sort_order: i + 1,
+        zone_status: 'aktif',
+        updated_at: new Date()
       };
 
-      if (z.id_zona) {
-        await Zona.update(payload, { where: { id_zona: z.id_zona }, transaction: t });
+      if (z.zone_id) {
+        await Zone.update(payload, { where: { zone_id: z.zone_id }, transaction: t });
       } else {
-        await Zona.create(payload, { transaction: t });
+        await Zone.create(payload, { transaction: t });
       }
     }
   });
 };
 
-export const deleteZona = async (idZona) => {
-  const zona = await Zona.findByPk(idZona);
-  if (!zona) return null;
-  await zona.update({ status_zona: 'nonaktif' });
+export const deleteZona = async (zoneId) => {
+  const zone = await Zone.findByPk(zoneId);
+  if (!zone) return null;
+  await zone.update({ zone_status: 'nonaktif' });
   return true;
 };

@@ -2,19 +2,19 @@ import db from '../models/index.js';
 
 export const getEnergi = async (req, res) => {
   try {
-    const { id_ruangan, tanggal } = req.query;
+    const { room_id, date } = req.query;
     let whereClause = {};
 
-    if (id_ruangan) whereClause.id_ruangan = id_ruangan;
-    if (tanggal) {
-      const date = new Date(tanggal);
-      whereClause.tanggal = date;
+    if (room_id) whereClause.room_id = room_id;
+    if (date) {
+      const parsedDate = new Date(date);
+      whereClause.date = parsedDate;
     }
 
-    const data = await db.LogEnergi.findAll({
+    const data = await db.EnergyLog.findAll({
       where: whereClause,
-      order: [['waktu_mulai', 'DESC']],
-      include: [{ model: db.Ruangan, as: 'ruangan' }]
+      order: [['log_id', 'DESC']],
+      include: [{ model: db.Room }]
     });
 
     res.status(200).json({ success: true, data });
@@ -25,24 +25,18 @@ export const getEnergi = async (req, res) => {
 
 export const getSensor = async (req, res) => {
   try {
-    const { id_ruangan } = req.query;
+    const { room_id } = req.query;
     
-    let perangkatWhere = {};
-    if (id_ruangan) {
-      perangkatWhere.id_ruangan = id_ruangan;
+    let whereClause = {};
+    if (room_id) {
+      whereClause.room_id = room_id;
     }
 
-    const data = await db.SensorDaya.findAll({
+    const data = await db.PowerSensor.findAll({
       limit: 10,
-      order: [['waktu_pencatatan', 'DESC']],
-      include: [
-        { 
-          model: db.PerangkatIot, 
-          as: 'perangkat_iot',
-          where: Object.keys(perangkatWhere).length > 0 ? perangkatWhere : undefined,
-          include: [{ model: db.Ruangan, as: 'ruangan' }]
-        }
-      ]
+      order: [['read_at', 'DESC']],
+      where: Object.keys(whereClause).length > 0 ? whereClause : undefined,
+      include: [{ model: db.Room }]
     });
 
     res.status(200).json({ success: true, data });

@@ -1,5 +1,6 @@
 import * as zonaService from '../services/zonaService.js';
 import { simpanZonaValidation } from '../validations/zona.validation.js';
+import db from '../models/index.js';
 
 export const getAll = async (req, res) => {
   try {
@@ -13,7 +14,7 @@ export const getAll = async (req, res) => {
 export const getById = async (req, res) => {
   try {
     const data = await zonaService.getById(req.params.id);
-    if (!data) return res.status(404).json({ success: false, message: 'Zona not found' });
+    if (!data) return res.status(404).json({ success: false, message: 'Zone not found' });
     res.status(200).json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -22,7 +23,7 @@ export const getById = async (req, res) => {
 
 export const getByKamera = async (req, res) => {
   try {
-    const data = await zonaService.getZonaByKamera(req.params.idKamera);
+    const data = await zonaService.getZonaByKamera(req.params.cameraId);
     res.status(200).json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -37,7 +38,7 @@ export const simpan = async (req, res) => {
     }
 
     await zonaService.upsertZona(value);
-    res.status(200).json({ success: true, message: 'Zonas saved successfully' });
+    res.status(200).json({ success: true, message: 'Zones saved successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -55,7 +56,7 @@ export const create = async (req, res) => {
 export const update = async (req, res) => {
   try {
     const data = await zonaService.update(req.params.id, req.body);
-    if (!data) return res.status(404).json({ success: false, message: 'Zona not found' });
+    if (!data) return res.status(404).json({ success: false, message: 'Zone not found' });
     res.status(200).json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -65,49 +66,46 @@ export const update = async (req, res) => {
 export const deleteZona = async (req, res) => {
   try {
     const isDeleted = await zonaService.deleteZona(req.params.id);
-    if (!isDeleted) return res.status(404).json({ success: false, message: 'Zona not found' });
-    res.status(200).json({ success: true, message: 'Zona deleted successfully' });
+    if (!isDeleted) return res.status(404).json({ success: false, message: 'Zone not found' });
+    res.status(200).json({ success: true, message: 'Zone deleted successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-import db from '../models/index.js';
-
 export const getDetail = async (req, res) => {
   try {
     const { id } = req.params;
-    const zona = await db.Zona.findByPk(id, {
+    const zone = await db.Zone.findByPk(id, {
       include: [
-        { model: db.Ruangan, as: 'ruangan' }
+        { model: db.Room }
       ]
     });
     
-    if (!zona) return res.status(404).json({ success: false, message: 'Zona not found' });
+    if (!zone) return res.status(404).json({ success: false, message: 'Zone not found' });
 
-    // get latest log deteksi
-    const log_deteksi = await db.LogDeteksi.findOne({
-      where: { id_zona: id },
-      order: [['waktu_deteksi', 'DESC']]
+    // get latest detection log
+    const detection_log = await db.DetectionLog.findOne({
+      where: { zone_id: id },
+      order: [['detection_time', 'DESC']]
     });
 
-    // get kontrol lampu
-    const kontrol_lampu = await db.KontrolLampu.findAll({
+    // get light controls
+    const light_controls = await db.LightControl.findAll({
       include: [
         { 
-          model: db.PerangkatIot, 
-          as: 'perangkat_iot',
-          where: { id_zona: id }
+          model: db.IotDevice, 
         }
-      ]
+      ],
+      where: { zone_id: id }
     });
 
     res.status(200).json({
       success: true,
       data: {
-        ...zona.toJSON(),
-        log_deteksi,
-        kontrol_lampu
+        ...zone.toJSON(),
+        detection_log,
+        light_controls
       }
     });
   } catch (error) {

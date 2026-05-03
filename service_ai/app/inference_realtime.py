@@ -3,99 +3,113 @@ from ultralytics import YOLO
 import paho.mqtt.client as mqtt
 import json
 import time
+import os
+from dotenv import load_dotenv
 from zona_loader import ambil_zona_dari_db, titik_di_zona
 
-# Define the target camera ID this inference process handles
-# For a more robust solution, this could be passed as a command-line arg or env var
-ID_KAMERA = 1 
+load_dotenv()
+
+# --- Config dari .env ---
+MQTT_BROKER   = os.getenv('MQTT_BROKER', 'localhost')
+MQTT_PORT     = int(os.getenv('MQTT_PORT', 1883))
+MQTT_USER     = os.getenv('MQTT_USER')
+MQTT_PASSWORD = os.getenv('MQTT_PASSWORD')
+CAMERA_SOURCE = os.getenv('CAMERA_SOURCE', '0')
+ID_KAMERA     = 1
+
+# Konversi CAMERA_SOURCE: angka = index webcam, string = RTSP URL
+camera_input = int(CAMERA_SOURCE) if CAMERA_SOURCE.isdigit() else CAMERA_SOURCE
 
 model = YOLO('yolov8n.pt')
 
+# --- MQTT dengan auth ---
 client = mqtt.Client()
-client.connect('localhost', 1883)
+if MQTT_USER and MQTT_PASSWORD:
+    client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
+client.connect(MQTT_BROKER, MQTT_PORT)
 client.loop_start()
+print(f"✅ MQTT terhubung ke {MQTT_BROKER}:{MQTT_PORT}")
 
-cap = cv2.VideoCapture(0)
-print("✅ Kamera aktif! Tekan 'q' untuk keluar")
+cap = cv2.VideoCapture(camera_input)
+if not cap.isOpened():
+    print(f"❌ Kamera tidak bisa dibuka: {CAMERA_SOURCE}")
+    client.loop_stop()
+    exit(1)
+print(f"✅ Kamera aktif (source: {CAMERA_SOURCE})")
 
-prev_data = {}
+prev_data      = {}
 last_send_time = 0
-SEND_INTERVAL = 2
+SEND_INTERVAL  = 2
 
-# Zone reloading logic
-zones = []
+zones               = []
 last_zone_fetch_time = 0
-ZONE_FETCH_INTERVAL = 60 # Reload every 60 seconds
+ZONE_FETCH_INTERVAL = 60
 
-while True:
-    current_time = time.time()
-    
-    # Reload zones periodically
-    if (current_time - last_zone_fetch_time) > ZONE_FETCH_INTERVAL or not zones:
-        zones = ambil_zona_dari_db(ID_KAMERA)
-        last_zone_fetch_time = current_time
-        print(f"🔄 Reloaded {len(zones)} zones from DB.")
+print("▶️  Inferensi berjalan. Tekan Ctrl+C untuk keluar.")
 
-    ret, frame = cap.read()
-    if not ret:
-        break
+try:
+    while True:
+        current_time = time.time()
 
-    height, width = frame.shape[:2]
+        # Reload zona secara berkala
+        if (current_time - last_zone_fetch_time) > ZONE_FETCH_INTERVAL or not zones:
+            zones = ambil_zona_dari_db(ID_KAMERA)
+            last_zone_fetch_time = current_time
+            print(f"🔄 Reloaded {len(zones)} zones dari DB.")
 
-    results = model.predict(
-        frame,
-        conf=0.25,
-        iou=0.45,
-        classes=[0],
-        show_labels=False,
-        show_conf=False,
-        verbose=False
-    )
+        ret, frame = cap.read()
+        if not ret:
+            print("⚠️  Frame tidak terbaca, mencoba lagi...")
+            time.sleep(0.5)
+            continue
 
-    annotated = results[0].plot()
+        height, width = frame.shape[:2]
 
-    # Hitung orang per zona
-    # Initialize counts based on loaded zones dynamically
-    count = {z['nama_zona']: 0 for z in zones}
-    count['total'] = 0
+        results = model.predict(
+            frame,
+            conf=0.25,
+            iou=0.45,
+            classes=[0],
+            show_labels=False,
+            show_conf=False,
+            verbose=False
+        )
 
-    for box in results[0].boxes:
-        x1, y1, x2, y2 = map(int, box.xyxy[0])
-        cx = (x1 + x2) // 2
-        cy = (y1 + y2) // 2
-        
-        # Calculate relative coordinates
-        cx_rel = cx / width
-        cy_rel = cy / height
+        # Hitung orang per zona
+        count = {z['nama_zona']: 0 for z in zones}
+        count['total'] = 0
 
-        # Assign to zone
-        for z in zones:
-            if titik_di_zona(cx_rel, cy_rel, z):
-                count[z['nama_zona']] += 1
-                break # count each person only in one zone (or remove break to count in overlapping)
+        for box in results[0].boxes:
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
+            cx = (x1 + x2) // 2
+            cy = (y1 + y2) // 2
 
-        count['total'] += 1
+            cx_rel = cx / width
+            cy_rel = cy / height
 
-    # Status lampu
-    status = 'ON' if count['total'] > 0 else 'OFF'
-    
-    # ── Kirim MQTT setiap 2 detik ───────────────
-    if count != prev_data and (current_time - last_send_time) > SEND_INTERVAL:
-        # Dynamic payload
-        payload_data = count.copy()
-        payload_data['lampu'] = status
-        
-        payload = json.dumps(payload_data)
-        client.publish('kelas/deteksi', payload)
-        print(f"📤 {payload}")
-        prev_data = count.copy()
-        last_send_time = current_time
+            for z in zones:
+                if titik_di_zona(cx_rel, cy_rel, z):
+                    count[z['nama_zona']] += 1
+                    break
 
-    cv2.imshow('Eco-Light Detector', annotated)
+            count['total'] += 1
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+        status = 'ON' if count['total'] > 0 else 'OFF'
 
-cap.release()
-cv2.destroyAllWindows()
-client.loop_stop()
+        # Kirim MQTT setiap 2 detik jika ada perubahan
+        if count != prev_data and (current_time - last_send_time) > SEND_INTERVAL:
+            payload_data          = count.copy()
+            payload_data['lampu'] = status
+            payload               = json.dumps(payload_data)
+            client.publish('kelas/deteksi', payload)
+            print(f"📤 {payload}")
+            prev_data      = count.copy()
+            last_send_time = current_time
+
+except KeyboardInterrupt:
+    print("\n🛑 Dihentikan oleh user.")
+
+finally:
+    cap.release()
+    client.loop_stop()
+    print("✅ Resource dilepas, service berhenti.")

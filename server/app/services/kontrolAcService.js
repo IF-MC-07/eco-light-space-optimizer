@@ -1,28 +1,28 @@
 import db from '../models/index.js';
 
-const { KontrolAc } = db;
+const { AcControl } = db;
 
 export const getAll = async () => {
-  return await KontrolAc.findAll();
+  return await AcControl.findAll();
 };
 
 export const getById = async (id) => {
-  return await KontrolAc.findByPk(id);
+  return await AcControl.findByPk(id);
 };
 
 export const create = async (data) => {
-  return await KontrolAc.create(data);
+  return await AcControl.create(data);
 };
 
 export const update = async (id, data) => {
-  const kontrol = await KontrolAc.findByPk(id);
-  if (!kontrol) return null;
-  return await kontrol.update(data);
+  const control = await AcControl.findByPk(id);
+  if (!control) return null;
+  return await control.update(data);
 };
 
 export const remove = async (id) => {
-  const kontrol = await KontrolAc.findByPk(id);
-  if (!kontrol) return null;
-  await kontrol.destroy();
+  const control = await AcControl.findByPk(id);
+  if (!control) return null;
+  await control.destroy();
   return true;
 };

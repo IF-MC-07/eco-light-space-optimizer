@@ -12,7 +12,7 @@ export const getAll = async (req, res) => {
 export const getById = async (req, res) => {
   try {
     const data = await kontrolAcService.getById(req.params.id);
-    if (!data) return res.status(404).json({ success: false, message: 'Kontrol AC not found' });
+    if (!data) return res.status(404).json({ success: false, message: 'AC Control not found' });
     res.status(200).json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -31,7 +31,7 @@ export const create = async (req, res) => {
 export const update = async (req, res) => {
   try {
     const data = await kontrolAcService.update(req.params.id, req.body);
-    if (!data) return res.status(404).json({ success: false, message: 'Kontrol AC not found' });
+    if (!data) return res.status(404).json({ success: false, message: 'AC Control not found' });
     res.status(200).json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -41,8 +41,8 @@ export const update = async (req, res) => {
 export const remove = async (req, res) => {
   try {
     const isDeleted = await kontrolAcService.remove(req.params.id);
-    if (!isDeleted) return res.status(404).json({ success: false, message: 'Kontrol AC not found' });
-    res.status(200).json({ success: true, message: 'Kontrol AC deleted successfully' });
+    if (!isDeleted) return res.status(404).json({ success: false, message: 'AC Control not found' });
+    res.status(200).json({ success: true, message: 'AC Control deleted successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -51,14 +51,14 @@ export const remove = async (req, res) => {
 export const toggle = async (req, res) => {
   try {
     const { id } = req.params;
-    const { suhu_setting } = req.body;
+    const { temperature_setting } = req.body;
     const item = await kontrolAcService.getById(id);
-    if (!item) return res.status(404).json({ success: false, message: 'Kontrol AC not found' });
+    if (!item) return res.status(404).json({ success: false, message: 'AC Control not found' });
     
-    const newStatus = item.status_ac === 'on' ? 'off' : 'on';
+    const newStatus = item.ac_status === 'on' ? 'off' : 'on';
     
-    const payload = { status_ac: newStatus };
-    if (suhu_setting) payload.suhu_setting = suhu_setting;
+    const payload = { ac_status: newStatus };
+    if (temperature_setting) payload.temperature_setting = temperature_setting;
 
     const data = await kontrolAcService.update(id, payload);
     

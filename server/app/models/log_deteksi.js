@@ -1,46 +1,46 @@
 export default (sequelize, DataTypes) => {
-  const LogDeteksi = sequelize.define('LogDeteksi', {
-    id_deteksi: {
+  const DetectionLog = sequelize.define('DetectionLog', {
+    detection_id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true
     },
-    id_kamera: {
+    camera_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'kamera',
-        key: 'id_kamera'
+        model: 'cameras',
+        key: 'camera_id'
       }
     },
-    id_zona: {
+    zone_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'zona',
-        key: 'id_zona'
+        model: 'zones',
+        key: 'zone_id'
       }
     },
-    jumlah_orang: {
+    occupancy_count: {
       type: DataTypes.INTEGER,
       defaultValue: 0
     },
-    status_zona: {
+    zone_status: {
       type: DataTypes.STRING(20)
     },
-    waktu_deteksi: {
+    detection_time: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
     }
   }, {
-    tableName: 'log_deteksi',
+    tableName: 'detection_logs',
     timestamps: false,
   });
 
-  LogDeteksi.associate = (models) => {
-    LogDeteksi.belongsTo(models.Kamera, { foreignKey: 'id_kamera', onDelete: 'CASCADE' });
-    LogDeteksi.belongsTo(models.Zona, { foreignKey: 'id_zona', onDelete: 'CASCADE' });
+  DetectionLog.associate = (models) => {
+    DetectionLog.belongsTo(models.Camera, { foreignKey: 'camera_id', onDelete: 'CASCADE' });
+    DetectionLog.belongsTo(models.Zone, { foreignKey: 'zone_id', onDelete: 'CASCADE' });
   };
 
-  return LogDeteksi;
+  return DetectionLog;
 };

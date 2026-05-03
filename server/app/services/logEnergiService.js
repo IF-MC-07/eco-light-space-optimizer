@@ -1,27 +1,27 @@
 import db from '../models/index.js';
 
-const { LogEnergi } = db;
+const { EnergyLog } = db;
 
 export const getAll = async () => {
-  return await LogEnergi.findAll();
+  return await EnergyLog.findAll();
 };
 
 export const getById = async (id) => {
-  return await LogEnergi.findByPk(id);
+  return await EnergyLog.findByPk(id);
 };
 
 export const create = async (data) => {
-  return await LogEnergi.create(data);
+  return await EnergyLog.create(data);
 };
 
 export const update = async (id, data) => {
-  const log = await LogEnergi.findByPk(id);
+  const log = await EnergyLog.findByPk(id);
   if (!log) return null;
   return await log.update(data);
 };
 
 export const remove = async (id) => {
-  const log = await LogEnergi.findByPk(id);
+  const log = await EnergyLog.findByPk(id);
   if (!log) return null;
   await log.destroy();
   return true;

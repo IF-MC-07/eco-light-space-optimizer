@@ -16,17 +16,17 @@ import kontrolAcModel from './kontrol_ac.js';
 
 // Inisialisasi model
 const db = {
-  Ruangan: ruanganModel(sequelize, DataTypes),
-  Pengguna: penggunaModel(sequelize, DataTypes),
-  Zona: zonaModel(sequelize, DataTypes),
-  Kamera: kameraModel(sequelize, DataTypes),
-  PerangkatIot: perangkatIotModel(sequelize, DataTypes),
-  SensorDaya: sensorDayaModel(sequelize, DataTypes),
-  LogEnergi: logEnergiModel(sequelize, DataTypes),
-  JadwalOtomatisasi: jadwalOtomatisasiModel(sequelize, DataTypes),
-  LogDeteksi: logDeteksiModel(sequelize, DataTypes),
-  KontrolLampu: kontrolLampuModel(sequelize, DataTypes),
-  KontrolAc: kontrolAcModel(sequelize, DataTypes)
+  Room: ruanganModel(sequelize, DataTypes),
+  User: penggunaModel(sequelize, DataTypes),
+  Zone: zonaModel(sequelize, DataTypes),
+  Camera: kameraModel(sequelize, DataTypes),
+  IotDevice: perangkatIotModel(sequelize, DataTypes),
+  PowerSensor: sensorDayaModel(sequelize, DataTypes),
+  EnergyLog: logEnergiModel(sequelize, DataTypes),
+  AutomationSchedule: jadwalOtomatisasiModel(sequelize, DataTypes),
+  DetectionLog: logDeteksiModel(sequelize, DataTypes),
+  LightControl: kontrolLampuModel(sequelize, DataTypes),
+  AcControl: kontrolAcModel(sequelize, DataTypes)
 };
 
 // Jalankan asosiasi model jika ada

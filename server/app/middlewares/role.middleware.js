@@ -7,7 +7,7 @@ export const requireRole = (role) => {
       });
     }
 
-    if (req.user.peran !== role) {
+    if (req.user.role !== role) {
       return res.status(403).json({
         success: false,
         message: `Akses ditolak. Memerlukan peran ${role}.`,

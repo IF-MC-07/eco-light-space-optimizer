@@ -27,7 +27,7 @@ export const useZona = (idKamera: number) => {
       ...zona,
       id_kamera: idKamera,
       // Create a temporary negative ID for new zones before they are saved to DB
-      id_zona: -Date.now() 
+      id_zona: -Date.now()
     };
     setZonas(prev => [...prev, newZona]);
     setSelectedId(newZona.id_zona!);
@@ -57,12 +57,20 @@ export const useZona = (idKamera: number) => {
   const selectZona = (id: number) => {
     setSelectedId(id);
   };
+  const clearAll = async () => {
+    try {
+      // Pisahkan zona yang sudah ada di DB (id positif) vs zona temporary (id negatif)
+      const savedZonas = zonas.filter(z => z.id_zona && z.id_zona > 0);
 
-  const clearAll = () => {
-    // In a real scenario, you might want to call delete on all existing ones
-    // But based on instruction, clearAll empties the list locally.
-    setZonas([]);
-    setSelectedId(null);
+      // Hapus semua zona yang ada di DB secara paralel
+      await Promise.all(savedZonas.map(z => apiDeleteZona(z.id_zona!)));
+
+      // Baru kosongkan state lokal
+      setZonas([]);
+      setSelectedId(null);
+    } catch (error) {
+      console.error('Failed to clear all zones', error);
+    }
   };
 
   const saveAll = async () => {
@@ -73,7 +81,7 @@ export const useZona = (idKamera: number) => {
         const { id_zona, status_zona, ...rest } = z;
         return (id_zona && id_zona > 0) ? { id_zona, ...rest } : rest;
       }) as ZonaPayload[];
-      
+
       await apiSimpanZona(payload);
       setLastSaved(new Date());
       // Re-fetch to get real DB IDs for newly added zones

@@ -1,47 +1,47 @@
 export default (sequelize, DataTypes) => {
-  const KontrolAc = sequelize.define('KontrolAc', {
-    id_kontrol_ac: {
+  const AcControl = sequelize.define('AcControl', {
+    ac_control_id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true
     },
-    id_ruangan: {
+    room_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'ruangan',
-        key: 'id_ruangan'
+        model: 'rooms',
+        key: 'room_id'
       }
     },
-    id_perangkat: {
+    device_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'perangkat_iot',
-        key: 'id_perangkat'
+        model: 'iot_devices',
+        key: 'device_id'
       }
     },
-    suhu_setting: {
+    temperature_setting: {
       type: DataTypes.FLOAT,
       defaultValue: 24.0
     },
-    status_ac: {
+    ac_status: {
       type: DataTypes.STRING(20),
       defaultValue: 'off'
     },
-    diperbarui_pada: {
+    updated_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
     }
   }, {
-    tableName: 'kontrol_ac',
+    tableName: 'ac_controls',
     timestamps: false,
   });
 
-  KontrolAc.associate = (models) => {
-    KontrolAc.belongsTo(models.Ruangan, { foreignKey: 'id_ruangan', onDelete: 'CASCADE' });
-    KontrolAc.belongsTo(models.PerangkatIot, { foreignKey: 'id_perangkat', onDelete: 'CASCADE' });
+  AcControl.associate = (models) => {
+    AcControl.belongsTo(models.Room, { foreignKey: 'room_id', onDelete: 'CASCADE' });
+    AcControl.belongsTo(models.IotDevice, { foreignKey: 'device_id', onDelete: 'CASCADE' });
   };
 
-  return KontrolAc;
+  return AcControl;
 };

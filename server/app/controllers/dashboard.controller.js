@@ -2,39 +2,39 @@ import db from '../models/index.js';
 
 export const getSummary = async (req, res) => {
   try {
-    const total_ruangan = await db.Ruangan.count();
-    const total_zona = await db.Zona.count();
-    const total_perangkat = await db.PerangkatIot.count();
-    const total_kamera = await db.Kamera.count();
+    const total_rooms = await db.Room.count();
+    const total_zones = await db.Zone.count();
+    const total_devices = await db.IotDevice.count();
+    const total_cameras = await db.Camera.count();
 
-    const sensor_terbaru = await db.SensorDaya.findAll({
+    const latest_sensors = await db.PowerSensor.findAll({
       limit: 10,
-      order: [['waktu_pencatatan', 'DESC']],
-      include: [{ model: db.PerangkatIot, as: 'perangkat_iot' }]
+      order: [['read_at', 'DESC']],
+      include: [{ model: db.Room }]
     });
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const log_energi_hari_ini = await db.LogEnergi.findAll({
+    const todays_energy_logs = await db.EnergyLog.findAll({
       where: {
-        tanggal: {
+        date: {
           [db.Sequelize.Op.gte]: today
         }
       },
-      order: [['waktu_mulai', 'ASC']],
-      include: [{ model: db.Ruangan, as: 'ruangan' }]
+      order: [['log_id', 'ASC']],
+      include: [{ model: db.Room }]
     });
 
     res.status(200).json({
       success: true,
       data: {
-        total_ruangan,
-        total_zona,
-        total_perangkat,
-        total_kamera,
-        sensor_terbaru,
-        log_energi_hari_ini
+        total_rooms,
+        total_zones,
+        total_devices,
+        total_cameras,
+        latest_sensors,
+        todays_energy_logs
       }
     });
   } catch (error) {

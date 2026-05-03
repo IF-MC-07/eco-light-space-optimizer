@@ -1,22 +1,22 @@
 export default (sequelize, DataTypes) => {
-  const PerangkatIot = sequelize.define('PerangkatIot', {
-    id_perangkat: {
+  const IotDevice = sequelize.define('IotDevice', {
+    device_id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true
     },
-    id_ruangan: {
+    room_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'ruangan',
-        key: 'id_ruangan'
+        model: 'rooms',
+        key: 'room_id'
       }
     },
-    nama_perangkat: {
+    device_name: {
       type: DataTypes.STRING(100)
     },
-    tipe: {
+    type: {
       type: DataTypes.STRING(50)
     },
     status: {
@@ -24,15 +24,15 @@ export default (sequelize, DataTypes) => {
       defaultValue: 'aktif'
     }
   }, {
-    tableName: 'perangkat_iot',
+    tableName: 'iot_devices',
     timestamps: false,
   });
 
-  PerangkatIot.associate = (models) => {
-    PerangkatIot.belongsTo(models.Ruangan, { foreignKey: 'id_ruangan', onDelete: 'CASCADE' });
-    PerangkatIot.hasMany(models.KontrolLampu, { foreignKey: 'id_perangkat', onDelete: 'CASCADE' });
-    PerangkatIot.hasMany(models.KontrolAc, { foreignKey: 'id_perangkat', onDelete: 'CASCADE' });
+  IotDevice.associate = (models) => {
+    IotDevice.belongsTo(models.Room, { foreignKey: 'room_id', onDelete: 'CASCADE' });
+    IotDevice.hasMany(models.LightControl, { foreignKey: 'device_id', onDelete: 'CASCADE' });
+    IotDevice.hasMany(models.AcControl, { foreignKey: 'device_id', onDelete: 'CASCADE' });
   };
 
-  return PerangkatIot;
+  return IotDevice;
 };

@@ -1,44 +1,44 @@
 export default (sequelize, DataTypes) => {
-  const JadwalOtomatisasi = sequelize.define('JadwalOtomatisasi', {
-    id_jadwal: {
+  const AutomationSchedule = sequelize.define('AutomationSchedule', {
+    schedule_id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true
     },
-    id_ruangan: {
+    room_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'ruangan',
-        key: 'id_ruangan'
+        model: 'rooms',
+        key: 'room_id'
       }
     },
-    id_pengguna: {
+    user_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'pengguna',
-        key: 'id_pengguna'
+        model: 'users',
+        key: 'user_id'
       }
     },
-    nama_jadwal: {
+    schedule_name: {
       type: DataTypes.STRING(100)
     },
-    waktu_mulai: {
+    start_time: {
       type: DataTypes.TIME
     },
-    waktu_selesai: {
+    end_time: {
       type: DataTypes.TIME
     }
   }, {
-    tableName: 'jadwal_otomatisasi',
+    tableName: 'automation_schedules',
     timestamps: false,
   });
 
-  JadwalOtomatisasi.associate = (models) => {
-    JadwalOtomatisasi.belongsTo(models.Ruangan, { foreignKey: 'id_ruangan', onDelete: 'CASCADE' });
-    JadwalOtomatisasi.belongsTo(models.Pengguna, { foreignKey: 'id_pengguna', onDelete: 'SET NULL' });
+  AutomationSchedule.associate = (models) => {
+    AutomationSchedule.belongsTo(models.Room, { foreignKey: 'room_id', onDelete: 'CASCADE' });
+    AutomationSchedule.belongsTo(models.User, { foreignKey: 'user_id', onDelete: 'SET NULL' });
   };
 
-  return JadwalOtomatisasi;
+  return AutomationSchedule;
 };

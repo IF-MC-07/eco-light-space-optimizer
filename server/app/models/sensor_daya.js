@@ -1,39 +1,39 @@
 export default (sequelize, DataTypes) => {
-  const SensorDaya = sequelize.define('SensorDaya', {
-    id_sensor: {
+  const PowerSensor = sequelize.define('PowerSensor', {
+    sensor_id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true
     },
-    id_ruangan: {
+    room_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'ruangan',
-        key: 'id_ruangan'
+        model: 'rooms',
+        key: 'room_id'
       }
     },
-    tegangan_v: {
+    voltage_v: {
       type: DataTypes.FLOAT
     },
-    arus_a: {
+    current_a: {
       type: DataTypes.FLOAT
     },
-    daya_watt: {
+    power_watts: {
       type: DataTypes.FLOAT
     },
-    waktu_baca: {
+    read_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
     }
   }, {
-    tableName: 'sensor_daya',
+    tableName: 'power_sensors',
     timestamps: false,
   });
 
-  SensorDaya.associate = (models) => {
-    SensorDaya.belongsTo(models.Ruangan, { foreignKey: 'id_ruangan', onDelete: 'CASCADE' });
+  PowerSensor.associate = (models) => {
+    PowerSensor.belongsTo(models.Room, { foreignKey: 'room_id', onDelete: 'CASCADE' });
   };
 
-  return SensorDaya;
+  return PowerSensor;
 };

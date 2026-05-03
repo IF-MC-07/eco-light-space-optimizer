@@ -1,18 +1,18 @@
 export default (sequelize, DataTypes) => {
-  const Ruangan = sequelize.define('Ruangan', {
-    id_ruangan: {
+  const Room = sequelize.define('Room', {
+    room_id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true
     },
-    nama_ruangan: {
+    room_name: {
       type: DataTypes.STRING(100),
       allowNull: false
     },
-    lokasi: {
+    location: {
       type: DataTypes.STRING(100)
     },
-    kapasitas: {
+    capacity: {
       type: DataTypes.INTEGER
     },
     status: {
@@ -20,19 +20,19 @@ export default (sequelize, DataTypes) => {
       defaultValue: 'aktif'
     }
   }, {
-    tableName: 'ruangan',
+    tableName: 'rooms',
     timestamps: false,
   });
 
-  Ruangan.associate = (models) => {
-    Ruangan.hasMany(models.Zona, { foreignKey: 'id_ruangan', onDelete: 'CASCADE' });
-    Ruangan.hasMany(models.Kamera, { foreignKey: 'id_ruangan', onDelete: 'CASCADE' });
-    Ruangan.hasMany(models.PerangkatIot, { foreignKey: 'id_ruangan', onDelete: 'CASCADE' });
-    Ruangan.hasMany(models.SensorDaya, { foreignKey: 'id_ruangan', onDelete: 'CASCADE' });
-    Ruangan.hasMany(models.LogEnergi, { foreignKey: 'id_ruangan', onDelete: 'CASCADE' });
-    Ruangan.hasMany(models.JadwalOtomatisasi, { foreignKey: 'id_ruangan', onDelete: 'CASCADE' });
-    Ruangan.hasMany(models.KontrolAc, { foreignKey: 'id_ruangan', onDelete: 'CASCADE' });
+  Room.associate = (models) => {
+    Room.hasMany(models.Zone, { foreignKey: 'room_id', onDelete: 'CASCADE' });
+    Room.hasMany(models.Camera, { foreignKey: 'room_id', onDelete: 'CASCADE' });
+    Room.hasMany(models.IotDevice, { foreignKey: 'room_id', onDelete: 'CASCADE' });
+    Room.hasMany(models.PowerSensor, { foreignKey: 'room_id', onDelete: 'CASCADE' });
+    Room.hasMany(models.EnergyLog, { foreignKey: 'room_id', onDelete: 'CASCADE' });
+    Room.hasMany(models.AutomationSchedule, { foreignKey: 'room_id', onDelete: 'CASCADE' });
+    Room.hasMany(models.AcControl, { foreignKey: 'room_id', onDelete: 'CASCADE' });
   };
 
-  return Ruangan;
+  return Room;
 };

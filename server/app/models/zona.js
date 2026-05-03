@@ -1,22 +1,22 @@
 export default (sequelize, DataTypes) => {
-  const Zona = sequelize.define('Zona', {
-    id_zona: {
+  const Zone = sequelize.define('Zone', {
+    zone_id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true
     },
-    id_ruangan: {
+    room_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'ruangan',
-        key: 'id_ruangan'
+        model: 'rooms',
+        key: 'room_id'
       }
     },
-    nama_zona: {
+    zone_name: {
       type: DataTypes.STRING(100)
     },
-    status_zona: {
+    zone_status: {
       type: DataTypes.STRING(20),
       defaultValue: 'aktif'
     },
@@ -36,33 +36,33 @@ export default (sequelize, DataTypes) => {
       type: DataTypes.FLOAT,
       allowNull: true
     },
-    warna: {
+    color: {
       type: DataTypes.STRING(20),
       allowNull: true
     },
-    urutan: {
+    sort_order: {
       type: DataTypes.INTEGER,
       allowNull: true,
       defaultValue: 1
     },
-    dibuat_pada: {
+    created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
     },
-    diperbarui_pada: {
+    updated_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
     }
   }, {
-    tableName: 'zona',
+    tableName: 'zones',
     timestamps: false,
   });
 
-  Zona.associate = (models) => {
-    Zona.belongsTo(models.Ruangan, { foreignKey: 'id_ruangan', onDelete: 'CASCADE' });
-    Zona.hasMany(models.LogDeteksi, { foreignKey: 'id_zona', onDelete: 'CASCADE' });
-    Zona.hasMany(models.KontrolLampu, { foreignKey: 'id_zona', onDelete: 'CASCADE' });
+  Zone.associate = (models) => {
+    Zone.belongsTo(models.Room, { foreignKey: 'room_id', onDelete: 'CASCADE' });
+    Zone.hasMany(models.DetectionLog, { foreignKey: 'zone_id', onDelete: 'CASCADE' });
+    Zone.hasMany(models.LightControl, { foreignKey: 'zone_id', onDelete: 'CASCADE' });
   };
 
-  return Zona;
+  return Zone;
 };

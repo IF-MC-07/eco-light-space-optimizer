@@ -1,28 +1,28 @@
 import db from '../models/index.js';
 
-const { Kamera } = db;
+const { Camera } = db;
 
 export const getAll = async () => {
-  return await Kamera.findAll();
+  return await Camera.findAll();
 };
 
 export const getById = async (id) => {
-  return await Kamera.findByPk(id);
+  return await Camera.findByPk(id);
 };
 
 export const create = async (data) => {
-  return await Kamera.create(data);
+  return await Camera.create(data);
 };
 
 export const update = async (id, data) => {
-  const kamera = await Kamera.findByPk(id);
-  if (!kamera) return null;
-  return await kamera.update(data);
+  const camera = await Camera.findByPk(id);
+  if (!camera) return null;
+  return await camera.update(data);
 };
 
 export const remove = async (id) => {
-  const kamera = await Kamera.findByPk(id);
-  if (!kamera) return null;
-  await kamera.destroy();
+  const camera = await Camera.findByPk(id);
+  if (!camera) return null;
+  await camera.destroy();
   return true;
 };

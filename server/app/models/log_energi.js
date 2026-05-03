@@ -1,36 +1,36 @@
 export default (sequelize, DataTypes) => {
-  const LogEnergi = sequelize.define('LogEnergi', {
-    id_log: {
+  const EnergyLog = sequelize.define('EnergyLog', {
+    log_id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true
     },
-    id_ruangan: {
+    room_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'ruangan',
-        key: 'id_ruangan'
+        model: 'rooms',
+        key: 'room_id'
       }
     },
-    total_watt: {
+    total_watts: {
       type: DataTypes.FLOAT
     },
-    hemat_watt: {
+    saved_watts: {
       type: DataTypes.FLOAT
     },
-    tanggal: {
+    date: {
       type: DataTypes.DATEONLY,
       defaultValue: DataTypes.NOW
     }
   }, {
-    tableName: 'log_energi',
+    tableName: 'energy_logs',
     timestamps: false,
   });
 
-  LogEnergi.associate = (models) => {
-    LogEnergi.belongsTo(models.Ruangan, { foreignKey: 'id_ruangan', onDelete: 'CASCADE' });
+  EnergyLog.associate = (models) => {
+    EnergyLog.belongsTo(models.Room, { foreignKey: 'room_id', onDelete: 'CASCADE' });
   };
 
-  return LogEnergi;
+  return EnergyLog;
 };
