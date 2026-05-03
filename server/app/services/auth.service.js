@@ -8,13 +8,14 @@ const { User } = db;
 export const register = async (data) => {
   const existingUser = await User.findOne({ where: { email: data.email } });
   if (existingUser) {
-    throw new Error('Email sudah terdaftar.');
+    throw new Error('Email already exists.');
   }
 
   const hashedPassword = await bcrypt.hash(data.password, 10);
   
   const newUser = await User.create({
     name: data.name,
+    username: data.username,
     email: data.email,
     password: hashedPassword,
     role: 'user', // default role
@@ -27,17 +28,17 @@ export const register = async (data) => {
 export const login = async (email, password) => {
   const user = await User.findOne({ where: { email } });
   if (!user) {
-    throw new Error('Email atau kata sandi salah.');
+    throw new Error('Email or password is wrong.');
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    throw new Error('Email atau kata sandi salah.');
+    throw new Error('Email or password is wrong.');
   }
 
   const token = jwt.sign(
     { user_id: user.user_id, role: user.role },
-    process.env.JWT_SECRET,
+    process.env.JWT_SECRET || 'super_secret_jwt_key_2026',
     { expiresIn: '7d' }
   );
 
@@ -58,12 +59,12 @@ export const getProfile = async (user_id) => {
 export const forgotPassword = async (email) => {
   const user = await User.findOne({ where: { email } });
   if (!user) {
-    throw new Error('Email tidak ditemukan.');
+    throw new Error('Email not found.');
   }
 
   const resetToken = jwt.sign(
     { user_id: user.user_id },
-    process.env.JWT_SECRET + user.password, // using current hash to invalidate token once changed
+    (process.env.JWT_SECRET || 'super_secret_jwt_key_2026') + user.password, // using current hash to invalidate token once changed
     { expiresIn: '15m' }
   );
 
@@ -72,19 +73,19 @@ export const forgotPassword = async (email) => {
 
   const html = `
     <h1>Reset Password</h1>
-    <p>Halo ${user.name},</p>
-    <p>Silakan klik tautan di bawah ini untuk mereset kata sandi Anda. Tautan ini hanya berlaku selama 15 menit.</p>
-    <a href="${resetLink}">Reset Kata Sandi</a>
-    <p>Jika Anda tidak merasa meminta reset kata sandi, abaikan email ini.</p>
+    <p>Hello ${user.name},</p>
+    <p>Please click the link below to reset your password. This link is only valid for 15 minutes.</p>
+    <a href="${resetLink}">Reset Password</a>
+    <p>If you do not feel like requesting a password reset, ignore this email.</p>
   `;
 
   await sendEmail({
     to: user.email,
-    subject: 'Reset Kata Sandi - Eco-Light Space Optimizer',
+    subject: 'Reset Password - Eco-Light Space Optimizer',
     html,
   });
 
-  return { message: 'Email instruksi reset kata sandi telah dikirim.' };
+  return { message: 'Reset password instructions have been sent to your email.' };
 };
 
 export const resetPassword = async (user_id, token, new_password) => {
@@ -93,15 +94,15 @@ export const resetPassword = async (user_id, token, new_password) => {
     throw new Error('Invalid user.');
   }
 
-  const secret = process.env.JWT_SECRET + user.password;
+  const secret = (process.env.JWT_SECRET || 'super_secret_jwt_key_2026') + user.password;
   try {
     jwt.verify(token, secret);
   } catch (error) {
-    throw new Error('Token tidak valid atau telah kadaluarsa.');
+    throw new Error('Invalid token or expired.');
   }
 
   const hashedPassword = await bcrypt.hash(new_password, 10);
   await user.update({ password: hashedPassword });
 
-  return { message: 'Kata sandi berhasil direset.' };
+  return { message: 'Password has been reset successfully.' };
 };

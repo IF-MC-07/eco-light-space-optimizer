@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 
 export function RegisterForm() {
   const [nama, setNama] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -16,13 +17,13 @@ export function RegisterForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nama || !email || !password) return;
+    if (!nama || !username || !email || !password) return;
     if (password !== confirmPassword) {
       alert("Passwords do not match");
       return;
     }
 
-    const res = await register(nama, email, password);
+    const res = await register(nama, username, email, password);
     if (res.success) {
       router.push("/login");
     }
@@ -31,17 +32,10 @@ export function RegisterForm() {
   return (
     <div className="w-full">
       <div className="text-center mb-8">
-        <div className="w-12 h-12 bg-primary-light/20 text-primary rounded-xl flex items-center justify-center mx-auto mb-4">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-            <path d="M11 20A7 7 0 0 1 14 6c.5 3 2.5 5 5 6a10 10 0 0 1-8 8Z" />
-            <path d="M2 12a10 10 0 0 1 10-10c.5 3 2.5 5 5 6" />
-            <path d="M14 6c-.5 3-2.5 5-5 6a10 10 0 0 1-7-7" />
-          </svg>
+        <div className="w-60 h-60 flex items-center justify-center mx-auto">
+          <img src="images/Logo Eco-Light.png" alt="Logo" />
         </div>
         <h2 className="font-heading text-3xl font-bold text-secondary-dark mb-2">Create Account</h2>
-        <p className="text-secondary-light text-sm">
-          Join the Digital Arboretum and optimize your workspace.
-        </p>
       </div>
 
       <form className="space-y-5" onSubmit={handleSubmit}>
@@ -53,6 +47,15 @@ export function RegisterForm() {
           leftIcon={<User className="w-4 h-4" />}
           value={nama}
           onChange={(e: any) => setNama(e.target.value)}
+        />
+
+        <Input
+          label="USERNAME"
+          type="text"
+          placeholder="john_doe"
+          leftIcon={<User className="w-4 h-4" />}
+          value={username}
+          onChange={(e: any) => setUsername(e.target.value)}
         />
 
         <Input

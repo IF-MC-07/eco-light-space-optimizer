@@ -1,6 +1,7 @@
 import React from "react";
 import { X, Thermometer, Users, Leaf, Wind, Lightbulb, Radio, ArrowRight } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
+import { RoleGuard } from "../../../components/auth/RoleGuard";
 
 interface RoomSummaryModalProps {
   isOpen: boolean;
@@ -21,7 +22,7 @@ export function RoomSummaryModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div 
+      <div
         className="bg-white rounded-3xl shadow-2xl w-full max-w-[480px] overflow-hidden flex flex-col relative animate-in fade-in zoom-in-95 duration-200"
         role="dialog"
         aria-modal="true"
@@ -34,7 +35,7 @@ export function RoomSummaryModal({
               {roomType} • {roomLocation}
             </p>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="text-secondary-light hover:text-secondary-dark transition-colors p-1"
           >
@@ -71,7 +72,7 @@ export function RoomSummaryModal({
         <div className="px-8 mb-6">
           <h3 className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest mb-4">Active Devices</h3>
           <div className="space-y-6">
-            
+
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div className="w-10 h-10 rounded-xl bg-[#86EFAC] flex items-center justify-center text-primary-dark">
@@ -138,13 +139,15 @@ export function RoomSummaryModal({
 
         {/* Footer Actions */}
         <div className="px-8 pb-8 pt-4 bg-white flex flex-col items-center space-y-4">
-          <Button className="w-full bg-primary-dark hover:bg-primary text-white py-6 rounded-xl flex items-center justify-center space-x-2 text-sm font-semibold transition-colors">
-            <span>Go to Room Management</span>
-            <ArrowRight className="w-5 h-5" />
-          </Button>
-          <button className="text-sm font-semibold text-secondary-dark hover:text-primary transition-colors">
-            Download Room Log
-          </button>
+          <RoleGuard allowedRoles={['admin']}>
+            <Button className="w-full bg-primary-dark hover:bg-primary text-white py-6 rounded-xl flex items-center justify-center space-x-2 text-sm font-semibold transition-colors">
+              <span>Go to Room Management</span>
+              <ArrowRight className="w-5 h-5" />
+            </Button>
+            <button className="text-sm font-semibold text-secondary-dark hover:text-primary transition-colors">
+              Download Room Log
+            </button>
+          </RoleGuard>
         </div>
       </div>
     </div>

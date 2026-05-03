@@ -15,11 +15,15 @@ import { Button } from '../ui/Button';
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { useMe } from '@/features/auth/hooks';
+import { RoleGuard } from '@/components/auth/RoleGuard';
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { data: userData } = useMe();
+  const role = userData?.user?.role;
   
-  const navItems = [
+  const allNavItems = [
     { label: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/dashboard' },
     { label: 'Energy Monitor', icon: <Activity size={20} />, href: '/energy-monitor' },
     { label: 'Lighting & AC', icon: <Lightbulb size={20} />, href: '/lighting-ac' },
@@ -27,6 +31,12 @@ export function Sidebar() {
     { label: 'Automation', icon: <Bot size={20} />, href: '/automation' },
     { label: 'Room Availability', icon: <DoorOpen size={20} />, href: '/room-availability' },
   ];
+
+  const allowedForUser = ['/dashboard', '/room-availability', '/lighting-ac', '/profile'];
+
+  const navItems = role === 'admin' 
+    ? allNavItems 
+    : allNavItems.filter(item => allowedForUser.includes(item.href));
 
   return (
     <aside className="w-64 h-screen bg-white border-r border-neutral-border flex flex-col justify-between flex-shrink-0 fixed left-0 top-0 z-20">
@@ -64,10 +74,12 @@ export function Sidebar() {
 
       {/* Bottom Area */}
       <div className="p-4 flex flex-col gap-2 border-t border-neutral-border">
-        <Button variant="primary" fullWidth className="mb-2 justify-start pl-4 gap-2 text-sm shadow-sm">
-          <Plus size={18} />
-          Add New Device
-        </Button>
+        <RoleGuard allowedRoles={['admin']}>
+          <Button variant="primary" fullWidth className="mb-2 justify-start pl-4 gap-2 text-sm shadow-sm">
+            <Plus size={18} />
+            Add New Device
+          </Button>
+        </RoleGuard>
         <a href="#" className="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-secondary hover:text-secondary-dark hover:bg-neutral rounded-md">
           <HelpCircle size={20} className="text-secondary-light" />
           Help

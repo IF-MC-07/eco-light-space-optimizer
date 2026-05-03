@@ -9,6 +9,11 @@ export default (sequelize, DataTypes) => {
       type: DataTypes.STRING(100),
       allowNull: false
     },
+    username: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+      unique: true
+    },
     email: {
       type: DataTypes.STRING(100),
       allowNull: false,
@@ -20,6 +25,7 @@ export default (sequelize, DataTypes) => {
     },
     role: {
       type: DataTypes.STRING(20),
+      allowNull: false,
       defaultValue: 'user'
     }
   }, {

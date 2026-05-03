@@ -5,6 +5,7 @@ import { SystemHealth } from "../../../features/dashboard/components/SystemHealt
 import { EcoScore } from "../../../features/dashboard/components/EcoScore";
 import { QuickActions } from "../../../features/dashboard/components/QuickActions";
 import { ActivityFeed } from "../../../features/dashboard/components/ActivityFeed";
+import { RoleGuard } from "../../../components/auth/RoleGuard";
 
 export default function Dashboard() {
   return (
@@ -29,7 +30,9 @@ export default function Dashboard() {
       </div>
 
       {/* Row 3: Quick Actions */}
-      <QuickActions />
+      <RoleGuard allowedRoles={['admin']}>
+        <QuickActions />
+      </RoleGuard>
 
       {/* Row 4: Recent Alerts */}
       <div className="w-full">

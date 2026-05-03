@@ -3,6 +3,7 @@ import { LightingACStats } from '../../../features/monitoring/components/Lightin
 import { DeviceStatusTable } from '../../../features/monitoring/components/DeviceStatusTable';
 import { MasterControls } from '../../../features/monitoring/components/MasterControls';
 import { TargetClimate } from '../../../features/monitoring/components/TargetClimate';
+import { RoleGuard } from '../../../components/auth/RoleGuard';
 
 export default function LightingAndAC() {
   return (
@@ -18,8 +19,10 @@ export default function LightingAndAC() {
 
         {/* Right Column (Span 1) */}
         <div className="col-span-1 space-y-6">
-          <MasterControls />
-          <TargetClimate />
+          <RoleGuard allowedRoles={['admin']}>
+            <MasterControls />
+            <TargetClimate />
+          </RoleGuard>
         </div>
       </div>
     </div>

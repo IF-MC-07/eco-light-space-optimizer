@@ -6,6 +6,11 @@ export const registerSchema = Joi.object({
     'string.min': 'Nama minimal 3 karakter',
     'any.required': 'Nama wajib diisi'
   }),
+  username: Joi.string().min(3).required().messages({
+    'string.empty': 'Username tidak boleh kosong',
+    'string.min': 'Username minimal 3 karakter',
+    'any.required': 'Username wajib diisi'
+  }),
   email: Joi.string().email().required().messages({
     'string.empty': 'Email tidak boleh kosong',
     'string.email': 'Format email tidak valid',

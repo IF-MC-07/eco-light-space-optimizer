@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { DoorOpen, MoreVertical } from 'lucide-react';
+import { RoleGuard } from '../../../components/auth/RoleGuard';
 
 const roomsData = [
   { id: 1, name: 'Room 701', lightActive: true, acActive: true, temp: '23', actionState: true },
@@ -63,22 +64,24 @@ export function DeviceStatusTable() {
                       {room.temp}
                     </span>
                   </td>
-                  <td className="py-4 px-4">
-                    <div className="flex items-center gap-3">
-                      {/* Simple Toggle Switch */}
-                      <button 
-                        onClick={() => toggleRoom(room.id)}
-                        className={`w-11 h-6 rounded-full relative transition-colors duration-200 focus:outline-none ${room.actionState ? 'bg-primary-dark' : 'bg-neutral-border'}`}
-                      >
-                        <span 
-                          className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-200 shadow-sm ${room.actionState ? 'left-[22px]' : 'left-1'}`}
-                        />
-                      </button>
-                      <button className="text-secondary hover:text-black transition-colors">
-                        <MoreVertical size={16} />
-                      </button>
-                    </div>
-                  </td>
+                  <RoleGuard allowedRoles={['admin']} fallback={<td className="py-4 px-4 text-xs font-semibold text-secondary-light italic">View Only</td>}>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-3">
+                        {/* Simple Toggle Switch */}
+                        <button 
+                          onClick={() => toggleRoom(room.id)}
+                          className={`w-11 h-6 rounded-full relative transition-colors duration-200 focus:outline-none ${room.actionState ? 'bg-primary-dark' : 'bg-neutral-border'}`}
+                        >
+                          <span 
+                            className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-200 shadow-sm ${room.actionState ? 'left-[22px]' : 'left-1'}`}
+                          />
+                        </button>
+                        <button className="text-secondary hover:text-black transition-colors">
+                          <MoreVertical size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </RoleGuard>
                 </tr>
               ))}
             </tbody>

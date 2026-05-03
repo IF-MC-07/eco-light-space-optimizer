@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Search, Bell, Settings } from 'lucide-react';
+import { RoleGuard } from '../auth/RoleGuard';
 
 interface NavbarProps {
   title?: string;
@@ -56,13 +57,15 @@ export function Navbar({
               <Bell size={20} />
               <span className="absolute top-0 right-0 w-2 h-2 bg-tertiary rounded-full border border-white"></span>
             </button>
-            <button className="hover:text-secondary-dark transition-colors">
-              <Settings size={20} />
-            </button>
+            <RoleGuard allowedRoles={['admin']}>
+              <button className="hover:text-secondary-dark transition-colors">
+                <Settings size={20} />
+              </button>
+            </RoleGuard>
           </div>
 
           {/* Profile */}
-          <Link href="/admin/profile" className="block h-9 w-9 rounded-full overflow-hidden border border-neutral-border hover:ring-2 hover:ring-primary transition-all">
+          <Link href="/profile" className="block h-9 w-9 rounded-full overflow-hidden border border-neutral-border hover:ring-2 hover:ring-primary transition-all">
             <img 
               src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
               alt="User profile" 

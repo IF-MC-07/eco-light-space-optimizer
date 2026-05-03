@@ -90,14 +90,10 @@ export function LoginForm() {
         <div className="flex-1 border-t border-neutral-border"></div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-8">
+      <div className="gap-4 mb-8">
         <Button variant="outline" className="w-full bg-[#F8FAFC] border-none hover:bg-neutral-border/50 text-secondary-dark py-5 text-sm font-semibold rounded-md transition-colors flex items-center justify-center gap-2">
           <FcGoogle className="w-5 h-5" />
           Google
-        </Button>
-        <Button variant="outline" className="w-full bg-[#F8FAFC] border-none hover:bg-neutral-border/50 text-secondary-dark py-5 text-sm font-semibold rounded-md transition-colors flex items-center justify-center gap-2">
-          <FaApple className="w-5 h-5 text-black" />
-          Apple
         </Button>
       </div>
 

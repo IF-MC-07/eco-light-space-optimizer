@@ -36,8 +36,8 @@ export function SavingsTrendChart() {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 pb-6">
-        <div className="h-full w-full mt-4">
+      <CardContent className="flex-1 pb-6 min-h-0">
+        <div className="h-full w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} margin={{ top: 0, right: 0, left: 0, bottom: 0 }} barGap={0}>
               <XAxis 
