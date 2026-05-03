@@ -13,32 +13,32 @@ export const zonaKeys = {
 export const useZoneList = (params?: any) => {
   return useQuery({
     queryKey: zonaKeys.list(params),
-    queryFn: () => api.getZona(params),
+    queryFn: () => api.getZone(params),
   });
 };
 
 export const useZoneDetail = (id: string) => {
   return useQuery({
     queryKey: zonaKeys.detail(id),
-    queryFn: () => api.getZonaById(id),
+    queryFn: () => api.getZoneById(id),
     enabled: !!id,
   });
 };
 
-export const useCreateZona = () => {
+export const useCreateZone = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: api.createZona,
+    mutationFn: api.createZone,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: zonaKeys.lists() });
     },
   });
 };
 
-export const useUpdateZona = () => {
+export const useUpdateZone = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => api.updateZona(id, data),
+    mutationFn: ({ id, data }: { id: string; data: any }) => api.updateZone(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: zonaKeys.lists() });
       queryClient.invalidateQueries({ queryKey: zonaKeys.detail(variables.id) });
@@ -46,10 +46,10 @@ export const useUpdateZona = () => {
   });
 };
 
-export const useDeleteZona = () => {
+export const useDeleteZone = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: api.deleteZona,
+    mutationFn: api.deleteZone,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: zonaKeys.lists() });
     },
