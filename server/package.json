@@ -6,7 +6,9 @@
   "scripts": {
     "test": "cross-env NODE_ENV=test NODE_OPTIONS='--experimental-vm-modules' jest --verbose",
     "start": "node app/server.js",
-    "dev": "nodemon app/server.js"
+    "dev": "nodemon app/server.js",
+    "seed": "node seed.js",
+    "db:reset": "node seed.js --reset"
   },
   "jest": {
     "testEnvironment": "node",
