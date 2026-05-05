@@ -1,19 +1,24 @@
 import React from "react";
 import { cn } from "../../../lib/utils";
 
+import { useUserStats } from '../hooks';
+import { UserStats } from '../types';
+
 interface UserStatCardProps {
   title: string;
-  value: string;
+  statKey: keyof UserStats;
   subtext?: string;
   statusColor?: "green" | "red" | "gray";
 }
 
 export function UserStatCard({
   title,
-  value,
+  statKey,
   subtext,
   statusColor = "gray",
 }: UserStatCardProps) {
+  const { data: statsData, isLoading } = useUserStats();
+  const value = isLoading ? '...' : (statsData?.data?.[statKey] ?? 0);
   const getStatusColor = () => {
     switch (statusColor) {
       case "green":

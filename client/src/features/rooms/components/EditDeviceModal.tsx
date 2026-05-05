@@ -1,14 +1,44 @@
-import React from "react";
+"use client";
+import React, { useState, useEffect } from "react";
 import { Share2, Leaf } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
+import { useUpdateDevice } from "../hooks";
+import { Device, DeviceType, DeviceStatus } from "../types";
 
 interface EditDeviceModalProps {
   isOpen: boolean;
   onClose: () => void;
+  device?: Device;
 }
 
-export function EditDeviceModal({ isOpen, onClose }: EditDeviceModalProps) {
-  if (!isOpen) return null;
+export function EditDeviceModal({ isOpen, onClose, device }: EditDeviceModalProps) {
+  const [name, setName] = useState("");
+  const [type, setType] = useState<string>(DeviceType.LIGHTING);
+  const [status, setStatus] = useState<string>(DeviceStatus.ONLINE);
+
+  const { mutate: updateDevice, isPending, error } = useUpdateDevice();
+
+  useEffect(() => {
+    if (device) {
+      setName(device.name);
+      setType(device.type);
+      setStatus(device.status);
+    }
+  }, [device]);
+
+  const handleUpdate = () => {
+    if (!device) return;
+    updateDevice(
+      { id: device.id, payload: { name, type, status } },
+      {
+        onSuccess: () => {
+          onClose();
+        }
+      }
+    );
+  };
+
+  if (!isOpen || !device) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4">
@@ -23,12 +53,19 @@ export function EditDeviceModal({ isOpen, onClose }: EditDeviceModalProps) {
         </div>
 
         <div className="space-y-6">
+          {error && (
+            <div className="p-3 bg-red-100 text-red-600 rounded-lg text-sm">
+              Error updating device. Please try again.
+            </div>
+          )}
+
           {/* Device Name */}
           <div className="space-y-2">
             <label className="text-sm font-bold text-secondary-dark">Device Name</label>
             <input 
               type="text" 
-              defaultValue="HVAC-Arb-04-A"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-dark focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3.5"
             />
           </div>
@@ -37,9 +74,16 @@ export function EditDeviceModal({ isOpen, onClose }: EditDeviceModalProps) {
           <div className="space-y-2">
             <label className="text-sm font-bold text-secondary-dark">Category</label>
             <div className="relative">
-              <select className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-dark focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3.5 appearance-none cursor-pointer">
-                <option value="climate">Climate Control</option>
-                <option value="lighting">Lighting</option>
+              <select 
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-dark focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3.5 appearance-none cursor-pointer"
+              >
+                <option value={DeviceType.LIGHTING}>Lighting</option>
+                <option value={DeviceType.AC}>Climate Control</option>
+                <option value={DeviceType.SENSOR}>Sensor</option>
+                <option value={DeviceType.CAMERA}>Camera</option>
+                <option value={DeviceType.OTHER}>Other</option>
               </select>
               <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-secondary-dark">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -49,15 +93,34 @@ export function EditDeviceModal({ isOpen, onClose }: EditDeviceModalProps) {
 
           {/* Network ID */}
           <div className="space-y-2">
-            <label className="text-sm font-bold text-secondary-dark">Network ID</label>
+            <label className="text-sm font-bold text-secondary-dark">Network / IP</label>
             <div className="w-full bg-[#F8FAFC] border border-neutral-border/50 rounded-lg flex items-center justify-between px-4 py-3.5">
               <div className="flex items-center space-x-3 text-primary-dark font-bold">
                 <Share2 className="w-5 h-5" />
-                <span className="text-sm">#SP-NET-9928-VX</span>
+                <span className="text-sm">{device.ipAddress || "#SP-NET-9928-VX"}</span>
               </div>
               <span className="text-[10px] font-bold text-secondary-dark uppercase tracking-widest bg-secondary-light/20 px-2.5 py-1 rounded">
                 SYSTEM-LOCKED
               </span>
+            </div>
+          </div>
+
+          {/* Status Toggle (Manual Override) */}
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-secondary-dark">Device Status</label>
+            <div className="relative">
+              <select 
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-dark focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3.5 appearance-none cursor-pointer"
+              >
+                <option value={DeviceStatus.ONLINE}>Online</option>
+                <option value={DeviceStatus.OFFLINE}>Offline</option>
+                <option value={DeviceStatus.ERROR}>Error / Maintenance</option>
+              </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-secondary-dark">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+              </div>
             </div>
           </div>
 
@@ -79,12 +142,17 @@ export function EditDeviceModal({ isOpen, onClose }: EditDeviceModalProps) {
         <div className="flex items-center justify-end space-x-6 mt-10">
           <button 
             onClick={onClose}
-            className="text-sm font-bold text-secondary-dark hover:text-primary transition-colors"
+            disabled={isPending}
+            className="text-sm font-bold text-secondary-dark hover:text-primary transition-colors disabled:opacity-50"
           >
             Discard Changes
           </button>
-          <Button className="bg-primary-dark hover:bg-primary text-white py-3 px-6 rounded-lg text-sm font-semibold transition-colors shadow-sm">
-            Save Settings
+          <Button 
+            onClick={handleUpdate}
+            disabled={isPending}
+            className="bg-primary-dark hover:bg-primary text-white py-3 px-6 rounded-lg text-sm font-semibold transition-colors shadow-sm disabled:opacity-50"
+          >
+            {isPending ? "Saving..." : "Save Settings"}
           </Button>
         </div>
       </div>

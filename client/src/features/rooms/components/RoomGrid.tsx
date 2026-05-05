@@ -1,35 +1,40 @@
-import React from 'react';
-import { RoomCard, Room } from './RoomCard';
+"use client";
+import React, { useState } from 'react';
+import { RoomCard } from './RoomCard';
+import { RoomSummaryModal } from './RoomSummaryModal';
+import { RoomFilters } from '../types';
+import { MOCK_ROOMS } from '../../../mocks/roomData';
 
-const dummyRooms: Room[] = [
-  { id: '1', name: 'Room 603', location: 'Gedung Utama Lt. 6', status: 'AVAILABLE', timeInfo: '2:30 PM Today' },
-  { id: '2', name: 'Room 602', location: 'Gedung Utama Lt. 6', status: 'OCCUPIED', timeInfo: '45 Minutes', session: 'Dasar Pemrograman' },
-  { id: '3', name: 'Room 601', location: 'Gedung Utama Lt. 6', status: 'AVAILABLE', timeInfo: '45 Minutes', session: 'Dasar Pemrograman' },
-  { id: '4', name: 'Room 606', location: 'Gedung Utama Lt. 6', status: 'AVAILABLE', timeInfo: 'All Day Open' },
-  { id: '5', name: 'Room 605', location: 'Gedung Utama Lt. 6', status: 'AVAILABLE', timeInfo: 'All Day Open' },
-  { id: '6', name: 'Room 604', location: 'Gedung Utama Lt. 6', status: 'OCCUPIED', timeInfo: '45 Minutes', session: 'Dasar Pemrograman' },
-  { id: '7', name: 'Room 703', location: 'Gedung Utama Lt. 7', status: 'AVAILABLE', timeInfo: 'All Day Open' },
-  { id: '8', name: 'Room 702', location: 'Gedung Utama Lt. 7', status: 'AVAILABLE', timeInfo: 'All Day Open' },
-  { id: '9', name: 'Room 701', location: 'Gedung Utama Lt. 7', status: 'AVAILABLE', timeInfo: 'All Day Open' },
-  { id: '10', name: 'Room 706', location: 'Gedung Utama Lt. 7', status: 'OCCUPIED', timeInfo: '45 Minutes', session: 'Dasar Pemrograman' },
-  { id: '11', name: 'Room 705', location: 'Gedung Utama Lt. 7', status: 'AVAILABLE', timeInfo: 'All Day Open' },
-  { id: '12', name: 'Room 704', location: 'Gedung Utama Lt. 7', status: 'OCCUPIED', timeInfo: '45 Minutes', session: 'Dasar Pemrograman' },
-  { id: '13', name: 'Room 803', location: 'Gedung Utama Lt. 7', status: 'OCCUPIED', timeInfo: '45 Minutes', session: 'Dasar Pemrograman' },
-  { id: '14', name: 'Room 802', location: 'Gedung Utama Lt. 7', status: 'OCCUPIED', timeInfo: '45 Minutes', session: 'Dasar Pemrograman' },
-  { id: '15', name: 'Room 801', location: 'Gedung Utama Lt. 7', status: 'AVAILABLE', timeInfo: 'All Day Open' },
-  { id: '16', name: 'Room 806', location: 'Gedung Utama Lt. 8', status: 'OCCUPIED', timeInfo: '45 Minutes', session: 'Dasar Pemrograman' },
-  { id: '17', name: 'Room 805', location: 'Gedung Utama Lt. 8', status: 'OCCUPIED', timeInfo: '45 Minutes', session: 'Dasar Pemrograman' },
-  { id: '18', name: 'Room 804', location: 'Gedung Utama Lt. 8', status: 'AVAILABLE', timeInfo: 'All Day Open' },
-];
+export function RoomGrid({ filters }: { filters?: RoomFilters }) {
+  const rooms = MOCK_ROOMS;
+  
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const selectedRoom = rooms.find(r => r.id === selectedRoomId) ?? null;
 
-// Note: In Room 601 in wireframe, it says "AVAILABLE" but also has "45 Minutes" and "Dasar Pemrograman". This looks like a mistake in the wireframe design, but I've replicated it.
-
-export function RoomGrid() {
   return (
-    <div className="grid grid-cols-3 gap-6">
-      {dummyRooms.map(room => (
-        <RoomCard key={room.id} room={room} />
-      ))}
+    <div className="w-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {rooms.length === 0 ? (
+          <div className="col-span-full text-center py-10 text-secondary-light">No rooms found.</div>
+        ) : (
+          rooms.map(room => (
+            <RoomCard 
+              key={room.id} 
+              room={room as any} 
+              onClick={() => setSelectedRoomId(room.id)}
+            />
+          ))
+        )}
+      </div>
+
+      {/* Render Modal */}
+      {selectedRoom && (
+        <RoomSummaryModal 
+          isOpen={true}
+          onClose={() => setSelectedRoomId(null)}
+          room={selectedRoom}
+        />
+      )}
     </div>
   );
 }

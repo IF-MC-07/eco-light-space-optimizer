@@ -1,13 +1,44 @@
-import React from "react";
+"use client";
+import React, { useState } from "react";
 import { X, QrCode, MapPin, Info, MonitorSpeaker } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
+import { useCreateDevice } from "../hooks";
+import { DeviceType } from "../types";
 
 interface AddDeviceModalProps {
   isOpen: boolean;
   onClose: () => void;
+  roomId?: string;
 }
 
-export function AddDeviceModal({ isOpen, onClose }: AddDeviceModalProps) {
+export function AddDeviceModal({ isOpen, onClose, roomId }: AddDeviceModalProps) {
+  const [name, setName] = useState("");
+  const [type, setType] = useState<string>(DeviceType.LIGHTING);
+  const [ipAddress, setIpAddress] = useState("");
+  const [macAddress, setMacAddress] = useState("");
+
+  const { mutate: createDevice, isPending, error } = useCreateDevice();
+
+  const handleClose = () => {
+    setName("");
+    setType(DeviceType.LIGHTING);
+    setIpAddress("");
+    setMacAddress("");
+    onClose();
+  };
+
+  const handleCreate = () => {
+    if (!roomId) return;
+    createDevice(
+      { roomId, name, type, ipAddress, macAddress },
+      {
+        onSuccess: () => {
+          handleClose();
+        }
+      }
+    );
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -25,7 +56,7 @@ export function AddDeviceModal({ isOpen, onClose }: AddDeviceModalProps) {
             </p>
           </div>
           <button 
-            onClick={onClose}
+            onClick={handleClose}
             className="text-secondary-dark hover:text-primary transition-colors p-1"
           >
             <X className="w-5 h-5" />
@@ -33,11 +64,19 @@ export function AddDeviceModal({ isOpen, onClose }: AddDeviceModalProps) {
         </div>
 
         <div className="px-8 space-y-5">
+          {error && (
+            <div className="p-3 bg-red-100 text-red-600 rounded-lg text-sm">
+              Error creating device. Please try again.
+            </div>
+          )}
+
           {/* Device Name */}
           <div className="space-y-2">
             <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">Device Name</label>
             <input 
               type="text" 
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Lobby South Chiller"
               className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-dark placeholder-secondary-light focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3.5"
             />
@@ -48,9 +87,16 @@ export function AddDeviceModal({ isOpen, onClose }: AddDeviceModalProps) {
             <div className="space-y-2">
               <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">Device Type</label>
               <div className="relative">
-                <select className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-dark focus:outline-none focus:ring-2 focus:ring-primary/50 pl-4 pr-10 py-3.5 appearance-none cursor-pointer">
-                  <option value="lighting">Lighting</option>
-                  <option value="climate">Climate</option>
+                <select 
+                  value={type}
+                  onChange={(e) => setType(e.target.value)}
+                  className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-dark focus:outline-none focus:ring-2 focus:ring-primary/50 pl-4 pr-10 py-3.5 appearance-none cursor-pointer"
+                >
+                  <option value={DeviceType.LIGHTING}>Lighting</option>
+                  <option value={DeviceType.AC}>Climate (AC)</option>
+                  <option value={DeviceType.SENSOR}>Sensor</option>
+                  <option value={DeviceType.CAMERA}>Camera</option>
+                  <option value={DeviceType.OTHER}>Other</option>
                 </select>
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-secondary-dark">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -58,28 +104,30 @@ export function AddDeviceModal({ isOpen, onClose }: AddDeviceModalProps) {
               </div>
             </div>
 
-            {/* Location */}
+            {/* IP Address */}
             <div className="space-y-2">
-              <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">Location/Room</label>
+              <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">IP Address</label>
               <div className="relative">
-                <select className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-dark focus:outline-none focus:ring-2 focus:ring-primary/50 pl-4 pr-10 py-3.5 appearance-none cursor-pointer">
-                  <option value="atrium">Atrium</option>
-                  <option value="lobby">Lobby</option>
-                </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-secondary-dark">
-                  <MapPin className="w-4 h-4" />
-                </div>
+                <input 
+                  type="text" 
+                  value={ipAddress}
+                  onChange={(e) => setIpAddress(e.target.value)}
+                  placeholder="192.168.1.x"
+                  className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-dark placeholder-secondary-light focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3.5"
+                />
               </div>
             </div>
           </div>
 
-          {/* Serial Number */}
+          {/* MAC Address (Serial Number mapping) */}
           <div className="space-y-2">
-            <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">Serial Number</label>
+            <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">MAC / Serial Number</label>
             <div className="relative">
               <input 
                 type="text" 
-                placeholder="XXXX-XXXX-XXXX-XXXX"
+                value={macAddress}
+                onChange={(e) => setMacAddress(e.target.value)}
+                placeholder="XX:XX:XX:XX:XX:XX"
                 className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-light placeholder-secondary-light/50 focus:outline-none focus:ring-2 focus:ring-primary/50 pl-4 pr-12 py-3.5"
               />
               <button className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8492a6] hover:text-primary-dark transition-colors">
@@ -102,14 +150,19 @@ export function AddDeviceModal({ isOpen, onClose }: AddDeviceModalProps) {
         {/* Footer Actions */}
         <div className="px-8 py-8 bg-white flex items-center justify-end space-x-8 mt-2">
           <button 
-            onClick={onClose}
-            className="text-sm font-bold text-secondary-dark hover:text-primary transition-colors"
+            onClick={handleClose}
+            disabled={isPending}
+            className="text-sm font-bold text-secondary-dark hover:text-primary transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
-          <Button className="bg-primary-dark hover:bg-primary text-white py-3 px-6 rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center space-x-2">
+          <Button 
+            onClick={handleCreate}
+            disabled={isPending || !roomId || !name}
+            className="bg-primary-dark hover:bg-primary text-white py-3 px-6 rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center space-x-2 disabled:opacity-50"
+          >
             <MonitorSpeaker className="w-5 h-5" />
-            <span>Add Device</span>
+            <span>{isPending ? "Adding..." : "Add Device"}</span>
           </Button>
         </div>
       </div>

@@ -1,16 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { RoomHeader } from '../../../features/rooms/components/RoomHeader';
-import { RoomStats } from '../../../features/rooms/components/RoomStats';
 import { RoomGrid } from '../../../features/rooms/components/RoomGrid';
+import { RoomFilters } from '../../../features/rooms/types';
 import { Calendar } from 'lucide-react';
 
 export default function RoomAvailability() {
+  const [filters, setFilters] = useState<RoomFilters>({});
+
+  const handleFilterChange = (newFilters: Partial<RoomFilters>) => {
+    setFilters(prev => ({ ...prev, ...newFilters }));
+  };
+
   return (
     <div className="flex flex-col space-y-6 w-full max-w-6xl mx-auto h-full min-h-full">
-      <RoomHeader />
-      <RoomStats />
-      <div className="flex-1">
-        <RoomGrid />
+      <RoomHeader filters={filters} onFilterChange={handleFilterChange} />
+      
+      <div className="flex-1 mt-4">
+        <RoomGrid filters={filters} />
       </div>
 
       {/* Footer - specifically mapped from the wireframe */}
@@ -22,7 +28,7 @@ export default function RoomAvailability() {
           </div>
           <div className="flex items-center">
             <Calendar size={14} className="mr-2" />
-            Last Updated: 1:42 PM
+            Last Updated: {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
           </div>
         </div>
         

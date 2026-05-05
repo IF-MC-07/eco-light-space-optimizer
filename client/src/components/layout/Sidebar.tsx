@@ -9,7 +9,8 @@ import {
   Plus, 
   HelpCircle, 
   LogOut,
-  Activity
+  Activity,
+  Users
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 
@@ -17,10 +18,12 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useMe } from '@/features/auth/hooks';
 import { RoleGuard } from '@/components/auth/RoleGuard';
+import { useAuth } from '@/hooks/useAuth';
 
 export function Sidebar() {
   const pathname = usePathname();
   const { data: userData } = useMe();
+  const { logout } = useAuth();
   const role = userData?.user?.role;
   
   const allNavItems = [
@@ -30,15 +33,17 @@ export function Sidebar() {
     { label: 'Savings Report', icon: <BarChart2 size={20} />, href: '/savings-report' },
     { label: 'Automation', icon: <Bot size={20} />, href: '/automation' },
     { label: 'Room Availability', icon: <DoorOpen size={20} />, href: '/room-availability' },
+    { label: 'Users Management', icon: <Users size={20} />, href: '/users' },
   ];
 
   const allowedForUser = ['/dashboard', '/room-availability', '/lighting-ac', '/profile'];
 
-  const navItems = role === 'admin' 
+  const navItems = ['admin', 'manager', 'ADMIN', 'MANAGER'].includes(role) 
     ? allNavItems 
     : allNavItems.filter(item => allowedForUser.includes(item.href));
 
   return (
+    <>
     <aside className="w-64 h-screen bg-white border-r border-neutral-border flex flex-col justify-between flex-shrink-0 fixed left-0 top-0 z-20">
       <div>
         {/* Logo Area */}
@@ -84,11 +89,23 @@ export function Sidebar() {
           <HelpCircle size={20} className="text-secondary-light" />
           Help
         </a>
-        <a href="#" className="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-secondary hover:text-secondary-dark hover:bg-neutral rounded-md">
+        <button onClick={logout} className="w-full flex items-center gap-3 px-3 py-2 text-sm font-semibold text-secondary hover:text-secondary-dark hover:bg-neutral rounded-md">
           <LogOut size={20} className="text-secondary-light" />
           Logout
-        </a>
+        </button>
       </div>
     </aside>
+    {process.env.NODE_ENV === 'development' && (
+      <div style={{
+        position: 'fixed', bottom: 16, right: 16,
+        background: '#1a1a1a', color: '#00ff00',
+        padding: '8px 12px', borderRadius: 8,
+        fontFamily: 'monospace', fontSize: 12, zIndex: 9999
+      }}>
+        role: {role ?? 'undefined'} |
+        id: {userData?.user?.user_id ?? 'undefined'}
+      </div>
+    )}
+    </>
   );
 }

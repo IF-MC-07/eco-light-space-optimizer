@@ -20,7 +20,7 @@ export const register = async (req, res, next) => {
       data: user,
     });
   } catch (error) {
-    if (error.message === 'Email sudah terdaftar.') {
+    if (error.message === 'Email already exists.') {
       return res.status(400).json({ success: false, message: error.message });
     }
     next(error);
@@ -41,7 +41,7 @@ export const login = async (req, res, next) => {
       data,
     });
   } catch (error) {
-    if (error.message === 'Email atau kata sandi salah.') {
+    if (error.message === 'Email or password is wrong.') {
       return res.status(401).json({ success: false, message: error.message });
     }
     next(error);
@@ -73,7 +73,7 @@ export const forgotPassword = async (req, res, next) => {
       message: result.message,
     });
   } catch (error) {
-    if (error.message === 'Email tidak ditemukan.') {
+    if (error.message === 'Email not found.') {
       return res.status(404).json({ success: false, message: error.message });
     }
     next(error);
@@ -98,7 +98,7 @@ export const resetPassword = async (req, res, next) => {
       message: result.message,
     });
   } catch (error) {
-    if (error.message === 'Invalid or expired token.' || error.message === 'Invalid user.') {
+    if (error.message === 'Invalid token or expired.' || error.message === 'Invalid user.') {
       return res.status(400).json({ success: false, message: error.message });
     }
     next(error);

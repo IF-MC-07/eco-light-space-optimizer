@@ -1,29 +1,44 @@
-import React, { useState } from "react";
+"use client";
+import React, { useState, useEffect } from "react";
 import { Pencil, Settings, Trash2, LayoutGrid, Lamp, Radio, Video, Wind } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
 import { Switch } from "../../../components/ui/Switch";
 import { cn } from "../../../lib/utils";
+import { useRouter } from "next/navigation";
 
 interface Device {
   id: string;
   name: string;
-  type: "Light" | "Sensor" | "Camera" | "AC";
-  status: boolean;
+  type: string;
+  status: string;
+  statusBool?: boolean;
   hasHdStream?: boolean;
 }
 
-const initialDevices: Device[] = [
-  { id: "1", name: "Ceiling Light A1", type: "Light", status: true },
-  { id: "2", name: "Smart Sensor S1", type: "Sensor", status: true },
-  { id: "3", name: "Zone Eye Cam-06", type: "Camera", status: true, hasHdStream: true },
-  { id: "4", name: "Main AC Unit", type: "AC", status: true },
-];
+interface ProvisionedDevicesTableProps {
+  devices?: Device[];
+  roomId?: string;
+  onAddDevice?: () => void;
+  onEditDevice?: (device: Device) => void;
+}
 
-export function ProvisionedDevicesTable() {
+export function ProvisionedDevicesTable({ 
+  devices: initialDevices = [], 
+  roomId,
+  onAddDevice,
+  onEditDevice 
+}: ProvisionedDevicesTableProps) {
+  const router = useRouter();
   const [devices, setDevices] = useState<Device[]>(initialDevices);
 
+  useEffect(() => {
+    if (initialDevices.length > 0) {
+      setDevices(initialDevices);
+    }
+  }, [initialDevices]);
+
   const toggleStatus = (id: string) => {
-    setDevices(devices.map(d => d.id === id ? { ...d, status: !d.status } : d));
+    setDevices(devices.map(d => d.id === id ? { ...d, statusBool: !d.statusBool, status: !d.statusBool ? "Running" : "Standby" } : d));
   };
 
   const getIcon = (type: string) => {
@@ -41,9 +56,12 @@ export function ProvisionedDevicesTable() {
       <div className="flex justify-between items-end mb-6">
         <div>
           <h3 className="font-heading text-lg font-bold text-secondary-dark mb-1">Provisioned Devices</h3>
-          <p className="text-sm text-secondary-light">Managing 14 active IoT nodes in Room 606</p>
+          <p className="text-sm text-secondary-light">Managing {devices.length} active IoT nodes in Room {roomId || "606"}</p>
         </div>
-        <Button className="bg-primary-dark hover:bg-primary text-white text-sm py-2 px-4 h-10 rounded-md shadow-sm transition-colors flex items-center gap-2">
+        <Button 
+          onClick={onAddDevice}
+          className="bg-primary-dark hover:bg-primary text-white text-sm py-2 px-4 h-10 rounded-md shadow-sm transition-colors flex items-center gap-2"
+        >
           <span>+ Add Device to Room</span>
         </Button>
       </div>
@@ -60,8 +78,8 @@ export function ProvisionedDevicesTable() {
         {/* Table Body */}
         <div className="space-y-3 mt-4">
           {devices.map((device) => (
-            <div 
-              key={device.id} 
+            <div
+              key={device.id}
               className={cn(
                 "grid grid-cols-12 gap-4 items-center bg-[#F8FAFC] p-4 rounded-lg transition-colors hover:bg-[#F1F5F9] relative overflow-hidden",
                 device.type === "Camera" && "bg-white border border-[#E2E8F0] shadow-sm"
@@ -83,7 +101,7 @@ export function ProvisionedDevicesTable() {
                 <div>
                   <h4 className="font-bold text-sm text-secondary-dark">{device.name}</h4>
                   {device.hasHdStream && (
-                    <span className="text-[9px] font-bold text-primary bg-primary-light/10 px-1.5 py-0.5 rounded uppercase mt-1 inline-block">
+                     <span className="text-[9px] font-bold text-primary bg-primary-light/10 px-1.5 py-0.5 rounded uppercase mt-1 inline-block">
                       HD STREAM
                     </span>
                   )}
@@ -97,21 +115,29 @@ export function ProvisionedDevicesTable() {
 
               {/* Status Column */}
               <div className="col-span-2">
-                <Switch 
-                  checked={device.status} 
-                  onCheckedChange={() => toggleStatus(device.id)} 
+                <Switch
+                  checked={device.statusBool !== undefined ? device.statusBool : device.status === 'Running' || device.status === 'ONLINE'}
+                  onCheckedChange={() => toggleStatus(device.id)}
                 />
               </div>
 
               {/* Actions Column */}
               <div className="col-span-2 flex items-center justify-end space-x-3 text-secondary-light">
                 {device.type === "Camera" && (
-                  <button className="hidden lg:flex items-center space-x-1 bg-[#D1FAE5] text-primary-dark px-3 py-1.5 rounded text-xs font-bold mr-2 hover:bg-[#A7F3D0] transition-colors">
+                  <button 
+                    onClick={() => router.push(`/zone-configuration/${device.id}`)}
+                    className="hidden lg:flex items-center space-x-1 bg-[#D1FAE5] text-primary-dark px-3 py-1.5 rounded text-xs font-bold mr-2 hover:bg-[#A7F3D0] transition-colors"
+                  >
                     <LayoutGrid className="w-3 h-3" />
                     <span>Configure Zones</span>
                   </button>
                 )}
-                <button className="hover:text-secondary-dark transition-colors"><Pencil className="w-4 h-4" /></button>
+                <button 
+                  onClick={() => onEditDevice && onEditDevice(device)}
+                  className="hover:text-secondary-dark transition-colors"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
                 {device.type !== "Camera" && (
                   <button className="hover:text-secondary-dark transition-colors"><Settings className="w-4 h-4" /></button>
                 )}

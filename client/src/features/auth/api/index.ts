@@ -7,6 +7,11 @@ export const login = async (data: any): Promise<AuthResponse> => {
   return response.data;
 };
 
+export const logout = async (): Promise<any> => {
+  const response = await serverAPI.post('/auth/logout');
+  return response.data;
+};
+
 export const register = async (data: any): Promise<AuthResponse> => {
   const response = await serverAPI.post('/auth/register', data);
   return response.data;
@@ -24,7 +29,9 @@ export const resetPassword = async (data: any): Promise<any> => {
 
 export const me = async (): Promise<{ user: User }> => {
   const response = await serverAPI.get('/auth/me');
-  return response.data;
+  console.log('[AUTH] raw response:', response.data);
+  console.log('[AUTH] role from response:', response.data?.user?.role ?? response.data?.role ?? response.data?.data?.role);
+  return { user: response.data.data };
 };
 
 // --- User CRUD Endpoints ---

@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 import { UserPlus } from "lucide-react";
 import { Breadcrumbs } from "../../../components/ui/Breadcrumbs";

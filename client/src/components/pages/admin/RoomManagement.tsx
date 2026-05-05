@@ -1,14 +1,30 @@
-import React from "react";
+"use client";
+import React, { useState } from "react";
 import { Breadcrumbs } from "../../../components/ui/Breadcrumbs";
 import { RoomStatCard } from "../../../features/rooms/components/RoomStatCard";
 import { ProvisionedDevicesTable } from "../../../features/rooms/components/ProvisionedDevicesTable";
+import { AddDeviceModal } from "../../../features/rooms/components/AddDeviceModal";
+import { EditDeviceModal } from "../../../features/rooms/components/EditDeviceModal";
 import { UserCheck, Sun, Thermometer, ShieldCheck, UserCircle2, Lightbulb, Snowflake, CheckCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { MOCK_ROOMS } from "../../../mocks/roomData";
 
-export default function RoomManagement() {
+interface RoomManagementProps {
+  roomId: string;
+}
+
+export default function RoomManagement({ roomId }: RoomManagementProps) {
+  const router = useRouter();
+
+  const [isAddDeviceOpen, setIsAddDeviceOpen] = useState(false);
+  const [selectedDevice, setSelectedDevice] = useState<any>(null);
+
+  const room = MOCK_ROOMS.find(r => r.id === roomId) ?? MOCK_ROOMS[0];
+
   const breadcrumbItems = [
-    { label: "Campus", href: "#" },
-    { label: "Room Availability", href: "#" },
-    { label: "Room 606 Management", active: true },
+    { label: "Campus", href: "/", onClick: () => router.push("/") },
+    { label: "Room Availability", href: "/room-availability", onClick: () => router.push("/room-availability") },
+    { label: `${room.name} Management`, active: true },
   ];
 
   return (
@@ -18,7 +34,7 @@ export default function RoomManagement() {
       <div className="space-y-2">
         <Breadcrumbs items={breadcrumbItems} />
         <h1 className="font-heading text-3xl font-bold text-secondary-dark tracking-tight">
-          Room 606 Management
+          {room.name} Management
         </h1>
       </div>
 
@@ -61,9 +77,26 @@ export default function RoomManagement() {
 
       {/* Devices Table Section */}
       <div className="w-full bg-white rounded-2xl shadow-sm p-8 border border-neutral-border">
-        <ProvisionedDevicesTable />
+        <ProvisionedDevicesTable 
+          devices={room.devices as any[]}
+          roomId={roomId} 
+          onAddDevice={() => setIsAddDeviceOpen(true)}
+          onEditDevice={(device: any) => setSelectedDevice(device)}
+        />
       </div>
 
+      {/* Modals */}
+      <AddDeviceModal 
+        isOpen={isAddDeviceOpen} 
+        onClose={() => setIsAddDeviceOpen(false)} 
+        roomId={roomId}
+      />
+      
+      <EditDeviceModal 
+        isOpen={!!selectedDevice} 
+        onClose={() => setSelectedDevice(null)} 
+        device={selectedDevice}
+      />
     </div>
   );
 }

@@ -113,3 +113,5 @@ service_ai/app/models/*.pt
 
 # ─── NODE_MODULES ───────────────────────────────────────────
 node_modules/
+client/src/mocks/
+scratch/

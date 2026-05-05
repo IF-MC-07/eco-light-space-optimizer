@@ -1,22 +1,14 @@
 import React from 'react';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
-import { MapPin } from 'lucide-react';
+import { MapPin, MonitorSmartphone } from 'lucide-react';
+import { Room, RoomStatus } from '../types';
 
-export interface Room {
-  id: string;
-  name: string;
-  location: string;
-  status: 'AVAILABLE' | 'OCCUPIED';
-  timeInfo: string;
-  session?: string;
-}
-
-export function RoomCard({ room }: { room: Room }) {
-  const isAvailable = room.status === 'AVAILABLE';
+export function RoomCard({ room, onClick }: { room: Room, onClick?: () => void }) {
+  const isAvailable = room.status === RoomStatus.ACTIVE;
 
   return (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer">
+    <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={onClick}>
       <CardContent className="p-5 flex flex-col h-full mt-5">
         <div className="flex justify-between items-start mb-2">
           <h3 className="text-xl font-heading font-bold text-black">{room.name}</h3>
@@ -29,27 +21,26 @@ export function RoomCard({ room }: { room: Room }) {
           </Badge>
         </div>
         
-        <div className="flex items-center text-xs text-secondary mb-6">
+        <div className="flex items-center text-xs text-secondary mb-2">
           <MapPin size={12} className="mr-1" />
-          {room.location}
+          {room.building}, Floor {room.floor}
+        </div>
+
+        <div className="flex items-center text-xs text-secondary mb-6">
+          <MonitorSmartphone size={12} className="mr-1" />
+          {room.devices?.length || 0} Devices
         </div>
 
         <div className="mt-auto space-y-2 mb-5">
           {isAvailable ? (
             <div className="text-xs font-bold text-primary">
-              {room.timeInfo}
+              Available
             </div>
           ) : (
-            <>
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-secondary font-medium">Available In</span>
-                <span className="font-bold text-tertiary">{room.timeInfo}</span>
-              </div>
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-secondary font-medium">In Session</span>
-                <span className="font-bold text-tertiary">{room.session}</span>
-              </div>
-            </>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-secondary font-medium">Currently</span>
+              <span className="font-bold text-tertiary">Occupied / Maintenance</span>
+            </div>
           )}
         </div>
       </CardContent>

@@ -1,36 +1,40 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import * as api from '../api';
+import { roomsApi, devicesApi, schedulesApi } from '../api';
+import { 
+  RoomFilters, CreateRoomPayload, UpdateRoomPayload,
+  CreateDevicePayload, UpdateDevicePayload,
+  CreateSchedulePayload, UpdateSchedulePayload 
+} from '../types';
 
-export const roomKeys = {
-  all: ['rooms'] as const,
-  lists: () => [...roomKeys.all, 'list'] as const,
-  list: (params?: any) => [...roomKeys.lists(), params] as const,
-  details: () => [...roomKeys.all, 'detail'] as const,
-  detail: (id: string) => [...roomKeys.details(), id] as const,
-};
-
-// --- Room Hooks ---
-export const useRoomList = (params?: any) => {
+// Room hooks
+export const useRooms = (filters?: RoomFilters) => {
   return useQuery({
-    queryKey: roomKeys.list(params),
-    queryFn: () => api.getRooms(params),
+    queryKey: ['rooms', 'list', filters],
+    queryFn: () => roomsApi.getAll(filters),
   });
 };
 
-export const useRoomDetail = (id: string) => {
+export const useRoom = (id: string) => {
   return useQuery({
-    queryKey: roomKeys.detail(id),
-    queryFn: () => api.getRoomById(id),
+    queryKey: ['rooms', 'detail', id],
+    queryFn: () => roomsApi.getById(id),
     enabled: !!id,
+  });
+};
+
+export const useRoomStats = () => {
+  return useQuery({
+    queryKey: ['rooms', 'stats'],
+    queryFn: () => roomsApi.getStats(),
   });
 };
 
 export const useCreateRoom = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: api.createRoom,
+    mutationFn: (payload: CreateRoomPayload) => roomsApi.create(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: roomKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
     },
   });
 };
@@ -38,20 +42,118 @@ export const useCreateRoom = () => {
 export const useUpdateRoom = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => api.updateRoom(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: roomKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: roomKeys.detail(variables.id) });
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateRoomPayload }) => roomsApi.update(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
     },
   });
 };
 
-export const useDeleteRoom = () => {
+export const useRemoveRoom = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: api.deleteRoom,
+    mutationFn: (id: string) => roomsApi.remove(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: roomKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
+    },
+  });
+};
+
+// Device hooks
+export const useDevices = (roomId: string) => {
+  return useQuery({
+    queryKey: ['devices', roomId],
+    queryFn: () => devicesApi.getByRoom(roomId),
+    enabled: !!roomId,
+  });
+};
+
+export const useCreateDevice = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateDevicePayload) => devicesApi.create(payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['devices', variables.roomId] });
+    },
+  });
+};
+
+export const useUpdateDevice = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    // We don't have roomId in payload always, so invalidate all devices to be safe, or if available
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateDevicePayload }) => devicesApi.update(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['devices'] });
+    },
+  });
+};
+
+export const useRemoveDevice = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => devicesApi.remove(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['devices'] });
+    },
+  });
+};
+
+export const useProvisionDevice = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => devicesApi.provision(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['devices'] });
+    },
+  });
+};
+
+// Schedule hooks
+export const useSchedules = (deviceId: string) => {
+  return useQuery({
+    queryKey: ['schedules', deviceId],
+    queryFn: () => schedulesApi.getByDevice(deviceId),
+    enabled: !!deviceId,
+  });
+};
+
+export const useCreateSchedule = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateSchedulePayload) => schedulesApi.create(payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['schedules', variables.deviceId] });
+    },
+  });
+};
+
+export const useUpdateSchedule = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateSchedulePayload }) => schedulesApi.update(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schedules'] });
+    },
+  });
+};
+
+export const useRemoveSchedule = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => schedulesApi.remove(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schedules'] });
+    },
+  });
+};
+
+export const useToggleSchedule = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => schedulesApi.toggleActive(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schedules'] });
     },
   });
 };

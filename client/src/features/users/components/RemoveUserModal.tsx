@@ -1,16 +1,29 @@
 import React from "react";
 import { UserMinus, Info } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
+import { useRemoveUser } from "../hooks";
 
 interface RemoveUserModalProps {
   isOpen: boolean;
   onClose: () => void;
+  userId?: string;
   userName?: string;
-  onConfirm?: () => void;
 }
 
-export function RemoveUserModal({ isOpen, onClose, userName = "Elena Vance", onConfirm }: RemoveUserModalProps) {
+export function RemoveUserModal({ isOpen, onClose, userId, userName = "this user" }: RemoveUserModalProps) {
+  const { mutate: removeUser, isPending, isLoading, error } = useRemoveUser();
+  const loading = isPending || isLoading;
+
   if (!isOpen) return null;
+
+  const handleConfirm = () => {
+    if (!userId) return;
+    removeUser(userId, {
+      onSuccess: () => {
+        onClose();
+      }
+    });
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4">
@@ -30,6 +43,12 @@ export function RemoveUserModal({ isOpen, onClose, userName = "Elena Vance", onC
             </div>
             <h2 className="font-heading text-3xl font-bold text-secondary-dark">Remove User</h2>
           </div>
+
+          {error && (
+            <div className="mb-6 p-3 bg-red-100 text-red-600 rounded-lg text-sm">
+              Error removing user. Please try again.
+            </div>
+          )}
 
           <p className="text-[17px] text-secondary-dark leading-relaxed mb-8">
             Are you sure you want to remove <strong>{userName}</strong>? This action will immediately revoke their access to the campus management dashboard.
@@ -52,15 +71,17 @@ export function RemoveUserModal({ isOpen, onClose, userName = "Elena Vance", onC
         <div className="px-8 pb-8 pt-4 bg-[#F8FAFC] flex items-center justify-end space-x-6 border-t border-neutral-border/50">
           <button 
             onClick={onClose}
-            className="text-sm font-bold text-secondary-dark hover:text-primary transition-colors"
+            disabled={loading}
+            className="text-sm font-bold text-secondary-dark hover:text-primary transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <Button 
-            onClick={onConfirm}
-            className="bg-[#6B1B32] hover:bg-[#501324] text-white py-3 px-8 rounded-lg text-sm font-semibold transition-colors shadow-sm"
+            onClick={handleConfirm}
+            disabled={loading || !userId}
+            className="bg-[#6B1B32] hover:bg-[#501324] text-white py-3 px-8 rounded-lg text-sm font-semibold transition-colors shadow-sm disabled:opacity-50"
           >
-            Remove User
+            {loading ? "Removing..." : "Remove User"}
           </Button>
         </div>
       </div>

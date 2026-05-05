@@ -30,7 +30,7 @@ async function runSeed() {
       
       await User.create({
         name: 'Administrator',
-        username: 'admin', // Asumsi kolom username sudah ditambah sebelumnya
+        username: 'admin',
         email: adminEmail,
         password: hashedAdminPassword,
         role: 'admin',
