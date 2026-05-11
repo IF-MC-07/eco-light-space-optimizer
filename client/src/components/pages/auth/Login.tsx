@@ -18,7 +18,7 @@ export default function Login() {
 
           <div className="flex justify-start mb-8 relative z-10">
             <img
-              src="images/Logo Eco-Light.png"
+              src="/images/Logo Eco-Light.png"
               alt="Logo"
               className="w-48 h-auto"
             />

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Zone } from '@/types';
 import { getZoneByCamera, saveZone as apiSaveZone, deleteZone as apiDeleteZone } from '../api/zoneApi';
+import { MOCK_ZONES } from '@/mocks/zoneData';
 
 export const useZone = (cameraId: number) => {
   const [zonas, setZonas] = useState<Zone[]>([]);
@@ -11,10 +12,20 @@ export const useZone = (cameraId: number) => {
   const fetchZonas = useCallback(async () => {
     if (!cameraId) return;
     try {
+      // Try to get from mock data first
+      const mockData = MOCK_ZONES.filter(z => z.camera_id === cameraId);
+      if (mockData.length > 0) {
+        setZonas(mockData);
+        return;
+      }
+
+      // If not in mock, try API
       const data = await getZoneByCamera(cameraId);
       setZonas(data);
     } catch (error) {
       console.error('Failed to fetch zones', error);
+      // Final fallback to empty if everything fails
+      setZonas([]);
     }
   }, [cameraId]);
 

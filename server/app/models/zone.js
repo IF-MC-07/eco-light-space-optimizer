@@ -36,6 +36,16 @@ export default (sequelize, DataTypes) => {
       type: DataTypes.FLOAT,
       allowNull: true
     },
+    skew_x: {
+      type: DataTypes.FLOAT,
+      allowNull: true,
+      defaultValue: 0
+    },
+    skew_y: {
+      type: DataTypes.FLOAT,
+      allowNull: true,
+      defaultValue: 0
+    },
     color: {
       type: DataTypes.STRING(20),
       allowNull: true

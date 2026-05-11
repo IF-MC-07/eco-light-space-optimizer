@@ -1,16 +1,28 @@
 "use client";
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import { Button } from '../../ui/Button';
 import { 
   ChevronDown, Move, Eye, Trash2, 
-  MousePointer2, Info, History, Plus, Database 
+  MousePointer2, Info, History, Plus, Database, Pencil 
 } from 'lucide-react';
 import { useZone } from '../../../features/zone/hooks/useZone';
 import type { Canvas, Rect } from 'fabric';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function ZoneConfiguration() {
-  const [selectedCameraId, setSelectedCameraId] = useState<number>(1);
+  const params = useParams();
+  const deviceId = params?.deviceId;
+
+  const [selectedCameraId, setSelectedCameraId] = useState<number>(() => {
+    if (typeof deviceId === 'string') {
+      // Extract numeric part from string ID (e.g. "d3-cam" -> 3)
+      const numericId = deviceId.replace(/\D/g, '');
+      const parsed = parseInt(numericId);
+      return isNaN(parsed) ? 1 : parsed;
+    }
+    return 1;
+  });
   const [mode, setMode] = useState<'draw' | 'edit' | 'preview'>('edit');
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<Canvas | null>(null);
@@ -132,6 +144,8 @@ export default function ZoneConfiguration() {
         selectable: mode === 'edit',
         evented: mode === 'edit',
         lockRotation: true,
+        skewX: z.skew_x || 0,
+        skewY: z.skew_y || 0,
         data: { id: z.zone_id }
       });
 
@@ -204,15 +218,21 @@ export default function ZoneConfiguration() {
         if (!isDrawing.current || !tempRect.current) return;
         const pointer = canvas.getPointer(o.e);
 
-        if (originX.current > pointer.x) {
-          tempRect.current.set({ left: abs(pointer.x) });
+        if (o.e.altKey) {
+          tempRect.current.set({ 
+            skewX: (pointer.x - originX.current) / 10,
+            skewY: (pointer.y - originY.current) / 10 
+          });
+        } else {
+          if (originX.current > pointer.x) {
+            tempRect.current.set({ left: pointer.x });
+          }
+          if (originY.current > pointer.y) {
+            tempRect.current.set({ top: pointer.y });
+          }
+          tempRect.current.set({ width: Math.abs(originX.current - pointer.x) });
+          tempRect.current.set({ height: Math.abs(originY.current - pointer.y) });
         }
-        if (originY.current > pointer.y) {
-          tempRect.current.set({ top: abs(pointer.y) });
-        }
-
-        tempRect.current.set({ width: Math.abs(originX.current - pointer.x) });
-        tempRect.current.set({ height: Math.abs(originY.current - pointer.y) });
         canvas.renderAll();
       });
 
@@ -234,6 +254,8 @@ export default function ZoneConfiguration() {
               y1_pct: top / ch,
               x2_pct: (left + width) / cw,
               y2_pct: (top + height) / ch,
+              skew_x: tempRect.current.skewX,
+              skew_y: tempRect.current.skewY,
               color: '#4CAF50'
             });
           }
@@ -274,7 +296,9 @@ export default function ZoneConfiguration() {
           x1_pct: left / cw,
           y1_pct: top / ch,
           x2_pct: (left + width) / cw,
-          y2_pct: (top + height) / ch
+          y2_pct: (top + height) / ch,
+          skew_x: obj.skewX,
+          skew_y: obj.skewY
         });
 
         // reset scale so resizing works predictably next time
@@ -337,6 +361,7 @@ export default function ZoneConfiguration() {
                >
                  <option value={1}>CCTV North-Entrance-01</option>
                  <option value={2}>CCTV Main-Lobby-02</option>
+                 <option value={3}>CCTV Room-603-03</option>
                </select>
                <ChevronDown size={14} className="text-secondary-light" />
              </div>
@@ -438,12 +463,20 @@ export default function ZoneConfiguration() {
                       <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: z.color }}></div>
                       <span className={`text-sm font-semibold ${selectedId === z.zone_id ? 'text-[#1B4D1E] font-bold' : 'text-secondary-dark'}`}>{z.zone_name}</span>
                     </div>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); deleteZone(z.zone_id!); }}
-                      className="text-secondary-light hover:text-tertiary transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); selectZona(z.zone_id!); }}
+                        className="text-secondary-light hover:text-primary transition-colors"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); deleteZone(z.zone_id!); }}
+                        className="text-secondary-light hover:text-tertiary transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -474,11 +507,15 @@ export default function ZoneConfiguration() {
                  <>
                    <div className="mb-5">
                      <label className="text-[10px] font-extrabold text-secondary uppercase tracking-widest mb-2 block">Nama Zona</label>
-                     <input 
-                       className="w-full bg-[#E2E8F0]/60 border-none rounded-md px-3 py-2.5 text-sm font-bold text-neutral-900 focus:ring-1 focus:ring-primary outline-none transition-shadow"
-                       value={selectedZoneData.zone_name}
-                       onChange={(e) => updateZona(selectedId!, { zone_name: e.target.value })}
-                     />
+                     <div className="relative group">
+                       <input 
+                         className="w-full bg-[#E2E8F0]/60 border-none rounded-md px-3 py-2.5 text-sm font-bold text-neutral-900 focus:ring-1 focus:ring-primary outline-none transition-shadow pr-10"
+                         value={selectedZoneData.zone_name}
+                         onChange={(e) => updateZona(selectedId!, { zone_name: e.target.value })}
+                         placeholder="Masukkan nama zona..."
+                       />
+                       <Pencil size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-light group-focus-within:text-primary transition-colors pointer-events-none" />
+                     </div>
                    </div>
 
                    <div className="mb-6">
@@ -499,6 +536,30 @@ export default function ZoneConfiguration() {
                         <div className="bg-[#E2E8F0]/60 p-2.5 rounded-md">
                           <span className="text-[9px] font-bold text-secondary uppercase tracking-wider block">Y2</span>
                           <div className="font-extrabold text-neutral-900 text-sm mt-0.5 leading-none">{Math.round(selectedZoneData.y2_pct * 1080)}</div>
+                        </div>
+                     </div>
+                   </div>
+
+                   <div className="mb-6">
+                     <label className="text-[10px] font-extrabold text-secondary uppercase tracking-widest mb-2 block">Skew (Kemiringan)</label>
+                     <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-[#E2E8F0]/60 p-2.5 rounded-md">
+                          <span className="text-[9px] font-bold text-secondary uppercase tracking-wider block">Skew X</span>
+                          <input 
+                            type="number"
+                            className="bg-transparent border-none w-full text-sm font-extrabold outline-none"
+                            value={Math.round(selectedZoneData.skew_x || 0)}
+                            onChange={(e) => updateZona(selectedId!, { skew_x: parseInt(e.target.value) || 0 })}
+                          />
+                        </div>
+                        <div className="bg-[#E2E8F0]/60 p-2.5 rounded-md">
+                          <span className="text-[9px] font-bold text-secondary uppercase tracking-wider block">Skew Y</span>
+                          <input 
+                            type="number"
+                            className="bg-transparent border-none w-full text-sm font-extrabold outline-none"
+                            value={Math.round(selectedZoneData.skew_y || 0)}
+                            onChange={(e) => updateZona(selectedId!, { skew_y: parseInt(e.target.value) || 0 })}
+                          />
                         </div>
                      </div>
                    </div>

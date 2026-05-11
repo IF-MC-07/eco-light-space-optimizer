@@ -25,6 +25,8 @@ export interface Zone {
   x2_pct: number;
   y2_pct: number;
   color: string;
+  skew_x?: number;
+  skew_y?: number;
   status?: 'aktif' | 'nonaktif';
   urutan?: number;
 }

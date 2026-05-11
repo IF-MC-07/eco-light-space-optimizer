@@ -43,6 +43,8 @@ CREATE TABLE zones (
     y1_pct DOUBLE PRECISION,
     x2_pct DOUBLE PRECISION,
     y2_pct DOUBLE PRECISION,
+    skew_x DOUBLE PRECISION,
+    skew_y DOUBLE PRECISION,
     created_at TIMESTAMP WITH TIME ZONE,
     updated_at TIMESTAMP WITH TIME ZONE
 );

@@ -33,7 +33,7 @@ export function RegisterForm() {
     <div className="w-full">
       <div className="text-center mb-8">
         <div className="w-60 h-60 flex items-center justify-center mx-auto">
-          <img src="images/Logo Eco-Light.png" alt="Logo" />
+          <img src="/images/Logo Eco-Light.png" alt="Logo" />
         </div>
         <h2 className="font-heading text-3xl font-bold text-secondary-dark mb-2">Create Account</h2>
       </div>

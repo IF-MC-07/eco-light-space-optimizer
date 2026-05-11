@@ -49,7 +49,7 @@ export function Sidebar() {
         {/* Logo Area */}
         <div className="h-20 flex items-center px-6 mb-4">
           <div className="flex items-center gap-2">
-            <img src="images/Logo Eco-Light.png" alt="Logo-Eco-Light" className="w-full h-full object-contain"/>
+            <img src="/images/Logo Eco-Light.png" alt="Logo-Eco-Light" className="w-full h-full object-contain"/>
           </div>
         </div>
 

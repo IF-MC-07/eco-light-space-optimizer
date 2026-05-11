@@ -5,7 +5,7 @@ import { RoomStatCard } from "../../../features/rooms/components/RoomStatCard";
 import { ProvisionedDevicesTable } from "../../../features/rooms/components/ProvisionedDevicesTable";
 import { AddDeviceModal } from "../../../features/rooms/components/AddDeviceModal";
 import { EditDeviceModal } from "../../../features/rooms/components/EditDeviceModal";
-import { UserCheck, Sun, Thermometer, ShieldCheck, UserCircle2, Lightbulb, Snowflake, CheckCircle } from "lucide-react";
+import { UserCheck, Sun, Thermometer, ShieldCheck, UserCircle2, Lightbulb, Snowflake, CheckCircle, Video, LayoutGrid } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { MOCK_ROOMS } from "../../../mocks/roomData";
 
@@ -20,6 +20,7 @@ export default function RoomManagement({ roomId }: RoomManagementProps) {
   const [selectedDevice, setSelectedDevice] = useState<any>(null);
 
   const room = MOCK_ROOMS.find(r => r.id === roomId) ?? MOCK_ROOMS[0];
+  const cameraDevice = room.devices.find((d: any) => d.type === "Camera");
 
   const breadcrumbItems = [
     { label: "Campus", href: "/", onClick: () => router.push("/") },
@@ -74,6 +75,28 @@ export default function RoomManagement({ roomId }: RoomManagementProps) {
           watermarkIcon={<CheckCircle className="w-24 h-24 stroke-1" />}
         />
       </div>
+
+      {/* Vision System Section */}
+      {cameraDevice && (
+        <div className="w-full bg-gradient-to-r from-[#F8FAFC] to-[#F1F5F9] rounded-2xl p-6 border border-neutral-border flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+          <div className="flex items-center gap-6">
+            <div className="w-16 h-16 bg-primary-dark rounded-xl flex items-center justify-center text-white shadow-md">
+              <Video className="w-8 h-8" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-secondary-dark leading-tight">Vision System Active</h3>
+              <p className="text-secondary-light text-sm">Real-time occupancy monitoring & space zone optimization</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => router.push(`/zone-configuration/${cameraDevice.id}`)}
+            className="w-full md:w-auto px-6 py-3 bg-white border-2 border-primary-dark text-primary-dark rounded-xl font-bold hover:bg-primary-dark hover:text-white transition-all flex items-center justify-center gap-2 shadow-sm"
+          >
+            <LayoutGrid className="w-4 h-4" />
+            Configure Space Zones
+          </button>
+        </div>
+      )}
 
       {/* Devices Table Section */}
       <div className="w-full bg-white rounded-2xl shadow-sm p-8 border border-neutral-border">
