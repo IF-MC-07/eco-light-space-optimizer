@@ -13,7 +13,6 @@ export default function EnergyMonitor() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
         <div>
           <h1 className="text-3xl font-heading font-bold text-black tracking-tight mb-1">Energy Monitor</h1>
-          <p className="text-sm font-medium text-secondary-light">Live telemetry from Arboretum HQ Campus</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="secondary" className="bg-neutral border-none text-secondary-dark font-bold hover:bg-neutral-border/40 px-4">

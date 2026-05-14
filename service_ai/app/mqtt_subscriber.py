@@ -15,6 +15,9 @@ class MQTTSubscriber:
         self.username = os.getenv("MQTT_USER")
         self.password = os.getenv("MQTT_PASSWORD")
         
+        self.topic_trigger = os.getenv("MQTT_TOPIC_TRIGGER", "camera/trigger")
+        self.topic_request = os.getenv("MQTT_TOPIC_REQUEST", "ai/inference/request")
+        
         self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         self.client.on_connect = self._on_connect
         self.client.on_message = self._on_message
@@ -27,8 +30,8 @@ class MQTTSubscriber:
         if reason_code == 0:
             logger.info(f"✅ Connected to MQTT Broker: {self.broker}:{self.port}")
             # Subscribe ke topic setelah connect
-            client.subscribe("camera/trigger")      # trigger snapshot
-            client.subscribe("ai/inference/request") # request inference
+            client.subscribe(self.topic_trigger)
+            client.subscribe(self.topic_request)
         else:
             logger.error(f"❌ Failed to connect, reason: {reason_code}")
 
@@ -47,9 +50,9 @@ class MQTTSubscriber:
 
     def _route_message(self, topic: str, payload):
         """Routing pesan berdasarkan topic"""
-        if topic == "camera/trigger":
+        if topic == self.topic_trigger:
             self._handle_camera_trigger(payload)
-        elif topic == "ai/inference/request":
+        elif topic == self.topic_request:
             self._handle_inference_request(payload)
 
     def _handle_camera_trigger(self, payload):

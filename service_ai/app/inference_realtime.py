@@ -25,7 +25,8 @@ MQTT_BROKER         = os.getenv("MQTT_BROKER", "localhost")
 MQTT_PORT           = int(os.getenv("MQTT_PORT", 1883))
 MQTT_USER           = os.getenv("MQTT_USER")
 MQTT_PASSWORD       = os.getenv("MQTT_PASSWORD")
-MQTT_TOPIC_PUBLISH  = os.getenv("MQTT_TOPIC_PUBLISH", "kelas/deteksi")
+MQTT_TOPIC_TRIGGER  = os.getenv("MQTT_TOPIC_TRIGGER", "camera/trigger")
+MQTT_TOPIC_RESULT   = os.getenv("MQTT_TOPIC_RESULT", "ai/inference/result")
 MQTT_TOPIC_CONTROL  = os.getenv("MQTT_TOPIC_CONTROL", "kelas/control")
 
 CAMERA_SOURCE       = os.getenv("CAMERA_SOURCE", "0")
@@ -35,6 +36,8 @@ SEND_INTERVAL       = float(os.getenv("SEND_INTERVAL", 2))       # detik
 ZONE_FETCH_INTERVAL = float(os.getenv("ZONE_FETCH_INTERVAL", 60)) # detik
 CONF_THRESHOLD      = float(os.getenv("CONF_THRESHOLD", 0.25))
 IOU_THRESHOLD       = float(os.getenv("IOU_THRESHOLD", 0.45))
+
+MODEL_PATH          = os.getenv("MODEL_PATH", "yolov8n.pt")
 
 camera_input = int(CAMERA_SOURCE) if CAMERA_SOURCE.isdigit() else CAMERA_SOURCE
 
@@ -120,7 +123,7 @@ def hitung_per_zona(boxes, zones: list, width: int, height: int) -> dict:
     Orang yang tidak masuk zona manapun tetap dihitung di 'total'
     tapi tidak menambah count zona (konsisten).
     """
-    count = {z["nama_zona"]: 0 for z in zones}
+    count = {z["zone_name"]: 0 for z in zones}
     count["luar_zona"] = 0  # ✅ Fix: orang di luar semua zona
     count["total"]     = 0
 
@@ -132,7 +135,7 @@ def hitung_per_zona(boxes, zones: list, width: int, height: int) -> dict:
         masuk_zona = False
         for z in zones:
             if titik_di_zona(cx_rel, cy_rel, z):
-                count[z["nama_zona"]] += 1
+                count[z["zone_name"]] += 1
                 masuk_zona = True
                 break
 
@@ -153,8 +156,8 @@ def run():
     zone_mgr = ZoneManager(ID_KAMERA, ZONE_FETCH_INTERVAL)
 
     # Init model
-    log.info("🔃 Loading YOLOv8 model...")
-    model = YOLO("yolov8n.pt")
+    log.info(f"🔃 Loading YOLOv8 model from {MODEL_PATH}...")
+    model = YOLO(MODEL_PATH)
     log.info("✅ Model loaded.")
 
     # Init kamera
@@ -196,8 +199,8 @@ def run():
 
             now = time.time()
             if count != prev_data and (now - last_send_time) >= SEND_INTERVAL:
-                payload = {**count, "lampu": status, "id_kamera": ID_KAMERA}
-                if mqtt_handler.publish(MQTT_TOPIC_PUBLISH, payload):
+                payload = {**count, "lampu": status, "camera_id": ID_KAMERA}
+                if mqtt_handler.publish(MQTT_TOPIC_RESULT, payload):
                     log.info(f"📤 {payload}")
                 prev_data      = count.copy()
                 last_send_time = now

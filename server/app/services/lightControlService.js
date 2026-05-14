@@ -1,4 +1,5 @@
 import db from '../models/index.js';
+import mqttService from './mqttService.js';
 
 const { LightControl } = db;
 
@@ -17,7 +18,21 @@ export const create = async (data) => {
 export const update = async (id, data) => {
   const control = await LightControl.findByPk(id);
   if (!control) return null;
-  return await control.update(data);
+  
+  const updated = await control.update(data);
+  
+  // Publish MQTT if status changed
+  if (data.light_status) {
+    const topic = process.env.MQTT_TOPIC_CONTROL || 'kelas/control';
+    const payload = {
+      device_id: updated.device_id,
+      relay_channel: updated.relay_channel,
+      action: updated.light_status.toUpperCase()
+    };
+    mqttService.publish(topic, payload);
+  }
+  
+  return updated;
 };
 
 export const remove = async (id) => {

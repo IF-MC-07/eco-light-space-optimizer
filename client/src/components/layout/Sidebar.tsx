@@ -79,12 +79,6 @@ export function Sidebar() {
 
       {/* Bottom Area */}
       <div className="p-4 flex flex-col gap-2 border-t border-neutral-border">
-        <RoleGuard allowedRoles={['admin']}>
-          <Button variant="primary" fullWidth className="mb-2 justify-start pl-4 gap-2 text-sm shadow-sm">
-            <Plus size={18} />
-            Add New Device
-          </Button>
-        </RoleGuard>
         <a href="#" className="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-secondary hover:text-secondary-dark hover:bg-neutral rounded-md">
           <HelpCircle size={20} className="text-secondary-light" />
           Help

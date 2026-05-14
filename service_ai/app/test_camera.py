@@ -1,13 +1,21 @@
 import cv2
-from ultralytics import YOLO
 import paho.mqtt.client as mqtt
 import json
 import time
+import os
+from dotenv import load_dotenv
 
-model = YOLO('yolov8n.pt')
+load_dotenv()
 
-client = mqtt.Client()
-client.connect('localhost', 1883)
+MODEL_PATH = os.getenv('MODEL_PATH', 'yolov8n.pt')
+model = YOLO(MODEL_PATH)
+
+MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
+MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
+MQTT_TOPIC_RESULT = os.getenv("MQTT_TOPIC_RESULT", "ai/inference/result")
+
+client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
+client.connect(MQTT_BROKER, MQTT_PORT)
 client.loop_start()
 
 cap = cv2.VideoCapture(0)
@@ -91,7 +99,7 @@ while True:
             'total': count['total'],
             'lampu': status
         })
-        client.publish('kelas/deteksi', payload)
+        client.publish(MQTT_TOPIC_RESULT, payload)
         print(f"📤 {payload}")
         prev_data = count.copy()
         last_send_time = current_time

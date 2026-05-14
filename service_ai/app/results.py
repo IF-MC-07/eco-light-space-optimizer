@@ -11,5 +11,6 @@ def publish_inference_result(results: list, camera_id: str = "cam_01"):
         "detections": results,
         "count": len(results)
     }
-    mqtt_client.publish("ai/inference/result", payload)
+    MQTT_TOPIC_RESULT = os.getenv("MQTT_TOPIC_RESULT", "ai/inference/result")
+    mqtt_client.publish(MQTT_TOPIC_RESULT, payload)
     logger.info(f"✅ Result published: {len(results)} detections")

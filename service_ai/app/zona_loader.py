@@ -3,10 +3,8 @@ import psycopg2.extras
 import os
 from dotenv import load_dotenv
 
-# Load env variables from ../server/.env if exists
-env_path = os.path.join(os.path.dirname(__file__), '../../server/.env')
-if os.path.exists(env_path):
-    load_dotenv(env_path)
+# Load env variables
+load_dotenv()
 
 def get_db_connection():
     db_type = os.environ.get('DB_TYPE', 'local')
@@ -21,25 +19,43 @@ def get_db_connection():
         port=os.environ.get('DB_PORT', '5432')
     )
 
-def ambil_zona_dari_db(id_kamera: int) -> list[dict]:
+def ambil_zona_dari_db(camera_id: int) -> list[dict]:
+    """
+    Mengambil data zona dari database berdasarkan camera_id.
+    Standardized to match Sequelize schema (zones, cameras, room_id, camera_id, etc.)
+    """
     try:
         conn = get_db_connection()
+        if not conn:
+            print("❌ Failed to establish database connection.")
+            return []
+            
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+            # Explicitly select columns to match Sequelize model
             cur.execute("""
-                SELECT * FROM zona 
-                WHERE id_ruangan = (
-                    SELECT id_ruangan FROM kamera WHERE id_kamera = %s
+                SELECT 
+                    zone_id, room_id, zone_name, zone_status, 
+                    x1_pct, y1_pct, x2_pct, y2_pct, 
+                    color, sort_order 
+                FROM zones 
+                WHERE room_id = (
+                    SELECT room_id FROM cameras WHERE camera_id = %s
                 )
-                AND status_zona = 'aktif'
-                ORDER BY urutan
-            """, (id_kamera,))
+                AND zone_status = 'aktif'
+                ORDER BY sort_order
+            """, (camera_id,))
             rows = cur.fetchall()
+            
+            if not rows:
+                print(f"⚠️ No active zones found for camera_id: {camera_id}")
+                return []
+                
             return [dict(row) for row in rows]
     except Exception as e:
-        print(f"Error fetching zones: {e}")
+        print(f"❌ Error fetching zones from DB: {e}")
         return []
     finally:
-        if 'conn' in locals() and not conn.closed:
+        if 'conn' in locals() and conn and not conn.closed:
             conn.close()
 
 def titik_di_zona(cx_rel: float, cy_rel: float, zona: dict) -> bool:

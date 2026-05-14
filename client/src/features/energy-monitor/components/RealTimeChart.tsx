@@ -17,8 +17,7 @@ export function RealTimeChart() {
     <Card className="h-[300px] flex flex-col border-transparent bg-[#F5F7F5] shadow-sm mb-6">
       <CardHeader className="pb-2 flex flex-row items-start justify-between px-6 pt-6">
         <div>
-          <CardTitle className="text-lg text-black font-heading font-bold mb-1">Real-Time Energy Consumption</CardTitle>
-          <p className="text-xs text-secondary font-medium">Live telemetry stream (5s resolution)</p>
+          <CardTitle className="text-lg text-black font-heading font-bold mb-1">Energy Consumption</CardTitle>
         </div>
         <div className="flex items-center gap-4 text-[10px] font-bold text-secondary uppercase tracking-widest">
           <div className="flex items-center gap-1.5">

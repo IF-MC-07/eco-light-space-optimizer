@@ -11,20 +11,21 @@ from ultralytics import YOLO
 from app.zona_loader import ambil_zona_dari_db, titik_di_zona, get_db_connection
 
 app = FastAPI()
-model = YOLO('app/models/best.pt')
+MODEL_PATH = os.getenv('MODEL_PATH', 'yolov8n.pt')
+model = YOLO(MODEL_PATH)
 
-def get_kamera_ip(id_kamera: int) -> str:
+def get_kamera_ip(camera_id: int) -> str:
     try:
         conn = get_db_connection()
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
-            cur.execute("SELECT ip_address FROM kamera WHERE id_kamera = %s", (id_kamera,))
+            cur.execute("SELECT ip_address FROM cameras WHERE camera_id = %s", (camera_id,))
             row = cur.fetchone()
             if row:
                 return row['ip_address']
     except Exception as e:
         print(f"DB Error: {e}")
     finally:
-        if 'conn' in locals() and not conn.closed:
+        if 'conn' in locals() and conn and not conn.closed:
             conn.close()
     return None
 
@@ -42,7 +43,7 @@ def process_frame(frame, id_kamera, zones):
     annotated = results[0].plot()
 
     # Calculate counts
-    count = {z['nama_zona']: 0 for z in zones}
+    count = {z['zone_name']: 0 for z in zones}
     for box in results[0].boxes:
         x1, y1, x2, y2 = map(int, box.xyxy[0])
         cx_rel = ((x1 + x2) // 2) / width
@@ -50,7 +51,7 @@ def process_frame(frame, id_kamera, zones):
         
         for z in zones:
             if titik_di_zona(cx_rel, cy_rel, z):
-                count[z['nama_zona']] += 1
+                count[z['zone_name']] += 1
                 break
 
     # Draw zones
@@ -58,7 +59,7 @@ def process_frame(frame, id_kamera, zones):
         zx1, zy1 = int(z['x1_pct'] * width), int(z['y1_pct'] * height)
         zx2, zy2 = int(z['x2_pct'] * width), int(z['y2_pct'] * height)
         # Parse hex color safely
-        hex_color = z['warna'].lstrip('#')
+        hex_color = z['color'].lstrip('#')
         try:
             r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
             color = (b, g, r) # OpenCV uses BGR
@@ -66,7 +67,7 @@ def process_frame(frame, id_kamera, zones):
             color = (0, 255, 0)
             
         cv2.rectangle(annotated, (zx1, zy1), (zx2, zy2), color, 2)
-        cv2.putText(annotated, f"{z['nama_zona']} | Orang: {count[z['nama_zona']]}", 
+        cv2.putText(annotated, f"{z['zone_name']} | Orang: {count[z['zone_name']]}", 
                     (zx1, zy1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
 
     return annotated
