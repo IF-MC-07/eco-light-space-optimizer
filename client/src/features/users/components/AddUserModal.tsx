@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, Shield, Eye, Edit as EditIcon } from "lucide-react";
+import { X, Shield, Eye, EyeOff, User as UserIcon, Lock } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
 import { cn } from "../../../lib/utils";
 import { useCreateUser } from "../hooks";
@@ -13,7 +13,9 @@ interface AddUserModalProps {
 export function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [department, setDepartment] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<UserRole | string>(UserRole.USER);
 
   const { mutate: createUser, isPending, isLoading, error } = useCreateUser();
@@ -21,16 +23,32 @@ export function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
 
   if (!isOpen) return null;
 
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setEmail(val);
+    // Auto-generate username if not manually edited yet
+    if (!username || username === email.split('@')[0]) {
+      setUsername(val.split('@')[0]);
+    }
+  };
+
   const handleSubmit = () => {
     createUser(
-      { name, email, department, role },
+      { 
+        name, 
+        email, 
+        username: username || email.split('@')[0], 
+        password, 
+        role 
+      },
       {
         onSuccess: () => {
           onClose();
           // Reset form
           setName("");
           setEmail("");
-          setDepartment("");
+          setUsername("");
+          setPassword("");
           setRole(UserRole.USER);
         },
       }
@@ -64,7 +82,7 @@ export function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
 
         {error && (
           <div className="mb-4 p-3 bg-red-100 text-red-600 rounded-lg text-sm">
-            Error creating user. Please try again.
+            Error creating user. Please check if username/email already exists.
           </div>
         )}
 
@@ -72,13 +90,15 @@ export function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
         <div className="space-y-6 mb-8">
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">Full Name</label>
+              <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest flex items-center gap-2">
+                <UserIcon size={12} /> Full Name
+              </label>
               <input 
                 type="text" 
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="E.g. Julian Thorne"
-                className="w-full bg-[#E2E8F0] bg-opacity-60 border-none rounded-lg text-base text-secondary-dark placeholder-secondary-light focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3.5"
+                className="w-full bg-[#E2E8F0] bg-opacity-60 border-none rounded-lg text-sm text-secondary-dark placeholder-secondary-light focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3"
               />
             </div>
             <div className="space-y-2">
@@ -86,28 +106,43 @@ export function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
               <input 
                 type="email" 
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={handleEmailChange}
                 placeholder="julian.t@ecolight.com"
-                className="w-full bg-[#E2E8F0] bg-opacity-60 border-none rounded-lg text-base text-secondary-dark placeholder-secondary-light focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3.5"
+                className="w-full bg-[#E2E8F0] bg-opacity-60 border-none rounded-lg text-sm text-secondary-dark placeholder-secondary-light focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3"
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">Department</label>
-            <div className="relative">
-              <select 
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-                className="w-full bg-[#E2E8F0] bg-opacity-60 border-none rounded-lg text-base text-secondary-dark focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3.5 appearance-none cursor-pointer"
-              >
-                <option value="" disabled>Select Department</option>
-                <option value="sustainability">Sustainability</option>
-                <option value="operations">Operations</option>
-                <option value="maintenance">Maintenance</option>
-                <option value="it">Campus IT</option>
-              </select>
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-secondary-dark">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">Username</label>
+              <input 
+                type="text" 
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="jthorne"
+                className="w-full bg-[#E2E8F0] bg-opacity-60 border-none rounded-lg text-sm text-secondary-dark placeholder-secondary-light focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest flex items-center gap-2">
+                <Lock size={12} /> Password
+              </label>
+              <div className="relative">
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-[#E2E8F0] bg-opacity-60 border-none rounded-lg text-sm text-secondary-dark placeholder-secondary-light focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-light hover:text-secondary-dark transition-colors"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
             </div>
           </div>
@@ -160,7 +195,7 @@ export function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
           </button>
           <Button 
             onClick={handleSubmit}
-            disabled={loading || !name || !email}
+            disabled={loading || !name || !email || !password}
             className="bg-primary-dark hover:bg-primary text-white py-3 px-8 rounded-lg text-sm font-semibold transition-colors shadow-sm disabled:opacity-50"
           >
             {loading ? "Adding..." : "Add User"}

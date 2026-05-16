@@ -50,12 +50,18 @@ export default function AutomationRules() {
         <div className="flex flex-col justify-end pb-0.5">
           <Button 
             onClick={handleAddNew}
-            className="w-full h-[180px] bg-primary-dark hover:bg-primary text-white font-bold rounded-3xl shadow-lg flex flex-col items-center justify-center gap-4 transition-all hover:scale-[1.02] active:scale-[0.98] border-none group"
+            className="w-full h-full min-h-[180px] bg-primary-dark hover:bg-primary text-white font-bold rounded-[32px] shadow-lg flex flex-col items-center justify-center gap-4 transition-all hover:scale-[1.02] active:scale-[0.98] border-none group relative overflow-hidden"
           >
-            <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-              <Plus size={28} />
+            <div className="absolute -right-4 -top-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Plus size={120} />
             </div>
-            <span className="text-lg">Add New Rule</span>
+            <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-all group-hover:rotate-90 duration-500 shadow-inner">
+              <Plus size={32} />
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="text-xl font-heading font-black tracking-tight">Add New Rule</span>
+              <span className="text-[10px] text-white/60 uppercase tracking-[0.2em] font-bold">New Automation</span>
+            </div>
           </Button>
         </div>
       </div>

@@ -2,10 +2,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usersApi } from '../api';
 import { User } from '../types';
 
-export const useUsers = () => {
+export const useUsers = (filters?: any) => {
   return useQuery({
-    queryKey: ['users', 'list'],
-    queryFn: () => usersApi.getAll(),
+    queryKey: ['users', 'list', filters],
+    queryFn: () => usersApi.getAll(filters),
+  });
+};
+
+export const useUserStats = () => {
+  return useQuery({
+    queryKey: ['users', 'stats'],
+    queryFn: () => usersApi.getStats(),
   });
 };
 
@@ -30,7 +37,7 @@ export const useCreateUser = () => {
 export const useUpdateUser = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: Partial<User> }) => usersApi.update(id, payload),
+    mutationFn: ({ id, payload }: { id: string; payload: Partial<User> }) => usersApi.update(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },

@@ -15,3 +15,10 @@ export interface ApiResponse<T> {
   data: T;
   message: string;
 }
+
+export interface UserStats {
+  totalUsers: number;
+  activeNow: number;
+  newThisMonth: number;
+  pendingRequests: number;
+}

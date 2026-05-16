@@ -7,6 +7,7 @@ const router = Router();
 
 // Admin only routes for User CRUD
 router.get('/', authenticate, requireRole('admin'), userController.getAll);
+router.get('/stats', authenticate, requireRole('admin'), userController.getStats);
 router.get('/:id', authenticate, requireRole('admin'), userController.getById);
 router.post('/', authenticate, requireRole('admin'), userController.create);
 router.put('/:id', authenticate, requireRole('admin'), userController.update);

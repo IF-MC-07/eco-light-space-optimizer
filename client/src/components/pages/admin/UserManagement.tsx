@@ -17,6 +17,7 @@ export default function UserManagement() {
   const [isRemoveUserOpen, setIsRemoveUserOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [filters, setFilters] = useState({});
 
   const breadcrumbItems = [
     { label: "Campus Management", href: "#" },
@@ -92,8 +93,8 @@ export default function UserManagement() {
 
       {/* Main Content Area */}
       <div className="w-full bg-white rounded-3xl shadow-sm border border-neutral-border p-6 md:p-8 space-y-8">
-        <UserFilters />
-        <UserTable onEdit={handleEdit} onRemove={handleRemove} />
+        <UserFilters onFilterChange={setFilters} />
+        <UserTable filters={filters} onEdit={handleEdit} onRemove={handleRemove} />
       </div>
 
       {/* Modals */}
@@ -105,6 +106,7 @@ export default function UserManagement() {
       <EditUserModal 
         isOpen={isEditUserOpen} 
         onClose={() => setIsEditUserOpen(false)} 
+        userId={selectedUserId || undefined}
       />
 
       <RemoveUserModal 

@@ -14,7 +14,6 @@ interface EditUserModalProps {
 export function EditUserModal({ isOpen, onClose, userId }: EditUserModalProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [department, setDepartment] = useState("");
   const [role, setRole] = useState<UserRole | string>(UserRole.ADMIN);
 
   const { data: userData, isLoading: isLoadingUser } = useUser(userId || "");
@@ -25,7 +24,6 @@ export function EditUserModal({ isOpen, onClose, userId }: EditUserModalProps) {
     if (userData?.data) {
       setName(userData.data.name || "");
       setEmail(userData.data.email || "");
-      setDepartment(userData.data.department || "");
       setRole(userData.data.role || UserRole.ADMIN);
     }
   }, [userData]);
@@ -35,7 +33,7 @@ export function EditUserModal({ isOpen, onClose, userId }: EditUserModalProps) {
   const handleUpdate = () => {
     if (!userId) return;
     updateUser(
-      { id: userId, payload: { name, email, department, role } },
+      { id: userId, payload: { name, email, role } },
       {
         onSuccess: () => {
           onClose();
@@ -119,25 +117,6 @@ export function EditUserModal({ isOpen, onClose, userId }: EditUserModalProps) {
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">Department</label>
-                <div className="relative">
-                  <select 
-                    value={department}
-                    onChange={(e) => setDepartment(e.target.value)}
-                    className="w-full bg-[#E2E8F0] bg-opacity-60 border-none rounded-lg text-base text-secondary-dark focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3.5 appearance-none cursor-pointer"
-                  >
-                    <option value="" disabled>Select Department</option>
-                    <option value="sustainability">Sustainability</option>
-                    <option value="operations">Operations</option>
-                    <option value="maintenance">Maintenance</option>
-                    <option value="it">Campus IT</option>
-                  </select>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-secondary-dark">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path></svg>
-                  </div>
-                </div>
-              </div>
             </div>
 
             {/* Roles */}
@@ -167,22 +146,22 @@ export function EditUserModal({ isOpen, onClose, userId }: EditUserModalProps) {
                   )}
                 </div>
 
-                {/* Manager / Editor Card */}
+                {/* Viewer Card */}
                 <div 
-                  onClick={() => setRole(UserRole.MANAGER)}
+                  onClick={() => setRole(UserRole.USER)}
                   className={cn(
                     "p-4 rounded-xl cursor-pointer transition-all border-2 relative flex flex-col",
-                    role === UserRole.MANAGER 
+                    role === UserRole.USER 
                       ? "border-primary-dark bg-[#F5F7F5]" 
                       : "border-transparent bg-[#F8FAFC] hover:bg-[#F1F5F9]"
                   )}
                 >
                   <div className="w-10 h-10 rounded-lg bg-[#BFDBFE] text-primary-dark flex items-center justify-center mb-4">
-                    <EditIcon className="w-5 h-5" />
+                    <Eye className="w-5 h-5" />
                   </div>
-                  <h4 className="font-bold text-secondary-dark mb-1">Manager</h4>
-                  <p className="text-[11px] text-secondary-light leading-relaxed">Can manage devices and monitor metrics.</p>
-                  {role === UserRole.MANAGER && (
+                  <h4 className="font-bold text-secondary-dark mb-1">Viewer</h4>
+                  <p className="text-[11px] text-secondary-light leading-relaxed">Read-only access to monitoring and analytics.</p>
+                  {role === UserRole.USER && (
                     <CheckCircle2 className="w-5 h-5 text-primary-dark absolute top-4 right-4 fill-primary-dark/20" />
                   )}
                 </div>

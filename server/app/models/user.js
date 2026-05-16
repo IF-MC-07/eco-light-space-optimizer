@@ -29,6 +29,22 @@ export default (sequelize, DataTypes) => {
       type: DataTypes.STRING(20),
       allowNull: false,
       defaultValue: 'user'
+    },
+    avatar: {
+      type: DataTypes.TEXT, // Base64 or URL
+      allowNull: true
+    },
+    email_notifications: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
+    },
+    system_notifications: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
+    },
+    daily_digest: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
     }
   }, {
     tableName: 'users',

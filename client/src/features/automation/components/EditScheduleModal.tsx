@@ -18,7 +18,7 @@ export function EditScheduleModal({ isOpen, onClose, schedule, isAddingNew = fal
   const { mutate: updateSchedule, isPending: isUpdating } = useUpdateSchedule();
   const { mutate: createSchedule, isPending: isCreating } = useCreateSchedule();
   const { data: meResponse } = useMe();
-  const me = meResponse?.data;
+  const me = meResponse?.user;
   const { data: roomsResponse } = useRooms();
   const rooms = roomsResponse?.data || [];
 
@@ -49,7 +49,7 @@ export function EditScheduleModal({ isOpen, onClose, schedule, isAddingNew = fal
       start_time: startTime,
       end_time: endTime,
       room_id: roomId,
-      user_id: me?.user_id || "", // Use actual user_id from me hook
+      user_id: me?.user_id || null, // Use actual user_id from me hook or null if not available
     };
 
     if (isAddingNew) {

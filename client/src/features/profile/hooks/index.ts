@@ -11,7 +11,7 @@ export const useProfile = () => {
 export const useUpdateProfile = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: any }) => 
+    mutationFn: ({ id, payload }: { id: string; payload: any }) => 
       profileApi.updateProfile(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile', 'me'] });

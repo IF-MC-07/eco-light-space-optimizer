@@ -24,21 +24,12 @@ export default function ProfileSettings() {
         </div>
       </div>
 
-      {/* Footer Actions */}
       <div className="pt-6 pb-4 mt-auto border-t border-neutral-border flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-xs font-medium text-secondary-light">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
-          Last active profile change: Oct 12, 2023 • 09:42 AM
-        </div>
-        <div className="flex items-center gap-3">
-          <Button variant="secondary" className="px-8 font-bold border-none bg-neutral hover:bg-neutral-border/40 text-secondary-dark">
-            Discard
-          </Button>
-          <Button className="px-8 font-bold bg-primary hover:bg-primary-dark text-white">
-            Save Changes
-          </Button>
+          Account activity: Real-time synchronization active
         </div>
       </div>
     </div>

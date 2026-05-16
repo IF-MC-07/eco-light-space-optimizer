@@ -10,8 +10,8 @@ export function RoomGrid({ rooms, isLoading, isError, onDeleteRoom }: {
   isError: boolean,
   onDeleteRoom?: (room: Room) => void 
 }) {
-  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
-  const selectedRoom = rooms.find(r => r.room_id === selectedRoomId) ?? null;
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const selectedRoom = rooms.find(r => String(r.room_id) === String(selectedRoomId)) ?? null;
 
   if (isLoading) return <div className="text-center py-10">Loading rooms...</div>;
   if (isError) return <div className="text-center py-10 text-red-500">Error loading rooms.</div>;

@@ -9,7 +9,6 @@ interface UserFiltersProps {
 export function UserFilters({ onFilterChange }: UserFiltersProps) {
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("");
-  const [department, setDepartment] = useState("");
 
   const handleApplyFilters = () => {
     if (onFilterChange) {
@@ -27,7 +26,7 @@ export function UserFilters({ onFilterChange }: UserFiltersProps) {
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [search, role, department]);
+  }, [search, role]);
 
   return (
     <div className="flex flex-col md:flex-row items-center gap-4 w-full">
@@ -54,26 +53,7 @@ export function UserFilters({ onFilterChange }: UserFiltersProps) {
         >
           <option value="">All Roles</option>
           <option value="ADMIN">Admin</option>
-          <option value="MANAGER">Manager</option>
-          <option value="VIEWER">Viewer</option>
-        </select>
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-dark pointer-events-none">
-          <ChevronDown className="w-4 h-4" />
-        </div>
-      </div>
-
-      {/* Department Dropdown */}
-      <div className="relative w-full md:w-auto min-w-[160px]">
-        <select 
-          value={department}
-          onChange={(e) => setDepartment(e.target.value)}
-          className="w-full bg-[#E2E8F0] bg-opacity-60 border-none rounded-xl text-xs font-bold text-secondary-dark focus:outline-none focus:ring-2 focus:ring-primary/50 pl-4 pr-10 py-3 appearance-none cursor-pointer"
-        >
-          <option value="">All Departments</option>
-          <option value="sustainability">Sustainability</option>
-          <option value="operations">Operations</option>
-          <option value="maintenance">Maintenance</option>
-          <option value="it">Campus IT</option>
+          <option value="USER">Viewer</option>
         </select>
         <div className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-dark pointer-events-none">
           <ChevronDown className="w-4 h-4" />

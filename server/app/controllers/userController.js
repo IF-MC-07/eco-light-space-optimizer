@@ -2,7 +2,7 @@ import * as userService from '../services/userService.js';
 
 export const getAll = async (req, res, next) => {
   try {
-    const data = await userService.getAll();
+    const data = await userService.getAll(req.query);
     res.status(200).json({ success: true, data, message: 'Users retrieved successfully' });
   } catch (error) {
     next(error);
@@ -49,6 +49,15 @@ export const remove = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
     res.status(200).json({ success: true, data: null, message: 'User deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getStats = async (req, res, next) => {
+  try {
+    const data = await userService.getStats();
+    res.status(200).json({ success: true, data, message: 'User stats retrieved successfully' });
   } catch (error) {
     next(error);
   }

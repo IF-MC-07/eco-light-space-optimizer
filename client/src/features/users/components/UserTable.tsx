@@ -50,8 +50,7 @@ export function UserTable({ filters, onEdit, onRemove }: UserTableProps) {
           <thead>
             <tr className="border-b border-neutral-border text-left">
               <th className="py-4 px-4 text-[10px] font-bold text-secondary-dark uppercase tracking-widest w-[35%]">User</th>
-              <th className="py-4 px-4 text-[10px] font-bold text-secondary-dark uppercase tracking-widest w-[15%]">Role</th>
-              <th className="py-4 px-4 text-[10px] font-bold text-secondary-dark uppercase tracking-widest w-[20%]">Department</th>
+              <th className="py-4 px-4 text-[10px] font-bold text-secondary-dark uppercase tracking-widest w-[25%]">Role</th>
               <th className="py-4 px-4 text-[10px] font-bold text-secondary-dark uppercase tracking-widest w-[20%]">Last Active</th>
               <th className="py-4 px-4 text-[10px] font-bold text-secondary-dark uppercase tracking-widest text-right w-[10%]">Actions</th>
             </tr>
@@ -82,9 +81,6 @@ export function UserTable({ filters, onEdit, onRemove }: UserTableProps) {
                     )}>
                       {user.role}
                     </span>
-                  </td>
-                  <td className="py-4 px-4">
-                    <span className="text-xs font-semibold text-secondary-dark">{user.department || '-'}</span>
                   </td>
                   <td className="py-4 px-4">
                     <span className="text-xs font-medium text-secondary-light">{user.lastActive || '-'}</span>

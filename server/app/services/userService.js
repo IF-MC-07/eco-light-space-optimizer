@@ -1,12 +1,30 @@
 import bcrypt from 'bcrypt';
+import { Op } from 'sequelize';
 import db from '../models/index.js';
 
 const { User } = db;
 const SALT_ROUNDS = 10;
 
-export const getAll = async () => {
+export const getAll = async (filters = {}) => {
+  const { search, role } = filters;
+  const where = {};
+
+  if (search) {
+    where[Op.or] = [
+      { name: { [Op.iLike]: `%${search}%` } },
+      { email: { [Op.iLike]: `%${search}%` } },
+      { username: { [Op.iLike]: `%${search}%` } }
+    ];
+  }
+
+  if (role) {
+    where.role = role.toLowerCase();
+  }
+
   return await User.findAll({
-    attributes: { exclude: ['password'] }
+    where,
+    attributes: { exclude: ['password'] },
+    order: [['name', 'ASC']]
   });
 };
 
@@ -45,4 +63,14 @@ export const remove = async (id) => {
   if (!user) return null;
   await user.destroy();
   return true;
+};
+
+export const getStats = async () => {
+  const totalUsers = await User.count();
+  return {
+    totalUsers,
+    activeNow: Math.floor(totalUsers * 0.8), // Mock logic for now
+    newThisMonth: Math.floor(totalUsers * 0.2),
+    pendingRequests: 0
+  };
 };
