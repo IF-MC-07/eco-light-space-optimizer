@@ -1,9 +1,11 @@
+import { generateCustomId } from '../utils/idGenerator.js';
+
 export default (sequelize, DataTypes) => {
   const Room = sequelize.define('Room', {
     room_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING(30),
       primaryKey: true,
-      autoIncrement: true
+      defaultValue: () => generateCustomId('ROM')
     },
     room_name: {
       type: DataTypes.STRING(100),
@@ -17,7 +19,7 @@ export default (sequelize, DataTypes) => {
     },
     status: {
       type: DataTypes.STRING(20),
-      defaultValue: 'aktif'
+      defaultValue: 'ACTIVE'
     }
   }, {
     tableName: 'rooms',

@@ -14,7 +14,7 @@ export function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [department, setDepartment] = useState("");
-  const [role, setRole] = useState<UserRole | string>(UserRole.MANAGER);
+  const [role, setRole] = useState<UserRole | string>(UserRole.USER);
 
   const { mutate: createUser, isPending, isLoading, error } = useCreateUser();
   const loading = isPending || isLoading;
@@ -31,7 +31,7 @@ export function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
           setName("");
           setEmail("");
           setDepartment("");
-          setRole(UserRole.MANAGER);
+          setRole(UserRole.USER);
         },
       }
     );
@@ -132,34 +132,19 @@ export function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
               <p className={cn("text-[10px]", role === UserRole.ADMIN ? "text-white/80" : "text-secondary-light")}>Full system control.</p>
             </div>
 
-            {/* Manager/Editor */}
-            <div 
-              onClick={() => setRole(UserRole.MANAGER)}
-              className={cn(
-                "p-4 rounded-xl cursor-pointer transition-all border border-transparent",
-                role === UserRole.MANAGER ? "bg-primary-dark text-white shadow-md" : "bg-[#F8FAFC] hover:bg-[#F1F5F9] text-secondary-dark"
-              )}
-            >
-              <div className="flex items-center space-x-2 mb-2">
-                <EditIcon className="w-5 h-5" />
-                <h4 className="font-bold">Manager</h4>
-              </div>
-              <p className={cn("text-[10px]", role === UserRole.MANAGER ? "text-primary" : "text-secondary-light")}>Can manage devices.</p>
-            </div>
-
             {/* Viewer */}
             <div 
-              onClick={() => setRole(UserRole.VIEWER)}
+              onClick={() => setRole(UserRole.USER)}
               className={cn(
                 "p-4 rounded-xl cursor-pointer transition-all border border-transparent",
-                role === UserRole.VIEWER ? "bg-primary-dark text-white shadow-md" : "bg-[#F8FAFC] hover:bg-[#F1F5F9] text-secondary-dark"
+                role === UserRole.USER ? "bg-primary-dark text-white shadow-md" : "bg-[#F8FAFC] hover:bg-[#F1F5F9] text-secondary-dark"
               )}
             >
               <div className="flex items-center space-x-2 mb-2">
                 <Eye className="w-5 h-5" />
                 <h4 className="font-bold">Viewer</h4>
               </div>
-              <p className={cn("text-[10px]", role === UserRole.VIEWER ? "text-white/80" : "text-secondary-light")}>Read-only analytics.</p>
+              <p className={cn("text-[10px]", role === UserRole.USER ? "text-white/80" : "text-secondary-light")}>Read-only analytics.</p>
             </div>
           </div>
         </div>

@@ -63,7 +63,7 @@ export function UserTable({ filters, onEdit, onRemove }: UserTableProps) {
               </tr>
             ) : (
               users.map((user, idx) => (
-                <tr key={user.id} className={cn("group transition-colors hover:bg-neutral-border/20", idx !== users.length - 1 && "border-b border-neutral-border/50")}>
+                <tr key={user.id || user.user_id || idx} className={cn("group transition-colors hover:bg-neutral-border/20", idx !== users.length - 1 && "border-b border-neutral-border/50")}>
                   <td className="py-4 px-4">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 rounded-full bg-secondary-dark text-white flex items-center justify-center text-sm font-bold shadow-sm shrink-0">
@@ -92,14 +92,14 @@ export function UserTable({ filters, onEdit, onRemove }: UserTableProps) {
                   <td className="py-4 px-4 text-right">
                     <div className="flex items-center justify-end space-x-3">
                       <button 
-                        onClick={() => onEdit?.(user.id)}
+                        onClick={() => onEdit?.(user.id || String(user.user_id))}
                         className="text-secondary-light hover:text-secondary-dark transition-colors" 
                         title="Edit User"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button 
-                        onClick={() => onRemove?.(user.id)}
+                        onClick={() => onRemove?.(user.id || String(user.user_id))}
                         className="text-[#DC2626]/70 hover:text-[#DC2626] transition-colors" 
                         title="Remove User"
                       >

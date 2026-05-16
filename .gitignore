@@ -19,6 +19,9 @@ server/**/__pycache__/
 server/*.pyc
 server/.env
 server/alembic/versions/*.py
+server/scratch_check_db.js
+server/fix_all_tables.js
+server/fix_rooms_table.js
 
 
 # ─── SERVICE AI ─────────────────────────────────────────────

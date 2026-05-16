@@ -1,27 +1,27 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Share2, Leaf } from "lucide-react";
+import { Leaf } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
-import { useUpdateDevice } from "../hooks";
-import { Device, DeviceType, DeviceStatus } from "../types";
+import { useUpdateDevice } from "../../iot-device/hooks";
+import { IotDevice } from "../../iot-device/types";
 
 interface EditDeviceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  device?: Device;
+  device?: IotDevice;
 }
 
 export function EditDeviceModal({ isOpen, onClose, device }: EditDeviceModalProps) {
   const [name, setName] = useState("");
-  const [type, setType] = useState<string>(DeviceType.LIGHTING);
-  const [status, setStatus] = useState<string>(DeviceStatus.ONLINE);
+  const [type, setType] = useState<string>("LIGHT");
+  const [status, setStatus] = useState<string>("ACTIVE");
 
   const { mutate: updateDevice, isPending, error } = useUpdateDevice();
 
   useEffect(() => {
     if (device) {
-      setName(device.name);
-      setType(device.type);
+      setName(device.device_name);
+      setType(device.device_type);
       setStatus(device.status);
     }
   }, [device]);
@@ -29,7 +29,10 @@ export function EditDeviceModal({ isOpen, onClose, device }: EditDeviceModalProp
   const handleUpdate = () => {
     if (!device) return;
     updateDevice(
-      { id: device.id, payload: { name, type, status } },
+      { 
+        id: device.device_id, 
+        payload: { device_name: name, device_type: type, status } 
+      },
       {
         onSuccess: () => {
           onClose();
@@ -59,7 +62,6 @@ export function EditDeviceModal({ isOpen, onClose, device }: EditDeviceModalProp
             </div>
           )}
 
-          {/* Device Name */}
           <div className="space-y-2">
             <label className="text-sm font-bold text-secondary-dark">Device Name</label>
             <input 
@@ -70,7 +72,6 @@ export function EditDeviceModal({ isOpen, onClose, device }: EditDeviceModalProp
             />
           </div>
 
-          {/* Category */}
           <div className="space-y-2">
             <label className="text-sm font-bold text-secondary-dark">Category</label>
             <div className="relative">
@@ -79,11 +80,10 @@ export function EditDeviceModal({ isOpen, onClose, device }: EditDeviceModalProp
                 onChange={(e) => setType(e.target.value)}
                 className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-dark focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3.5 appearance-none cursor-pointer"
               >
-                <option value={DeviceType.LIGHTING}>Lighting</option>
-                <option value={DeviceType.AC}>Climate Control</option>
-                <option value={DeviceType.SENSOR}>Sensor</option>
-                <option value={DeviceType.CAMERA}>Camera</option>
-                <option value={DeviceType.OTHER}>Other</option>
+                <option value="LIGHT">Lighting</option>
+                <option value="AC">Climate Control</option>
+                <option value="SENSOR">Sensor</option>
+                <option value="CAMERA">Camera</option>
               </select>
               <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-secondary-dark">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -91,21 +91,6 @@ export function EditDeviceModal({ isOpen, onClose, device }: EditDeviceModalProp
             </div>
           </div>
 
-          {/* Network ID */}
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-secondary-dark">Network / IP</label>
-            <div className="w-full bg-[#F8FAFC] border border-neutral-border/50 rounded-lg flex items-center justify-between px-4 py-3.5">
-              <div className="flex items-center space-x-3 text-primary-dark font-bold">
-                <Share2 className="w-5 h-5" />
-                <span className="text-sm">{device.ipAddress || "#SP-NET-9928-VX"}</span>
-              </div>
-              <span className="text-[10px] font-bold text-secondary-dark uppercase tracking-widest bg-secondary-light/20 px-2.5 py-1 rounded">
-                SYSTEM-LOCKED
-              </span>
-            </div>
-          </div>
-
-          {/* Status Toggle (Manual Override) */}
           <div className="space-y-2">
             <label className="text-sm font-bold text-secondary-dark">Device Status</label>
             <div className="relative">
@@ -114,9 +99,9 @@ export function EditDeviceModal({ isOpen, onClose, device }: EditDeviceModalProp
                 onChange={(e) => setStatus(e.target.value)}
                 className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-dark focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3.5 appearance-none cursor-pointer"
               >
-                <option value={DeviceStatus.ONLINE}>Online</option>
-                <option value={DeviceStatus.OFFLINE}>Offline</option>
-                <option value={DeviceStatus.ERROR}>Error / Maintenance</option>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+                <option value="OFFLINE">Offline</option>
               </select>
               <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-secondary-dark">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -124,21 +109,19 @@ export function EditDeviceModal({ isOpen, onClose, device }: EditDeviceModalProp
             </div>
           </div>
 
-          {/* Energy Compliance Box */}
           <div className="bg-[#F0FDF4]/50 border border-[#bbf7d0] rounded-xl p-4 flex space-x-3 mt-4">
             <div className="mt-0.5">
               <Leaf className="w-5 h-5 text-primary-dark" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-primary-dark mb-1">Energy Compliance</h4>
+              <h4 className="text-sm font-bold text-primary-dark mb-1">Device Operational</h4>
               <p className="text-xs text-secondary-dark leading-relaxed">
-                This device is currently contributing to a 12% reduction in regional energy waste.
+                Changes will be synced to the IoT network immediately.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Footer Actions */}
         <div className="flex items-center justify-end space-x-6 mt-10">
           <button 
             onClick={onClose}

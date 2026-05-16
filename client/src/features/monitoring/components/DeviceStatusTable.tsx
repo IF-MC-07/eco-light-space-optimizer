@@ -4,19 +4,19 @@ import { DoorOpen, MoreVertical } from 'lucide-react';
 import { RoleGuard } from '../../../components/auth/RoleGuard';
 
 const roomsData = [
-  { id: 1, name: 'Room 701', lightActive: true, acActive: true, temp: '23', actionState: true },
-  { id: 2, name: 'Room 701', lightActive: true, acActive: true, temp: 'Active', actionState: true },
-  { id: 3, name: 'Room 801', lightActive: false, acActive: false, temp: 'Off', actionState: false },
-  { id: 4, name: 'Room 701', lightActive: true, acActive: true, temp: '20', actionState: true },
-  { id: 5, name: 'Room 701', lightActive: true, acActive: true, temp: '21', actionState: true },
-  { id: 6, name: 'Room 801', lightActive: false, acActive: false, temp: 'Off', actionState: false },
-  { id: 7, name: 'Room 801', lightActive: false, acActive: false, temp: 'Off', actionState: false },
+  { id: 'ROM-701-1', name: 'Room 701', lightActive: true, acActive: true, temp: '23', actionState: true },
+  { id: 'ROM-701-2', name: 'Room 701', lightActive: true, acActive: true, temp: 'Active', actionState: true },
+  { id: 'ROM-801-1', name: 'Room 801', lightActive: false, acActive: false, temp: 'Off', actionState: false },
+  { id: 'ROM-701-3', name: 'Room 701', lightActive: true, acActive: true, temp: '20', actionState: true },
+  { id: 'ROM-701-4', name: 'Room 701', lightActive: true, acActive: true, temp: '21', actionState: true },
+  { id: 'ROM-801-2', name: 'Room 801', lightActive: false, acActive: false, temp: 'Off', actionState: false },
+  { id: 'ROM-801-3', name: 'Room 801', lightActive: false, acActive: false, temp: 'Off', actionState: false },
 ];
 
 export function DeviceStatusTable() {
   const [rooms, setRooms] = useState(roomsData);
 
-  const toggleRoom = (id: number) => {
+  const toggleRoom = (id: string) => {
     setRooms(rooms.map(room => room.id === id ? { ...room, actionState: !room.actionState } : room));
   };
 

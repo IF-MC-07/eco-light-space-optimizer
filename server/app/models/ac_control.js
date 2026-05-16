@@ -1,12 +1,14 @@
+import { generateCustomId } from '../utils/idGenerator.js';
+
 export default (sequelize, DataTypes) => {
   const AcControl = sequelize.define('AcControl', {
     ac_control_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING(30),
       primaryKey: true,
-      autoIncrement: true
+      defaultValue: () => generateCustomId('ACC')
     },
     room_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING(30),
       allowNull: true,
       references: {
         model: 'rooms',
@@ -14,7 +16,7 @@ export default (sequelize, DataTypes) => {
       }
     },
     device_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING(30),
       allowNull: true,
       references: {
         model: 'iot_devices',

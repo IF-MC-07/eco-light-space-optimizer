@@ -13,6 +13,7 @@ import automationScheduleModel from './automation_schedule.js';
 import detectionLogModel from './detection_log.js';
 import lightControlModel from './light_control.js';
 import acControlModel from './ac_control.js';
+import activityLogModel from './activity_log.js';
 
 // Inisialisasi model
 const db = {
@@ -26,7 +27,8 @@ const db = {
   AutomationSchedule: automationScheduleModel(sequelize, DataTypes),
   DetectionLog: detectionLogModel(sequelize, DataTypes),
   LightControl: lightControlModel(sequelize, DataTypes),
-  AcControl: acControlModel(sequelize, DataTypes)
+  AcControl: acControlModel(sequelize, DataTypes),
+  ActivityLog: activityLogModel(sequelize, DataTypes)
 };
 
 // Jalankan asosiasi model jika ada

@@ -5,14 +5,20 @@ import { SavingsTrendChart } from '../../../features/savings/components/SavingsT
 import { SavingsBreakdownTable } from '../../../features/savings/components/SavingsBreakdownTable';
 import { YoYComparison } from '../../../features/savings/components/YoYComparison';
 import { KeyAchievements } from '../../../features/savings/components/KeyAchievements';
+import { ExportReportModal } from '../../../features/dashboard/components/ExportReportModal';
 
 export default function SavingsReport() {
   const [activeTab, setActiveTab] = useState('Monthly');
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   return (
     <div className="flex flex-col space-y-6 w-full max-w-6xl mx-auto">
       {/* Top Section */}
-      <SavingsHeader activeTab={activeTab} setActiveTab={setActiveTab} />
+      <SavingsHeader 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        onExport={() => setIsExportModalOpen(true)}
+      />
 
       {/* Stats Cards */}
       <SavingsStats />
@@ -31,6 +37,13 @@ export default function SavingsReport() {
           <KeyAchievements />
         </div>
       </div>
+
+      {/* Modals */}
+      <ExportReportModal 
+        isOpen={isExportModalOpen} 
+        onClose={() => setIsExportModalOpen(false)} 
+        reportType="savings"
+      />
     </div>
   );
 }

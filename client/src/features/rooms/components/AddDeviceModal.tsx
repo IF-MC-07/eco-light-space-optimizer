@@ -1,9 +1,8 @@
 "use client";
 import React, { useState } from "react";
-import { X, QrCode, MapPin, Info, MonitorSpeaker } from "lucide-react";
+import { X, QrCode, Info, MonitorSpeaker } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
-import { useCreateDevice } from "../hooks";
-import { DeviceType } from "../types";
+import { useCreateDevice } from "../../iot-device/hooks";
 
 interface AddDeviceModalProps {
   isOpen: boolean;
@@ -13,24 +12,25 @@ interface AddDeviceModalProps {
 
 export function AddDeviceModal({ isOpen, onClose, roomId }: AddDeviceModalProps) {
   const [name, setName] = useState("");
-  const [type, setType] = useState<string>(DeviceType.LIGHTING);
-  const [ipAddress, setIpAddress] = useState("");
-  const [macAddress, setMacAddress] = useState("");
+  const [type, setType] = useState<string>("LIGHT");
 
   const { mutate: createDevice, isPending, error } = useCreateDevice();
 
   const handleClose = () => {
     setName("");
-    setType(DeviceType.LIGHTING);
-    setIpAddress("");
-    setMacAddress("");
+    setType("LIGHT");
     onClose();
   };
 
   const handleCreate = () => {
     if (!roomId) return;
     createDevice(
-      { roomId, name, type, ipAddress, macAddress },
+      { 
+        room_id: roomId, 
+        device_name: name, 
+        device_type: type, 
+        status: 'ACTIVE' 
+      },
       {
         onSuccess: () => {
           handleClose();
@@ -52,7 +52,7 @@ export function AddDeviceModal({ isOpen, onClose, roomId }: AddDeviceModalProps)
           <div>
             <h2 className="font-heading text-2xl font-bold text-secondary-dark mb-1">Add New Device</h2>
             <p className="text-secondary-light text-sm leading-relaxed max-w-[320px]">
-              Integrate a new hardware endpoint into the Arboretum ecosystem. Ensure the serial number matches the manufacturer label.
+              Integrate a new hardware endpoint into the ecosystem.
             </p>
           </div>
           <button 
@@ -70,84 +70,46 @@ export function AddDeviceModal({ isOpen, onClose, roomId }: AddDeviceModalProps)
             </div>
           )}
 
-          {/* Device Name */}
           <div className="space-y-2">
             <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">Device Name</label>
             <input 
               type="text" 
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Lobby South Chiller"
+              placeholder="e.g. Room Light 1"
               className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-dark placeholder-secondary-light focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3.5"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            {/* Device Type */}
-            <div className="space-y-2">
-              <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">Device Type</label>
-              <div className="relative">
-                <select 
-                  value={type}
-                  onChange={(e) => setType(e.target.value)}
-                  className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-dark focus:outline-none focus:ring-2 focus:ring-primary/50 pl-4 pr-10 py-3.5 appearance-none cursor-pointer"
-                >
-                  <option value={DeviceType.LIGHTING}>Lighting</option>
-                  <option value={DeviceType.AC}>Climate (AC)</option>
-                  <option value={DeviceType.SENSOR}>Sensor</option>
-                  <option value={DeviceType.CAMERA}>Camera</option>
-                  <option value={DeviceType.OTHER}>Other</option>
-                </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-secondary-dark">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                </div>
-              </div>
-            </div>
-
-            {/* IP Address */}
-            <div className="space-y-2">
-              <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">IP Address</label>
-              <div className="relative">
-                <input 
-                  type="text" 
-                  value={ipAddress}
-                  onChange={(e) => setIpAddress(e.target.value)}
-                  placeholder="192.168.1.x"
-                  className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-dark placeholder-secondary-light focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3.5"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* MAC Address (Serial Number mapping) */}
           <div className="space-y-2">
-            <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">MAC / Serial Number</label>
+            <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">Device Type</label>
             <div className="relative">
-              <input 
-                type="text" 
-                value={macAddress}
-                onChange={(e) => setMacAddress(e.target.value)}
-                placeholder="XX:XX:XX:XX:XX:XX"
-                className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-light placeholder-secondary-light/50 focus:outline-none focus:ring-2 focus:ring-primary/50 pl-4 pr-12 py-3.5"
-              />
-              <button className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8492a6] hover:text-primary-dark transition-colors">
-                <QrCode className="w-5 h-5" />
-              </button>
+              <select 
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-dark focus:outline-none focus:ring-2 focus:ring-primary/50 pl-4 pr-10 py-3.5 appearance-none cursor-pointer"
+              >
+                <option value="LIGHT">Lighting</option>
+                <option value="AC">Climate (AC)</option>
+                <option value="SENSOR">Sensor</option>
+                <option value="CAMERA">Camera</option>
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-secondary-dark">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+              </div>
             </div>
           </div>
 
-          {/* Info Box */}
           <div className="bg-[#F8FAFC] rounded-xl p-4 flex space-x-3 mt-4 border border-neutral-border/40">
             <div className="mt-0.5">
               <Info className="w-5 h-5 text-primary-dark" />
             </div>
             <p className="text-xs text-secondary-light leading-relaxed">
-              New devices are automatically added to the <strong className="text-secondary-dark">Real-time Flow Monitor</strong>. Baseline energy consumption will be calibrated over the next 24 hours.
+              New devices are automatically registered and can be configured for automation.
             </p>
           </div>
         </div>
 
-        {/* Footer Actions */}
         <div className="px-8 py-8 bg-white flex items-center justify-end space-x-8 mt-2">
           <button 
             onClick={handleClose}

@@ -1,12 +1,14 @@
+import { generateCustomId } from '../utils/idGenerator.js';
+
 export default (sequelize, DataTypes) => {
   const Camera = sequelize.define('Camera', {
     camera_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING(30),
       primaryKey: true,
-      autoIncrement: true
+      defaultValue: () => generateCustomId('CAM')
     },
     room_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING(30),
       allowNull: true,
       references: {
         model: 'rooms',

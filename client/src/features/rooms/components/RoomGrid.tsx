@@ -2,14 +2,19 @@
 import React, { useState } from 'react';
 import { RoomCard } from './RoomCard';
 import { RoomSummaryModal } from './RoomSummaryModal';
-import { RoomFilters } from '../types';
-import { MOCK_ROOMS } from '../../../mocks/roomData';
+import { Room } from '../types';
 
-export function RoomGrid({ filters }: { filters?: RoomFilters }) {
-  const rooms = MOCK_ROOMS;
-  
-  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
-  const selectedRoom = rooms.find(r => r.id === selectedRoomId) ?? null;
+export function RoomGrid({ rooms, isLoading, isError, onDeleteRoom }: { 
+  rooms: Room[], 
+  isLoading: boolean, 
+  isError: boolean,
+  onDeleteRoom?: (room: Room) => void 
+}) {
+  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
+  const selectedRoom = rooms.find(r => r.room_id === selectedRoomId) ?? null;
+
+  if (isLoading) return <div className="text-center py-10">Loading rooms...</div>;
+  if (isError) return <div className="text-center py-10 text-red-500">Error loading rooms.</div>;
 
   return (
     <div className="w-full">
@@ -19,9 +24,10 @@ export function RoomGrid({ filters }: { filters?: RoomFilters }) {
         ) : (
           rooms.map(room => (
             <RoomCard 
-              key={room.id} 
-              room={room as any} 
-              onClick={() => setSelectedRoomId(room.id)}
+              key={room.room_id} 
+              room={room} 
+              onClick={() => setSelectedRoomId(room.room_id)}
+              onDelete={onDeleteRoom ? () => onDeleteRoom(room) : undefined}
             />
           ))
         )}

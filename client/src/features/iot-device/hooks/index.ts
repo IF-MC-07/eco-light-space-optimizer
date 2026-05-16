@@ -1,57 +1,49 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import * as api from '../api';
+import { iotDeviceApi } from '../api';
+import { IotDevice } from '../types';
 
-export const iotDeviceKeys = {
-  all: ['iot-device'] as const,
-  lists: () => [...iotDeviceKeys.all, 'list'] as const,
-  list: (params?: any) => [...iotDeviceKeys.lists(), params] as const,
-  details: () => [...iotDeviceKeys.all, 'detail'] as const,
-  detail: (id: string) => [...iotDeviceKeys.details(), id] as const,
-};
-
-// --- IoT Device Hooks ---
-export const useIoTDeviceList = (params?: any) => {
+export const useDevices = (roomId?: string) => {
   return useQuery({
-    queryKey: iotDeviceKeys.list(params),
-    queryFn: () => api.getIoTDevices(params),
+    queryKey: ['iot-devices', 'list', roomId],
+    queryFn: () => iotDeviceApi.getAll(roomId),
   });
 };
 
-export const useIoTDeviceDetail = (id: string) => {
+export const useDevice = (id: string) => {
   return useQuery({
-    queryKey: iotDeviceKeys.detail(id),
-    queryFn: () => api.getIoTDeviceById(id),
+    queryKey: ['iot-devices', 'detail', id],
+    queryFn: () => iotDeviceApi.getById(id),
     enabled: !!id,
   });
 };
 
-export const useCreateIoTDevice = () => {
+export const useCreateDevice = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: api.createIoTDevice,
+    mutationFn: (payload: Partial<IotDevice>) => iotDeviceApi.create(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: iotDeviceKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ['iot-devices'] });
     },
   });
 };
 
-export const useUpdateIoTDevice = () => {
+export const useUpdateDevice = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => api.updateIoTDevice(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: iotDeviceKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: iotDeviceKeys.detail(variables.id) });
+    mutationFn: ({ id, payload }: { id: string; payload: Partial<IotDevice> }) => 
+      iotDeviceApi.update(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['iot-devices'] });
     },
   });
 };
 
-export const useDeleteIoTDevice = () => {
+export const useRemoveDevice = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: api.deleteIoTDevice,
+    mutationFn: (id: string) => iotDeviceApi.remove(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: iotDeviceKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ['iot-devices'] });
     },
   });
 };

@@ -5,9 +5,10 @@ import { Calendar, Download } from 'lucide-react';
 interface SavingsHeaderProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  onExport?: () => void;
 }
 
-export function SavingsHeader({ activeTab, setActiveTab }: SavingsHeaderProps) {
+export function SavingsHeader({ activeTab, setActiveTab, onExport }: SavingsHeaderProps) {
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center p-1 bg-neutral rounded-lg border border-neutral-border">
@@ -30,7 +31,7 @@ export function SavingsHeader({ activeTab, setActiveTab }: SavingsHeaderProps) {
           <Calendar className="w-4 h-4 mr-2 text-secondary" />
           June 2024
         </div>
-        <Button variant="primary">
+        <Button variant="primary" onClick={onExport}>
           <Download className="w-4 h-4 mr-2" />
           Export PDF
         </Button>

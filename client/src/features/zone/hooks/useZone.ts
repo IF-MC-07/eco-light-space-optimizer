@@ -3,9 +3,9 @@ import { Zone } from '@/types';
 import { getZoneByCamera, saveZone as apiSaveZone, deleteZone as apiDeleteZone } from '../api/zoneApi';
 import { MOCK_ZONES } from '@/mocks/zoneData';
 
-export const useZone = (cameraId: number) => {
+export const useZone = (cameraId: string) => {
   const [zonas, setZonas] = useState<Zone[]>([]);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
@@ -37,20 +37,20 @@ export const useZone = (cameraId: number) => {
     const newZona: Zone = {
       ...zona,
       camera_id: cameraId,
-      // Create a temporary negative ID for new zones before they are saved to DB
-      zone_id: -Date.now()
+      // Create a temporary string ID for new zones before they are saved to DB
+      zone_id: `TEMP-${Date.now()}`
     };
     setZonas(prev => [...prev, newZona]);
     setSelectedId(newZona.zone_id!);
   };
 
-  const updateZona = (id: number, changes: Partial<Zone>) => {
+  const updateZona = (id: string, changes: Partial<Zone>) => {
     setZonas(prev => prev.map(z => z.zone_id === id ? { ...z, ...changes } : z));
   };
 
-  const deleteZone = async (id: number) => {
-    // If it's a temporary zone (negative ID), just remove from state
-    if (id < 0) {
+  const deleteZone = async (id: string) => {
+    // If it's a temporary zone (TEMP- prefix), just remove from state
+    if (id.startsWith('TEMP-')) {
       setZonas(prev => prev.filter(z => z.zone_id !== id));
       if (selectedId === id) setSelectedId(null);
       return;
@@ -65,13 +65,13 @@ export const useZone = (cameraId: number) => {
     }
   };
 
-  const selectZona = (id: number) => {
+  const selectZona = (id: string) => {
     setSelectedId(id);
   };
   const clearAll = async () => {
     try {
-      // Pisahkan zona yang sudah ada di DB (id positif) vs zona temporary (id negatif)
-      const savedZonas = zonas.filter(z => z.zone_id && z.zone_id > 0);
+      // Pisahkan zona yang sudah ada di DB (bukan TEMP-) vs zona temporary
+      const savedZonas = zonas.filter(z => z.zone_id && !z.zone_id.startsWith('TEMP-'));
 
       // Hapus semua zona yang ada di DB secara paralel
       await Promise.all(savedZonas.map(z => apiDeleteZone(z.zone_id!)));
@@ -88,9 +88,9 @@ export const useZone = (cameraId: number) => {
     setIsSaving(true);
     try {
       const payload: Partial<Zone>[] = zonas.map(z => {
-        // Strip out the temporary negative zone_id for new entries
+        // Strip out the temporary zone_id for new entries
         const { zone_id, ...rest } = z;
-        return (zone_id && zone_id > 0) ? { zone_id, ...rest } : rest;
+        return (zone_id && !zone_id.startsWith('TEMP-')) ? { zone_id, ...rest } : rest;
       });
 
       await apiSaveZone(payload);

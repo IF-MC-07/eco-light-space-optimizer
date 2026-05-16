@@ -2,6 +2,7 @@ import express from 'express';
 import routes from './routes/index.js';
 import { corsMiddleware } from './middlewares/cors.middleware.js';
 import { errorHandler } from './middlewares/errorHandler.middleware.js';
+import { activityLogger } from './middlewares/activityLogger.middleware.js';
 
 import cookieParser from 'cookie-parser';
 
@@ -11,6 +12,7 @@ app.use(corsMiddleware);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(activityLogger);
 
 app.use('/api', routes);
 

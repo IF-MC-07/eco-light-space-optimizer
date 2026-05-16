@@ -17,8 +17,8 @@ export interface Room {
 }
 
 export interface Zone {
-  zone_id?: number;
-  camera_id: number;
+  zone_id?: string;
+  camera_id: string;
   zone_name: string;
   x1_pct: number;
   y1_pct: number;

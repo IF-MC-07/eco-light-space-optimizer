@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { DashboardStats } from "../../../features/dashboard/components/DashboardStats";
 import { EnergyTrendsChart } from "../../../features/dashboard/components/EnergyTrendsChart";
 import { SystemHealth } from "../../../features/dashboard/components/SystemHealth";
@@ -7,7 +7,10 @@ import { QuickActions } from "../../../features/dashboard/components/QuickAction
 import { ActivityFeed } from "../../../features/dashboard/components/ActivityFeed";
 import { RoleGuard } from "../../../components/auth/RoleGuard";
 
+
 export default function Dashboard() {
+
+
   return (
     <div className="flex flex-col space-y-6 w-full max-w-6xl mx-auto pb-10 mt-10">
       
@@ -38,6 +41,9 @@ export default function Dashboard() {
       <div className="w-full">
         <ActivityFeed />
       </div>
+
+      {/* Modals */}
+
 
     </div>
   );

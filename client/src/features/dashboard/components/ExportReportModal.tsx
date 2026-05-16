@@ -2,18 +2,58 @@ import React, { useState } from "react";
 import { X, Download, Calendar, Check } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
 import { cn } from "../../../lib/utils";
+import { serverAPI } from "../../../lib/api";
 
 interface ExportReportModalProps {
   isOpen: boolean;
   onClose: () => void;
+  reportType?: 'dashboard' | 'energy' | 'savings' | 'rooms' | 'users' | 'devices';
 }
 
-export function ExportReportModal({ isOpen, onClose }: ExportReportModalProps) {
+export function ExportReportModal({ isOpen, onClose, reportType = 'dashboard' }: ExportReportModalProps) {
   const [format, setFormat] = useState<"PDF" | "CSV" | "EXCEL">("PDF");
-  const [includeCharts, setIncludeCharts] = useState(true);
-  const [includeRoomBreakdown, setIncludeRoomBreakdown] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleDownload = async () => {
+    setIsDownloading(true);
+    const formatQuery = format === 'EXCEL' ? 'xlsx' : format.toLowerCase();
+    let endpoint = '';
+    
+    switch (reportType) {
+      case 'dashboard': endpoint = '/export/dashboard-summary'; break;
+      case 'energy': endpoint = '/export/energy-logs'; break;
+      case 'savings': endpoint = '/export/savings-report'; break;
+      case 'rooms': endpoint = '/export/rooms'; break;
+      case 'users': endpoint = '/export/users'; break;
+      case 'devices': endpoint = '/export/devices'; break;
+      default: endpoint = '/export/dashboard-summary';
+    }
+
+    try {
+      const response = await serverAPI.get(endpoint, {
+        params: { format: formatQuery },
+        responseType: 'blob'
+      });
+
+      const blob = new Blob([response.data], { type: response.headers['content-type'] });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${reportType}_report_${new Date().toISOString().split('T')[0]}.${formatQuery}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      onClose();
+    } catch (error) {
+      console.error('Download failed', error);
+      alert('Failed to export report. Please try again.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4">
@@ -59,82 +99,14 @@ export function ExportReportModal({ isOpen, onClose }: ExportReportModalProps) {
             </div>
           </div>
 
-          {/* Date Range */}
-          <div>
-            <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest block mb-3">Date Range</label>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <span className="text-[10px] text-secondary-dark font-semibold">Start Date</span>
-                <div className="relative">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-secondary-dark">
-                    <Calendar className="w-4 h-4" />
-                  </div>
-                  <input 
-                    type="text" 
-                    defaultValue="Aug 01, 2023"
-                    className="w-full bg-[#E2E8F0] border-none rounded-lg text-sm font-semibold text-secondary-dark focus:outline-none pl-10 pr-4 py-3"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <span className="text-[10px] text-secondary-dark font-semibold">End Date</span>
-                <div className="relative">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-secondary-dark">
-                    <Calendar className="w-4 h-4" />
-                  </div>
-                  <input 
-                    type="text" 
-                    defaultValue="Aug 31, 2023"
-                    className="w-full bg-[#E2E8F0] border-none rounded-lg text-sm font-semibold text-secondary-dark focus:outline-none pl-10 pr-4 py-3"
-                  />
-                </div>
-              </div>
-            </div>
+          <div className="bg-[#F8FAFC] rounded-xl p-4 flex space-x-3 mt-4 border border-neutral-border/40">
+            <Check className="w-5 h-5 text-primary-dark mt-0.5" />
+            <p className="text-xs text-secondary-light leading-relaxed">
+              Exporting <strong className="text-secondary-dark capitalize">{reportType}</strong> data in <strong className="text-secondary-dark">{format}</strong> format.
+            </p>
           </div>
-
-          {/* Inclusions */}
-          <div>
-            <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest block mb-3">Inclusions</label>
-            <div className="space-y-3">
-              {/* Checkbox 1 */}
-              <div 
-                className="bg-[#F8FAFC] rounded-xl p-4 flex items-start space-x-4 cursor-pointer"
-                onClick={() => setIncludeCharts(!includeCharts)}
-              >
-                <div className={cn(
-                  "w-5 h-5 rounded border flex items-center justify-center shrink-0 mt-0.5",
-                  includeCharts ? "bg-primary-dark border-primary-dark" : "border-[#CBD5E1] bg-white"
-                )}>
-                  {includeCharts && <Check className="w-3.5 h-3.5 text-white" />}
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm text-secondary-dark">Include Charts</h4>
-                  <p className="text-xs text-secondary-light">High-resolution visualizations and vitality meters</p>
-                </div>
-              </div>
-
-              {/* Checkbox 2 */}
-              <div 
-                className="bg-[#F8FAFC] rounded-xl p-4 flex items-start space-x-4 cursor-pointer"
-                onClick={() => setIncludeRoomBreakdown(!includeRoomBreakdown)}
-              >
-                <div className={cn(
-                  "w-5 h-5 rounded border flex items-center justify-center shrink-0 mt-0.5",
-                  includeRoomBreakdown ? "bg-primary-dark border-primary-dark" : "border-[#CBD5E1] bg-white"
-                )}>
-                  {includeRoomBreakdown && <Check className="w-3.5 h-3.5 text-white" />}
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm text-secondary-dark">Include Room Breakdown</h4>
-                  <p className="text-xs text-secondary-light">Granular data for individual sectors and rooms</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
         </div>
 
-        {/* Footer Actions */}
         <div className="flex items-center space-x-4 mt-8">
           <button 
             onClick={onClose}
@@ -142,9 +114,13 @@ export function ExportReportModal({ isOpen, onClose }: ExportReportModalProps) {
           >
             Cancel
           </button>
-          <Button className="flex-[2] bg-primary-dark hover:bg-primary text-white py-4 rounded-xl text-sm font-bold transition-colors flex items-center justify-center space-x-2 shadow-sm">
+          <Button 
+            onClick={handleDownload}
+            disabled={isDownloading}
+            className="flex-[2] bg-primary-dark hover:bg-primary text-white py-4 rounded-xl text-sm font-bold transition-colors flex items-center justify-center space-x-2 shadow-sm disabled:opacity-50"
+          >
             <Download className="w-4 h-4" />
-            <span>Download</span>
+            <span>{isDownloading ? "Downloading..." : "Download"}</span>
           </Button>
         </div>
       </div>

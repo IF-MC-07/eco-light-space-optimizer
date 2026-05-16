@@ -1,9 +1,11 @@
+import { generateCustomId } from '../utils/idGenerator.js';
+
 export default (sequelize, DataTypes) => {
   const User = sequelize.define('User', {
     user_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING(30),
       primaryKey: true,
-      autoIncrement: true
+      defaultValue: () => generateCustomId('USR')
     },
     name: {
       type: DataTypes.STRING(100),

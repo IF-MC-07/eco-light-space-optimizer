@@ -4,9 +4,9 @@ import { Progress } from '../../../components/ui/Progress';
 
 export function SystemHealth() {
   return (
-    <Card className="h-full border-transparent shadow-sm">
+    <Card className="min-h-full border-transparent shadow-sm">
       <CardHeader className="pb-4">
-        <CardTitle className="text-[11px] text-secondary font-bold uppercase tracking-widest">System Health</CardTitle>
+        <CardTitle className="text-[11px] text-secondary font-bold uppercase tracking-widest ">System Health</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div>

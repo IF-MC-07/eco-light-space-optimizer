@@ -15,7 +15,7 @@ export function EnergyTrendsChart() {
   const [activeTab, setActiveTab] = useState('Day');
 
   return (
-    <Card className="h-[400px] flex flex-col bg-[#F5F7F5] border-transparent">
+    <Card className="min-h-[400px] flex flex-col bg-[#F5F7F5] border-transparent">
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
         <div>
           <CardTitle className="text-xl text-black font-heading font-bold">Energy Usage Trends</CardTitle>

@@ -1,12 +1,14 @@
+import { generateCustomId } from '../utils/idGenerator.js';
+
 export default (sequelize, DataTypes) => {
   const LightControl = sequelize.define('LightControl', {
     control_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING(30),
       primaryKey: true,
-      autoIncrement: true
+      defaultValue: () => generateCustomId('LGT')
     },
     zone_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING(30),
       allowNull: true,
       references: {
         model: 'zones',
@@ -14,7 +16,7 @@ export default (sequelize, DataTypes) => {
       }
     },
     device_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING(30),
       allowNull: true,
       references: {
         model: 'iot_devices',

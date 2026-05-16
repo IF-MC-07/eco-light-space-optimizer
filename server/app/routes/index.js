@@ -14,6 +14,7 @@ import acControlRoute from './acControlRoute.js';
 import authRoute from './auth.route.js';
 import dashboardRoute from './dashboard.route.js';
 import monitoringRoute from './monitoring.route.js';
+import exportRoute from './exportRoute.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { requireRole } from '../middlewares/role.middleware.js';
 
@@ -33,5 +34,6 @@ router.use('/automation-schedules', authenticate, requireRole('admin'), automati
 router.use('/detection-logs', authenticate, detectionLogRoute);
 router.use('/light-controls', authenticate, requireRole('admin'), lightControlRoute);
 router.use('/ac-controls', authenticate, requireRole('admin'), acControlRoute);
+router.use('/export', authenticate, requireRole('admin'), exportRoute);
 
 export default router;

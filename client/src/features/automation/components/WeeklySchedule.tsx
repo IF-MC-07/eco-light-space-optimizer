@@ -1,7 +1,11 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 
-export function WeeklySchedule() {
+interface WeeklyScheduleProps {
+  onViewFullCalendar?: () => void;
+}
+
+export function WeeklySchedule({ onViewFullCalendar }: WeeklyScheduleProps) {
   const scheduleDays = [
     { day: 'MON', status: 'Active', isHoliday: false },
     { day: 'TUE', status: 'Active', isHoliday: false },
@@ -41,9 +45,12 @@ export function WeeklySchedule() {
         </div>
         
         <div className="flex justify-center">
-          <a href="#" className="text-xs font-bold text-primary hover:text-primary-dark transition-colors">
+          <button 
+            onClick={onViewFullCalendar}
+            className="text-xs font-bold text-primary hover:text-primary-dark transition-colors"
+          >
             View Full Calendar
-          </a>
+          </button>
         </div>
       </CardContent>
     </Card>

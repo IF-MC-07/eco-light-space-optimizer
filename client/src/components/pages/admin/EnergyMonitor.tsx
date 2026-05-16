@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { MonitorStats } from '../../../features/energy-monitor/components/MonitorStats';
 import { RealTimeChart } from '../../../features/energy-monitor/components/RealTimeChart';
 import { BuildingConsumption } from '../../../features/energy-monitor/components/BuildingConsumption';
@@ -6,8 +6,11 @@ import { CurrentStatusBox } from '../../../features/energy-monitor/components/Cu
 import { TopConsumers } from '../../../features/energy-monitor/components/TopConsumers';
 import { UsageAlerts } from '../../../features/energy-monitor/components/UsageAlerts';
 import { Button } from '../../ui/Button';
+import { ExportReportModal } from '../../../features/dashboard/components/ExportReportModal';
 
 export default function EnergyMonitor() {
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+
   return (
     <div className="w-full max-w-6xl mx-auto flex flex-col p-6 md:p-8 space-y-6 mt-5">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
@@ -18,7 +21,11 @@ export default function EnergyMonitor() {
           <Button variant="secondary" className="bg-neutral border-none text-secondary-dark font-bold hover:bg-neutral-border/40 px-4">
             Last 24 Hours
           </Button>
-          <Button variant="secondary" className="bg-neutral border-none text-secondary-dark font-bold hover:bg-neutral-border/40 px-4">
+          <Button 
+            variant="secondary" 
+            className="bg-neutral border-none text-secondary-dark font-bold hover:bg-neutral-border/40 px-4"
+            onClick={() => setIsExportModalOpen(true)}
+          >
             Export Data
           </Button>
         </div>
@@ -36,6 +43,13 @@ export default function EnergyMonitor() {
           <UsageAlerts />
         </div>
       </div>
+
+      {/* Modals */}
+      <ExportReportModal 
+        isOpen={isExportModalOpen} 
+        onClose={() => setIsExportModalOpen(false)} 
+        reportType="energy"
+      />
     </div>
   );
 }

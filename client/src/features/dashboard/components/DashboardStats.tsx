@@ -4,7 +4,7 @@ import { Building, Users, Zap, AlertTriangle } from 'lucide-react';
 
 export function DashboardStats() {
   return (
-    <div className="grid grid-cols-4 gap-6">
+    <div className="grid grid-cols-4 gap-6 min-h-[180px]">
       {/* Total Rooms */}
       <Card>
         <CardContent className="p-6 mt-5">

@@ -6,6 +6,12 @@ export const getAll = async () => {
   return await IotDevice.findAll();
 };
 
+export const getByRoomId = async (room_id) => {
+  return await IotDevice.findAll({
+    where: { room_id }
+  });
+};
+
 export const getById = async (id) => {
   return await IotDevice.findByPk(id);
 };
