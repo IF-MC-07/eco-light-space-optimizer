@@ -6,9 +6,10 @@ import { requireRole } from '../middlewares/role.middleware.js';
 const router = Router();
 
 router.get('/', authenticate, automationScheduleController.getAll);
+router.get('/stats', authenticate, automationScheduleController.getStats);
 router.get('/:id', authenticate, automationScheduleController.getById);
-router.post('/', authenticate, requireRole('admin'), automationScheduleController.create);
-router.put('/:id', authenticate, requireRole('admin'), automationScheduleController.update);
-router.delete('/:id', authenticate, requireRole('admin'), automationScheduleController.remove);
+router.post('/', authenticate, requireRole(['admin']), automationScheduleController.create);
+router.put('/:id', authenticate, requireRole(['admin']), automationScheduleController.update);
+router.delete('/:id', authenticate, requireRole(['admin']), automationScheduleController.remove);
 
 export default router;

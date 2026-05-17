@@ -1,5 +1,5 @@
 import { serverAPI } from '@/lib/api';
-import { Zone } from '@/types';
+import type { Zone } from '@/types';
 
 // --- Zone Endpoints ---
 export const getZones = async (params?: any): Promise<Zone[]> => {

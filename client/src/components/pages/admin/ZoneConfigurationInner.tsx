@@ -7,33 +7,34 @@ import {
   MousePointer2, Info, History, Plus, Database, Pencil 
 } from 'lucide-react';
 import { useZone } from '../../../features/zone/hooks/useZone';
-import type { Canvas, Rect } from 'fabric';
+import { fabric } from 'fabric';
 import { formatDistanceToNow } from 'date-fns';
+import { useMe } from '../../../features/auth/hooks';
 
 export default function ZoneConfiguration() {
   const params = useParams();
   const deviceId = params?.deviceId;
+  const { data: userData } = useMe();
+  const role = userData?.user?.role;
+  const isAdmin = role === 'admin';
 
-  const [selectedCameraId, setSelectedCameraId] = useState<number>(() => {
+  const [selectedCameraId, setSelectedCameraId] = useState<string>(() => {
     if (typeof deviceId === 'string') {
-      // Extract numeric part from string ID (e.g. "d3-cam" -> 3)
-      const numericId = deviceId.replace(/\D/g, '');
-      const parsed = parseInt(numericId);
-      return isNaN(parsed) ? 1 : parsed;
+      return deviceId;
     }
-    return 1;
+    return "1";
   });
   const [mode, setMode] = useState<'draw' | 'edit' | 'preview'>('edit');
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fabricRef = useRef<Canvas | null>(null);
+  const fabricRef = useRef<fabric.Canvas | null>(null);
   const fabricModuleRef = useRef<typeof import('fabric') | null>(null);
   const [fabricLoaded, setFabricLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const isDrawing = useRef(false);
   const originX = useRef(0);
   const originY = useRef(0);
-  const tempRect = useRef<Rect | null>(null);
-  const selectedIdRef = useRef<number | null>(null);
+  const tempRect = useRef<fabric.Rect | null>(null);
+  const selectedIdRef = useRef<string | null>(null);
   const [timeAgo, setTimeAgo] = useState('Belum disimpan');
 
   const {
@@ -254,8 +255,8 @@ export default function ZoneConfiguration() {
               y1_pct: top / ch,
               x2_pct: (left + width) / cw,
               y2_pct: (top + height) / ch,
-              skew_x: tempRect.current.skewX,
-              skew_y: tempRect.current.skewY,
+              skew_x: tempRect.current.skewX ?? 0,
+              skew_y: tempRect.current.skewY ?? 0,
               color: '#4CAF50'
             });
           }
@@ -276,7 +277,7 @@ export default function ZoneConfiguration() {
 
       canvas.on('selection:created', handleSelection);
       canvas.on('selection:updated', handleSelection);
-      canvas.on('selection:cleared', () => selectZona(-1)); // -1 or null
+      canvas.on('selection:cleared', () => selectZona(null)); // -1 or null
 
       canvas.on('object:modified', (e) => {
         const obj = e.target;
@@ -297,8 +298,8 @@ export default function ZoneConfiguration() {
           y1_pct: top / ch,
           x2_pct: (left + width) / cw,
           y2_pct: (top + height) / ch,
-          skew_x: obj.skewX,
-          skew_y: obj.skewY
+          skew_x: obj.skewX ?? 0,
+          skew_y: obj.skewY ?? 0
         });
 
         // reset scale so resizing works predictably next time
@@ -357,11 +358,11 @@ export default function ZoneConfiguration() {
                <select 
                  className="text-sm font-bold text-secondary-dark leading-none outline-none appearance-none bg-transparent"
                  value={selectedCameraId}
-                 onChange={(e) => setSelectedCameraId(Number(e.target.value))}
+                 onChange={(e) => setSelectedCameraId(e.target.value)}
                >
-                 <option value={1}>CCTV North-Entrance-01</option>
-                 <option value={2}>CCTV Main-Lobby-02</option>
-                 <option value={3}>CCTV Room-603-03</option>
+                 <option value="1">CCTV North-Entrance-01</option>
+                 <option value="2">CCTV Main-Lobby-02</option>
+                 <option value="3">CCTV Room-603-03</option>
                </select>
                <ChevronDown size={14} className="text-secondary-light" />
              </div>
@@ -594,6 +595,7 @@ export default function ZoneConfiguration() {
             </div>
           </div>
         </div>
+
       </div>
   );
 }

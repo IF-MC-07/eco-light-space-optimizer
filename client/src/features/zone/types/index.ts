@@ -1,4 +1,4 @@
-import { Zone as GlobalZone } from '@/types';
+import type { Zone as GlobalZone } from '@/types';
 
 export interface Zone extends GlobalZone {
   description?: string;

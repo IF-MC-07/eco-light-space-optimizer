@@ -11,8 +11,8 @@ interface RemoveUserModalProps {
 }
 
 export function RemoveUserModal({ isOpen, onClose, userId, userName = "this user" }: RemoveUserModalProps) {
-  const { mutate: removeUser, isPending, isLoading, error } = useRemoveUser();
-  const loading = isPending || isLoading;
+  const { mutate: removeUser, isPending, error } = useRemoveUser();
+  const loading = isPending;
 
   if (!isOpen) return null;
 

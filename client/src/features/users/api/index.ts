@@ -1,5 +1,5 @@
 import { serverAPI } from '@/lib/api';
-import { User, ApiResponse } from '../types';
+import type { User, ApiResponse, UserStats } from '../types';
 
 export const usersApi = {
   getAll: async (filters?: any): Promise<ApiResponse<User[]>> => {

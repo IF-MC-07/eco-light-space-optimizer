@@ -1,7 +1,14 @@
+"use client";
 import React from 'react';
 import { Card, CardContent } from '../../../components/ui/Card';
+import { useAutomationStats } from '../hooks';
 
 export function EfficiencyVitality() {
+  const { data: response } = useAutomationStats();
+  const stats = response?.data;
+  const rate = stats?.automation_rate ?? 80;
+  const strokeDashoffset = 251.2 * (1 - rate / 100);
+
   return (
     <Card className="bg-[#F8FAFC]">
       <CardContent className="p-6 flex flex-col items-center text-center mt-5">
@@ -18,7 +25,7 @@ export function EfficiencyVitality() {
               r="40"
               fill="transparent"
             ></circle>
-            {/* Progress Circle (80%) */}
+            {/* Progress Circle (dynamic) */}
             <circle
               className="text-primary-dark stroke-current"
               strokeWidth="8"
@@ -28,11 +35,11 @@ export function EfficiencyVitality() {
               r="40"
               fill="transparent"
               strokeDasharray="251.2"
-              strokeDashoffset="50.24" 
+              strokeDashoffset={strokeDashoffset} 
             ></circle>
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <h3 className="text-3xl font-heading font-black text-black">80%</h3>
+            <h3 className="text-3xl font-heading font-black text-black">{rate}%</h3>
             <span className="text-[8px] font-bold text-secondary uppercase tracking-wider mt-0.5">Optimal</span>
           </div>
         </div>

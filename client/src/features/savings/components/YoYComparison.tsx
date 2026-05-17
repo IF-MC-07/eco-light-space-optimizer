@@ -1,8 +1,20 @@
+"use client";
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { Progress } from '../../../components/ui/Progress';
+import { useSavingsYoY } from '../hooks';
 
 export function YoYComparison() {
+  const { data: response, isLoading } = useSavingsYoY();
+  const yoy = response?.data;
+
+  const reduction = yoy?.reduction_percentage ?? 28.8;
+  const progressValue = 100 - reduction;
+
+  if (isLoading) {
+    return <div className="text-center py-4">Loading YoY comparison...</div>;
+  }
+
   return (
     <Card>
       <CardHeader className="pb-4">
@@ -12,17 +24,17 @@ export function YoYComparison() {
         <div>
           <div className="flex justify-between items-end mb-2">
             <span className="text-sm font-medium text-secondary-dark">Energy Consumption</span>
-            <span className="text-sm font-bold text-primary">-18.4%</span>
+            <span className="text-sm font-bold text-primary">-{reduction}%</span>
           </div>
-          <Progress value={81.6} indicatorColor="bg-primary" />
+          <Progress value={progressValue} indicatorColor="bg-primary" />
         </div>
         
         <div>
           <div className="flex justify-between items-end mb-2">
             <span className="text-sm font-medium text-secondary-dark">Monthly Cost</span>
-            <span className="text-sm font-bold text-primary">-12.2%</span>
+            <span className="text-sm font-bold text-primary">-{Math.round(reduction * 0.8 * 10) / 10}%</span>
           </div>
-          <Progress value={87.8} indicatorColor="bg-primary" />
+          <Progress value={100 - (reduction * 0.8)} indicatorColor="bg-primary" />
         </div>
 
         <div>

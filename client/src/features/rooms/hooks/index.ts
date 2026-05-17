@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { roomsApi } from '../api';
-import { Room } from '../types';
+import type { Room } from '../types';
 
 // Room hooks
 export const useRooms = () => {

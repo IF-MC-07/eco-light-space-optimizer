@@ -1,23 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { DoorOpen, MoreVertical } from 'lucide-react';
-import { RoleGuard } from '../../../components/auth/RoleGuard';
+import { useMonitoring } from '../../../hooks/useMonitoring';
+import { useMe } from '../../../features/auth/hooks';
 
-const roomsData = [
-  { id: 'ROM-701-1', name: 'Room 701', lightActive: true, acActive: true, temp: '23', actionState: true },
-  { id: 'ROM-701-2', name: 'Room 701', lightActive: true, acActive: true, temp: 'Active', actionState: true },
-  { id: 'ROM-801-1', name: 'Room 801', lightActive: false, acActive: false, temp: 'Off', actionState: false },
-  { id: 'ROM-701-3', name: 'Room 701', lightActive: true, acActive: true, temp: '20', actionState: true },
-  { id: 'ROM-701-4', name: 'Room 701', lightActive: true, acActive: true, temp: '21', actionState: true },
-  { id: 'ROM-801-2', name: 'Room 801', lightActive: false, acActive: false, temp: 'Off', actionState: false },
-  { id: 'ROM-801-3', name: 'Room 801', lightActive: false, acActive: false, temp: 'Off', actionState: false },
-];
+const StatusBadge = ({ status }: { status: string }) => {
+  const isAktif = ['aktif', 'active', 'ACTIVE', 'AKTIF'].includes(status.toLowerCase());
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${isAktif ? 'bg-green-100 text-green-800' : 'bg-neutral-border text-secondary-dark'}`}>
+      {status}
+    </span>
+  );
+};
 
 export function DeviceStatusTable() {
-  const [rooms, setRooms] = useState(roomsData);
+  const { fetchDevices, updateDevice } = useMonitoring();
+  const { data: userData } = useMe();
+  const [devices, setDevices] = useState<any[]>([]);
 
-  const toggleRoom = (id: string) => {
-    setRooms(rooms.map(room => room.id === id ? { ...room, actionState: !room.actionState } : room));
+  const role = userData?.user?.role;
+  const isAdmin = role === 'admin';
+
+  const loadDevices = () => {
+    fetchDevices().then(res => {
+      if (res.success && res.data) {
+        setDevices(res.data);
+      }
+    });
+  };
+
+  useEffect(() => {
+    loadDevices();
+  }, [fetchDevices]);
+
+  const handleToggle = async (id: string, currentStatus: string) => {
+    if (!isAdmin) return;
+    const newStatus = ['aktif', 'active', 'ACTIVE', 'AKTIF'].includes(currentStatus) ? 'nonaktif' : 'aktif';
+    
+    // Optimistic UI update
+    setDevices(prev => prev.map(d => d.device_id === id ? { ...d, device_status: newStatus } : d));
+    
+    await updateDevice(id, { device_status: newStatus });
+    loadDevices();
   };
 
   return (
@@ -39,51 +63,68 @@ export function DeviceStatusTable() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-border/50">
-              {rooms.map((room) => (
-                <tr key={room.id} className="hover:bg-neutral/50 transition-colors">
-                  <td className="py-4 px-4 font-semibold text-black flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-md bg-neutral border border-neutral-border flex items-center justify-center text-secondary">
-                      <DoorOpen size={16} />
-                    </div>
-                    {room.name}
-                  </td>
-                  <td className="py-4 px-4">
-                    <div className={`flex items-center text-sm font-medium ${room.lightActive ? 'text-primary-dark' : 'text-secondary-light'}`}>
-                      <span className={`w-2 h-2 rounded-full mr-2 ${room.lightActive ? 'bg-primary' : 'bg-secondary-light'}`}></span>
-                      {room.lightActive ? 'Active' : 'Inactive'}
-                    </div>
-                  </td>
-                  <td className="py-4 px-4">
-                    <div className={`flex items-center text-sm font-medium ${room.acActive ? 'text-primary-dark' : 'text-secondary-light'}`}>
-                      <span className={`w-2 h-2 rounded-full mr-2 ${room.acActive ? 'bg-primary' : 'bg-secondary-light'}`}></span>
-                      {room.acActive ? 'Active' : 'Inactive'}
-                    </div>
-                  </td>
-                  <td className="py-4 px-4">
-                    <span className={`text-sm font-medium ${room.temp === 'Off' ? 'text-secondary-light' : 'text-primary-dark'}`}>
-                      {room.temp}
-                    </span>
-                  </td>
-                  <RoleGuard allowedRoles={['admin']} fallback={<td className="py-4 px-4 text-xs font-semibold text-secondary-light italic">View Only</td>}>
+              {devices.map((device) => {
+                const isLightActive = device.lighting === 'Active';
+                const isAcActive = device.ac_status === 'Active';
+                const isDeviceActive = ['aktif', 'active', 'ACTIVE', 'AKTIF'].includes(device.device_status);
+
+                return (
+                  <tr key={device.device_id} className="hover:bg-neutral/50 transition-colors">
+                    <td className="py-4 px-4 font-semibold text-black flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-md bg-neutral border border-neutral-border flex items-center justify-center text-secondary">
+                        <DoorOpen size={16} />
+                      </div>
+                      {device.room_name}
+                    </td>
                     <td className="py-4 px-4">
-                      <div className="flex items-center gap-3">
-                        {/* Simple Toggle Switch */}
-                        <button 
-                          onClick={() => toggleRoom(room.id)}
-                          className={`w-11 h-6 rounded-full relative transition-colors duration-200 focus:outline-none ${room.actionState ? 'bg-primary-dark' : 'bg-neutral-border'}`}
-                        >
-                          <span 
-                            className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-200 shadow-sm ${room.actionState ? 'left-[22px]' : 'left-1'}`}
-                          />
-                        </button>
-                        <button className="text-secondary hover:text-black transition-colors">
-                          <MoreVertical size={16} />
-                        </button>
+                      <div className={`flex items-center text-sm font-medium ${isLightActive ? 'text-primary-dark' : 'text-secondary-light'}`}>
+                        <span className={`w-2 h-2 rounded-full mr-2 ${isLightActive ? 'bg-primary' : 'bg-secondary-light'}`}></span>
+                        {device.lighting}
                       </div>
                     </td>
-                  </RoleGuard>
+                    <td className="py-4 px-4">
+                      <div className={`flex items-center text-sm font-medium ${isAcActive ? 'text-primary-dark' : 'text-secondary-light'}`}>
+                        <span className={`w-2 h-2 rounded-full mr-2 ${isAcActive ? 'bg-primary' : 'bg-secondary-light'}`}></span>
+                        {device.ac_status}
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className={`text-sm font-medium ${!isAcActive ? 'text-secondary-light' : 'text-primary-dark'}`}>
+                        {isAcActive ? `${device.temperature}°C` : 'Off'}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-3">
+                        {isAdmin ? (
+                          <>
+                            {/* Toggle Switch */}
+                            <button 
+                              onClick={() => handleToggle(device.device_id, device.device_status)}
+                              className={`w-11 h-6 rounded-full relative transition-colors duration-200 focus:outline-none ${isDeviceActive ? 'bg-primary-dark' : 'bg-neutral-border'}`}
+                            >
+                              <span 
+                                className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-200 shadow-sm ${isDeviceActive ? 'left-[22px]' : 'left-1'}`}
+                              />
+                            </button>
+                            <button className="text-secondary hover:text-black transition-colors">
+                              <MoreVertical size={16} />
+                            </button>
+                          </>
+                        ) : (
+                          <StatusBadge status={device.device_status} />
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {devices.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-secondary">
+                    No devices registered
+                  </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

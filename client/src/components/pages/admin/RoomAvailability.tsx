@@ -4,12 +4,16 @@ import { RoomGrid } from '../../../features/rooms/components/RoomGrid';
 import { Calendar } from 'lucide-react';
 import { AddRoomModal } from '../../../features/rooms/components/AddRoomModal';
 import { AlertDialog } from '../../../components/ui/AlertDialog';
+import { useMe } from '../../../features/auth/hooks';
 
 import { useRooms, useRemoveRoom } from '../../../features/rooms/hooks';
-import { Room } from '../../../features/rooms/types';
+import type { Room } from '../../../features/rooms/types';
 
 export default function RoomAvailability() {
   const [isAddRoomOpen, setIsAddRoomOpen] = useState(false);
+  const { data: userData } = useMe();
+  const role = userData?.user?.role;
+  const isAdmin = role === 'admin';
 
   const [roomToDelete, setRoomToDelete] = useState<Room | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string>("");
@@ -42,7 +46,7 @@ export default function RoomAvailability() {
           rooms={rooms}
           isLoading={isLoading}
           isError={isError}
-          onDeleteRoom={(room) => setRoomToDelete(room)}
+          {...(isAdmin ? { onDeleteRoom: (room) => setRoomToDelete(room) } : {})}
         />
       </div>
 

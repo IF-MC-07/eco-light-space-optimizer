@@ -1,4 +1,4 @@
-export const requireRole = (role) => {
+export const requireRole = (allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
@@ -7,13 +7,16 @@ export const requireRole = (role) => {
       });
     }
 
-    if (req.user.role !== role) {
+    const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
+
+    if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        message: `Akses ditolak. Memerlukan peran ${role}.`,
+        message: 'Access denied',
       });
     }
 
     next();
   };
 };
+

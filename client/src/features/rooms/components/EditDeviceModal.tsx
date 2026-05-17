@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Leaf } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
 import { useUpdateDevice } from "../../iot-device/hooks";
-import { IotDevice } from "../../iot-device/types";
+import type { IotDevice } from "../../iot-device/types";
 
 interface EditDeviceModalProps {
   isOpen: boolean;

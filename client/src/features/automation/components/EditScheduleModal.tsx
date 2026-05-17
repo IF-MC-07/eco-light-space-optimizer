@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { X, Clock } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
 import { useUpdateSchedule, useCreateSchedule } from "../hooks";
-import { AutomationSchedule } from "../types";
+import type { AutomationSchedule } from "../types";
 import { useMe } from "../../auth/hooks";
 import { useRooms } from "../../rooms/hooks";
 
@@ -36,7 +36,7 @@ export function EditScheduleModal({ isOpen, onClose, schedule, isAddingNew = fal
       if (schedule.room_id) {
         setRoomId(schedule.room_id);
       } else if (rooms.length > 0) {
-        setRoomId(rooms[0].room_id);
+        setRoomId(rooms[0]?.room_id || "");
       }
     }
   }, [schedule, isOpen, rooms]);
@@ -44,13 +44,15 @@ export function EditScheduleModal({ isOpen, onClose, schedule, isAddingNew = fal
   if (!isOpen || !schedule) return null;
 
   const handleSave = () => {
-    const payload = {
+    const payload: Partial<AutomationSchedule> = {
       schedule_name: name,
       start_time: startTime,
       end_time: endTime,
       room_id: roomId,
-      user_id: me?.user_id || null, // Use actual user_id from me hook or null if not available
     };
+    if (me?.user_id) {
+      payload.user_id = me.user_id;
+    }
 
     if (isAddingNew) {
       createSchedule(payload, { onSuccess: () => onClose() });

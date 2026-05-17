@@ -1,4 +1,5 @@
 import * as roomService from '../services/roomService.js';
+import db from '../models/index.js';
 
 export const getAll = async (req, res, next) => {
   try {
@@ -51,6 +52,38 @@ export const remove = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Room not found' });
     }
     res.status(200).json({ success: true, data: null, message: 'Room deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getZones = async (req, res, next) => {
+  try {
+    const data = await db.Zone.findAll({ where: { room_id: req.params.id } });
+    res.status(200).json({ success: true, data, message: 'Room zones retrieved successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getDetections = async (req, res, next) => {
+  try {
+    const data = await db.DetectionLog.findAll({
+      include: [{
+        model: db.Zone,
+        where: { room_id: req.params.id }
+      }]
+    });
+    res.status(200).json({ success: true, data, message: 'Room detections retrieved successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getDevices = async (req, res, next) => {
+  try {
+    const data = await db.IotDevice.findAll({ where: { room_id: req.params.id } });
+    res.status(200).json({ success: true, data, message: 'Room devices retrieved successfully' });
   } catch (error) {
     next(error);
   }

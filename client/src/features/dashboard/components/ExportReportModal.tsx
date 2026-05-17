@@ -3,11 +3,12 @@ import { X, Download, Calendar, Check } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
 import { cn } from "../../../lib/utils";
 import { serverAPI } from "../../../lib/api";
+import { downloadExport } from "../../../utils/exportHelper";
 
 interface ExportReportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  reportType?: 'dashboard' | 'energy' | 'savings' | 'rooms' | 'users' | 'devices';
+  reportType?: 'dashboard' | 'energy' | 'savings' | 'rooms' | 'users' | 'devices' | 'schedules' | 'zones';
 }
 
 export function ExportReportModal({ isOpen, onClose, reportType = 'dashboard' }: ExportReportModalProps) {
@@ -18,34 +19,62 @@ export function ExportReportModal({ isOpen, onClose, reportType = 'dashboard' }:
 
   const handleDownload = async () => {
     setIsDownloading(true);
-    const formatQuery = format === 'EXCEL' ? 'xlsx' : format.toLowerCase();
-    let endpoint = '';
+    const formatQuery = format === 'EXCEL' ? 'xlsx' as const : format.toLowerCase() as 'pdf' | 'xlsx' | 'csv';
     
-    switch (reportType) {
-      case 'dashboard': endpoint = '/export/dashboard-summary'; break;
-      case 'energy': endpoint = '/export/energy-logs'; break;
-      case 'savings': endpoint = '/export/savings-report'; break;
-      case 'rooms': endpoint = '/export/rooms'; break;
-      case 'users': endpoint = '/export/users'; break;
-      case 'devices': endpoint = '/export/devices'; break;
-      default: endpoint = '/export/dashboard-summary';
-    }
-
     try {
-      const response = await serverAPI.get(endpoint, {
-        params: { format: formatQuery },
-        responseType: 'blob'
-      });
-
-      const blob = new Blob([response.data], { type: response.headers['content-type'] });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${reportType}_report_${new Date().toISOString().split('T')[0]}.${formatQuery}`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      if (reportType === 'dashboard') {
+        const response = await serverAPI.get('/export/dashboard-summary', {
+          params: { format: formatQuery },
+          responseType: 'blob'
+        });
+        const blob = new Blob([response.data], { type: response.headers['content-type'] });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `dashboard_summary.${formatQuery}`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } else if (reportType === 'energy') {
+        const response = await serverAPI.get('/export/energy-logs', {
+          params: { format: formatQuery },
+          responseType: 'blob'
+        });
+        const blob = new Blob([response.data], { type: response.headers['content-type'] });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `energy_logs.${formatQuery}`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } else if (reportType === 'savings') {
+        const response = await serverAPI.get('/export/savings-report', {
+          params: { format: formatQuery },
+          responseType: 'blob'
+        });
+        const blob = new Blob([response.data], { type: response.headers['content-type'] });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `savings_report.${formatQuery}`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } else {
+        const resourceMap: Record<string, string> = {
+          rooms: 'rooms',
+          users: 'users',
+          devices: 'devices',
+          schedules: 'schedules',
+          zones: 'zones'
+        };
+        const resName = resourceMap[reportType] || 'users';
+        await downloadExport(resName, formatQuery);
+      }
       onClose();
     } catch (error) {
       console.error('Download failed', error);

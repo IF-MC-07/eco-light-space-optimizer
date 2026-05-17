@@ -3,7 +3,8 @@ import React, { useState, useEffect } from "react";
 import { X, MapPin, Users, DoorOpen, Activity } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
 import { useUpdateRoom } from "../hooks";
-import { Room, RoomStatus } from "../types";
+import type { Room } from "../types";
+import { RoomStatus } from "../types";
 import { cn } from "../../../lib/utils";
 
 interface EditRoomModalProps {

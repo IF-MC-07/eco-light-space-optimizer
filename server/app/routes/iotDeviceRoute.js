@@ -7,8 +7,8 @@ const router = Router();
 
 router.get('/', authenticate, iotDeviceController.getAll);
 router.get('/:id', authenticate, iotDeviceController.getById);
-router.post('/', authenticate, requireRole('admin'), iotDeviceController.create);
-router.put('/:id', authenticate, requireRole('admin'), iotDeviceController.update);
-router.delete('/:id', authenticate, requireRole('admin'), iotDeviceController.remove);
+router.post('/', authenticate, requireRole(['admin']), iotDeviceController.create);
+router.put('/:id', authenticate, requireRole(['admin']), iotDeviceController.update);
+router.delete('/:id', authenticate, requireRole(['admin']), iotDeviceController.remove);
 
 export default router;

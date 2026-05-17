@@ -19,7 +19,8 @@ export function middleware(request: NextRequest) {
                           pathname.startsWith('/device-automation') ||
                           pathname.startsWith('/room-availability') ||
                           pathname.startsWith('/zone-configuration') ||
-                          pathname.startsWith('/profile');
+                          pathname.startsWith('/profile') ||
+                          pathname.startsWith('/rooms');
 
   // Helper to decode JWT payload in edge runtime
   const getRoleFromToken = (tokenStr: string) => {
@@ -38,10 +39,10 @@ export function middleware(request: NextRequest) {
 
   // If we have a token and trying to access auth pages, redirect to appropriate page based on role
   if (token && isAuthPage) {
-    if (role === 'user') {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+    if (role === 'mahasiswa') {
+      return NextResponse.redirect(new URL('/lighting-ac', request.url));
     }
-    return NextResponse.redirect(new URL('/savings-report', request.url));
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   // If we don't have a token and trying to access protected pages, redirect to login
@@ -49,14 +50,14 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // Role-based access control for "user" role
-  if (token && role === 'user' && isProtectedPage) {
-    const allowedForUser = ['/dashboard', '/room-availability', '/lighting-ac', '/profile'];
-    const isAllowed = allowedForUser.some(route => pathname.startsWith(route));
+  // Role-based access control for "mahasiswa" role
+  if (token && role === 'mahasiswa' && isProtectedPage) {
+    const allowedForMahasiswa = ['/dashboard', '/lighting-ac', '/rooms', '/room-availability'];
+    const isAllowed = allowedForMahasiswa.some(route => pathname === route || pathname.startsWith(route + '/'));
     
     if (!isAllowed) {
-      // Redirect users away from admin-only pages
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      // Redirect mahasiswa away from admin-only pages
+      return NextResponse.redirect(new URL('/lighting-ac', request.url));
     }
   }
 

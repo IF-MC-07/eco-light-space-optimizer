@@ -17,8 +17,8 @@ export function EditUserModal({ isOpen, onClose, userId }: EditUserModalProps) {
   const [role, setRole] = useState<UserRole | string>(UserRole.ADMIN);
 
   const { data: userData, isLoading: isLoadingUser } = useUser(userId || "");
-  const { mutate: updateUser, isPending, isLoading: isUpdatingUser, error } = useUpdateUser();
-  const isUpdating = isPending || isUpdatingUser;
+  const { mutate: updateUser, isPending, error } = useUpdateUser();
+  const isUpdating = isPending;
 
   useEffect(() => {
     if (userData?.data) {
@@ -146,12 +146,12 @@ export function EditUserModal({ isOpen, onClose, userId }: EditUserModalProps) {
                   )}
                 </div>
 
-                {/* Viewer Card */}
+                {/* Mahasiswa Card */}
                 <div 
-                  onClick={() => setRole(UserRole.USER)}
+                  onClick={() => setRole(UserRole.MAHASISWA)}
                   className={cn(
                     "p-4 rounded-xl cursor-pointer transition-all border-2 relative flex flex-col",
-                    role === UserRole.USER 
+                    role === UserRole.MAHASISWA 
                       ? "border-primary-dark bg-[#F5F7F5]" 
                       : "border-transparent bg-[#F8FAFC] hover:bg-[#F1F5F9]"
                   )}
@@ -159,9 +159,9 @@ export function EditUserModal({ isOpen, onClose, userId }: EditUserModalProps) {
                   <div className="w-10 h-10 rounded-lg bg-[#BFDBFE] text-primary-dark flex items-center justify-center mb-4">
                     <Eye className="w-5 h-5" />
                   </div>
-                  <h4 className="font-bold text-secondary-dark mb-1">Viewer</h4>
-                  <p className="text-[11px] text-secondary-light leading-relaxed">Read-only access to monitoring and analytics.</p>
-                  {role === UserRole.USER && (
+                  <h4 className="font-bold text-secondary-dark mb-1">Mahasiswa</h4>
+                  <p className="text-[11px] text-secondary-light leading-relaxed">Read-only access to dashboard and monitoring.</p>
+                  {role === UserRole.MAHASISWA && (
                     <CheckCircle2 className="w-5 h-5 text-primary-dark absolute top-4 right-4 fill-primary-dark/20" />
                   )}
                 </div>

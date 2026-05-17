@@ -13,7 +13,7 @@ export const zonaKeys = {
 export const useZoneList = (params?: any) => {
   return useQuery({
     queryKey: zonaKeys.list(params),
-    queryFn: () => api.getZone(params),
+    queryFn: () => api.getZones(params),
   });
 };
 

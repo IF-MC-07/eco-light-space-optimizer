@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { MapPin, Users, Trash2 } from 'lucide-react';
-import { Room } from '../types';
+import type { Room } from '../types';
 
 interface RoomCardProps {
   room: Room;

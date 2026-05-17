@@ -16,10 +16,10 @@ export function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState<UserRole | string>(UserRole.USER);
+  const [role, setRole] = useState<UserRole | string>(UserRole.MAHASISWA);
 
-  const { mutate: createUser, isPending, isLoading, error } = useCreateUser();
-  const loading = isPending || isLoading;
+  const { mutate: createUser, isPending, error } = useCreateUser();
+  const loading = isPending;
 
   if (!isOpen) return null;
 
@@ -28,7 +28,7 @@ export function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
     setEmail(val);
     // Auto-generate username if not manually edited yet
     if (!username || username === email.split('@')[0]) {
-      setUsername(val.split('@')[0]);
+      setUsername(val.split('@')[0] || "");
     }
   };
 
@@ -37,7 +37,7 @@ export function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
       { 
         name, 
         email, 
-        username: username || email.split('@')[0], 
+        username: username || email.split('@')[0] || "",
         password, 
         role 
       },
@@ -49,7 +49,7 @@ export function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
           setEmail("");
           setUsername("");
           setPassword("");
-          setRole(UserRole.USER);
+          setRole(UserRole.MAHASISWA);
         },
       }
     );
@@ -151,7 +151,7 @@ export function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
         {/* Assign Role */}
         <div className="mb-12">
           <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest block mb-4">Assign Role</label>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             {/* Admin */}
             <div 
               onClick={() => setRole(UserRole.ADMIN)}
@@ -167,19 +167,19 @@ export function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
               <p className={cn("text-[10px]", role === UserRole.ADMIN ? "text-white/80" : "text-secondary-light")}>Full system control.</p>
             </div>
 
-            {/* Viewer */}
+            {/* Mahasiswa */}
             <div 
-              onClick={() => setRole(UserRole.USER)}
+              onClick={() => setRole(UserRole.MAHASISWA)}
               className={cn(
                 "p-4 rounded-xl cursor-pointer transition-all border border-transparent",
-                role === UserRole.USER ? "bg-primary-dark text-white shadow-md" : "bg-[#F8FAFC] hover:bg-[#F1F5F9] text-secondary-dark"
+                role === UserRole.MAHASISWA ? "bg-primary-dark text-white shadow-md" : "bg-[#F8FAFC] hover:bg-[#F1F5F9] text-secondary-dark"
               )}
             >
               <div className="flex items-center space-x-2 mb-2">
                 <Eye className="w-5 h-5" />
-                <h4 className="font-bold">Viewer</h4>
+                <h4 className="font-bold">Mahasiswa</h4>
               </div>
-              <p className={cn("text-[10px]", role === UserRole.USER ? "text-white/80" : "text-secondary-light")}>Read-only analytics.</p>
+              <p className={cn("text-[10px]", role === UserRole.MAHASISWA ? "text-white/80" : "text-secondary-light")}>Read-only access to dashboard and monitoring.</p>
             </div>
           </div>
         </div>

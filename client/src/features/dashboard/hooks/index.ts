@@ -11,18 +11,17 @@ export const dashboardKeys = {
   kontrolACList: (params?: any) => [...dashboardKeys.all, 'kontrol-ac', params] as const,
 };
 
-// --- Log Energi Hooks ---
 export const useLogEnergiList = (params?: any) => {
   return useQuery({
     queryKey: dashboardKeys.logEnergiList(params),
-    queryFn: () => api.getLogEnergi(params),
+    queryFn: () => api.getEnergyLogs(params),
   });
 };
 
 export const useLogEnergiDetail = (id: string) => {
   return useQuery({
     queryKey: dashboardKeys.logEnergiDetail(id),
-    queryFn: () => api.getLogEnergiById(id),
+    queryFn: () => api.getEnergyLogById(id),
     enabled: !!id,
   });
 };
@@ -30,25 +29,24 @@ export const useLogEnergiDetail = (id: string) => {
 export const useCreateLogEnergi = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: api.createLogEnergi,
+    mutationFn: api.createEnergyLog,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
     },
   });
 };
 
-// --- Log Deteksi Hooks ---
 export const useLogDeteksiList = (params?: any) => {
   return useQuery({
     queryKey: dashboardKeys.logDeteksiList(params),
-    queryFn: () => api.getLogDeteksi(params),
+    queryFn: () => api.getDetectionLogs(params),
   });
 };
 
 export const useLogDeteksiDetail = (id: string) => {
   return useQuery({
     queryKey: dashboardKeys.logDeteksiDetail(id),
-    queryFn: () => api.getLogDeteksiById(id),
+    queryFn: () => api.getDetectionLogById(id),
     enabled: !!id,
   });
 };
@@ -56,43 +54,41 @@ export const useLogDeteksiDetail = (id: string) => {
 export const useCreateLogDeteksi = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: api.createLogDeteksi,
+    mutationFn: api.createDetectionLog,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
     },
   });
 };
 
-// --- Kontrol Lampu Hooks ---
 export const useControlLampuList = (params?: any) => {
   return useQuery({
     queryKey: dashboardKeys.kontrolLampuList(params),
-    queryFn: () => api.getKontrolLampu(params),
+    queryFn: () => api.getLightControls(params),
   });
 };
 
 export const useCreateKontrolLampu = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: api.createKontrolLampu,
+    mutationFn: api.createLightControl,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
     },
   });
 };
 
-// --- Kontrol AC Hooks ---
 export const useControlACList = (params?: any) => {
   return useQuery({
     queryKey: dashboardKeys.kontrolACList(params),
-    queryFn: () => api.getKontrolAC(params),
+    queryFn: () => api.getACControls(params),
   });
 };
 
 export const useCreateKontrolAC = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: api.createKontrolAC,
+    mutationFn: api.createACControl,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
     },

@@ -1,8 +1,18 @@
 import * as powerSensorService from '../services/powerSensorService.js';
+import db from '../models/index.js';
 
 export const getAll = async (req, res) => {
   try {
-    const data = await powerSensorService.getAll();
+    const { room_id } = req.query;
+    let data;
+    if (room_id) {
+      data = await db.PowerSensor.findAll({
+        where: { room_id },
+        order: [['read_at', 'DESC']]
+      });
+    } else {
+      data = await powerSensorService.getAll();
+    }
     res.status(200).json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

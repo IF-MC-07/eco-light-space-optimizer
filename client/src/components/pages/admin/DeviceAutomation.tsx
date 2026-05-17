@@ -27,6 +27,12 @@ function Select({ value }: { value: string }) {
 export default function DeviceAutomation() {
   return (
     <div className="max-w-[1200px] mx-auto w-full">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 mt-5">
+        <div>
+          <h1 className="text-3xl font-heading font-extrabold text-black tracking-tight">Device Automation</h1>
+          <p className="text-sm text-secondary font-medium mt-1">Configure and manage automated IoT devices.</p>
+        </div>
+      </div>
       {/* Top 3 KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="bg-[#1B4D1E] border-none p-6 text-white relative overflow-hidden h-[150px]">

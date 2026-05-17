@@ -4,7 +4,7 @@ import { X, Thermometer, Users, Leaf, ArrowRight } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
 import { RoleGuard } from "../../../components/auth/RoleGuard";
 import { useRouter } from "next/navigation";
-import { Room } from "../types";
+import type { Room } from "../types";
 
 interface RoomSummaryModalProps {
   isOpen: boolean;

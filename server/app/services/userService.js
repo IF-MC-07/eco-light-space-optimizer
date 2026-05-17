@@ -67,10 +67,13 @@ export const remove = async (id) => {
 
 export const getStats = async () => {
   const totalUsers = await User.count();
+  const adminCount = await User.count({ where: { role: 'admin' } });
   return {
     totalUsers,
     activeNow: Math.floor(totalUsers * 0.8), // Mock logic for now
     newThisMonth: Math.floor(totalUsers * 0.2),
-    pendingRequests: 0
+    pendingRequests: 0,
+    adminCount,
+    activeUsers: Math.floor(totalUsers * 0.6)
   };
 };

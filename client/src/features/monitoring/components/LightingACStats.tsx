@@ -1,44 +1,61 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { Lightbulb, Snowflake, Thermometer, Leaf } from 'lucide-react';
-
-const statCards = [
-  {
-    title: 'Lights Active',
-    value: '12 / 18',
-    badgeText: 'HIGH EFFICIENCY',
-    badgeColor: 'bg-[#bbf7d0] text-primary',
-    icon: Lightbulb,
-    iconColor: 'text-primary bg-[#bbf7d0]',
-  },
-  {
-    title: 'AC Units Running',
-    value: '02',
-    badgeText: 'OPTIMIZED FLOW',
-    badgeColor: 'bg-blue-100 text-blue-700',
-    icon: Snowflake,
-    iconColor: 'text-blue-700 bg-blue-100',
-  },
-  {
-    title: 'Avg. Temperature',
-    value: '21.5°C',
-    badgeText: 'COMFORT ZONE',
-    badgeColor: 'bg-primary-dark text-white',
-    icon: Thermometer,
-    iconColor: 'text-white bg-primary-dark',
-  },
-  {
-    title: 'Energy Mode',
-    value: 'ECO',
-    badgeText: 'SUSTAINED',
-    badgeColor: 'bg-[#bbf7d0] text-primary',
-    icon: Leaf,
-    iconColor: 'text-primary bg-[#bbf7d0]',
-  }
-];
+import { useMonitoring } from '../../../hooks/useMonitoring';
 
 export function LightingACStats() {
+  const { fetchStats } = useMonitoring();
+  const [stats, setStats] = useState<any>(null);
+
+  useEffect(() => {
+    fetchStats().then(res => {
+      if (res.success && res.data) {
+        setStats(res.data);
+      }
+    });
+  }, [fetchStats]);
+
+  const activeLights = stats ? `${stats.lights_active} / ${stats.lights_total}` : '12 / 18';
+  const activeAc = stats ? String(stats.ac_units_running).padStart(2, '0') : '02';
+  const avgTemp = stats ? `${stats.avg_temperature}°C` : '21.5°C';
+  const energyMode = stats ? stats.energy_mode : 'ECO';
+
+  const statCards = [
+    {
+      title: 'Lights Active',
+      value: activeLights,
+      badgeText: 'HIGH EFFICIENCY',
+      badgeColor: 'bg-[#bbf7d0] text-primary',
+      icon: Lightbulb,
+      iconColor: 'text-primary bg-[#bbf7d0]',
+    },
+    {
+      title: 'AC Units Running',
+      value: activeAc,
+      badgeText: 'OPTIMIZED FLOW',
+      badgeColor: 'bg-blue-100 text-blue-700',
+      icon: Snowflake,
+      iconColor: 'text-blue-700 bg-blue-100',
+    },
+    {
+      title: 'Avg. Temperature',
+      value: avgTemp,
+      badgeText: 'COMFORT ZONE',
+      badgeColor: 'bg-primary-dark text-white',
+      icon: Thermometer,
+      iconColor: 'text-white bg-primary-dark',
+    },
+    {
+      title: 'Energy Mode',
+      value: energyMode,
+      badgeText: 'SUSTAINED',
+      badgeColor: 'bg-[#bbf7d0] text-primary',
+      icon: Leaf,
+      iconColor: 'text-primary bg-[#bbf7d0]',
+    }
+  ];
+
   return (
     <div className="grid grid-cols-4 gap-6">
       {statCards.map((stat, i) => (

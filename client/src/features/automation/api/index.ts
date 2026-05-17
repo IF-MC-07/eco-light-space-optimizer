@@ -1,5 +1,5 @@
 import { serverAPI } from '@/lib/api';
-import { AutomationSchedule, ApiResponse } from '../types';
+import type { AutomationSchedule, ApiResponse } from '../types';
 
 export const automationApi = {
   getAll: async (): Promise<ApiResponse<AutomationSchedule[]>> => {
@@ -17,8 +17,13 @@ export const automationApi = {
     return response.data;
   },
 
-  update: async (id: number, payload: Partial<AutomationSchedule>): Promise<ApiResponse<AutomationSchedule>> => {
+  update: async (id: string, payload: Partial<AutomationSchedule>): Promise<ApiResponse<AutomationSchedule>> => {
     const response = await serverAPI.put(`/automation-schedules/${id}`, payload);
+    return response.data;
+  },
+
+  getStats: async (): Promise<ApiResponse<{ total_schedules: number, active_schedules: number, efficiency_score: number, automation_rate: number }>> => {
+    const response = await serverAPI.get('/automation-schedules/stats');
     return response.data;
   },
 

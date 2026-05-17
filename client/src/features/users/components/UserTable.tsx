@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Edit, UserMinus, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { useUsers } from "../hooks";
-import { UserFilters } from "../types";
+import type { UserFilters } from "../types";
 
 interface UserTableProps {
   filters?: UserFilters;
@@ -21,15 +21,11 @@ export function UserTable({ filters, onEdit, onRemove }: UserTableProps) {
   const totalPages = pagination?.totalPages || 1;
 
   const getRoleBadgeColor = (role: string) => {
-    switch (role?.toUpperCase()) {
-      case "ADMIN":
+    switch (role?.toLowerCase()) {
+      case "admin":
         return "bg-[#86EFAC] text-[#065F46]"; // Green
-      case "MANAGER":
-      case "EDITOR":
+      case "mahasiswa":
         return "bg-[#BFDBFE] text-[#1E3A8A]"; // Blue
-      case "VIEWER":
-      case "STUDENT":
-        return "bg-[#E2E8F0] text-[#0F172A]"; // Gray
       default:
         return "bg-[#E2E8F0] text-[#0F172A]";
     }
@@ -62,7 +58,7 @@ export function UserTable({ filters, onEdit, onRemove }: UserTableProps) {
               </tr>
             ) : (
               users.map((user, idx) => (
-                <tr key={user.id || user.user_id || idx} className={cn("group transition-colors hover:bg-neutral-border/20", idx !== users.length - 1 && "border-b border-neutral-border/50")}>
+                <tr key={user.user_id || idx} className={cn("group transition-colors hover:bg-neutral-border/20", idx !== users.length - 1 && "border-b border-neutral-border/50")}>
                   <td className="py-4 px-4">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 rounded-full bg-secondary-dark text-white flex items-center justify-center text-sm font-bold shadow-sm shrink-0">
@@ -76,10 +72,10 @@ export function UserTable({ filters, onEdit, onRemove }: UserTableProps) {
                   </td>
                   <td className="py-4 px-4">
                     <span className={cn(
-                      "px-2.5 py-1 rounded text-[9px] font-bold uppercase tracking-widest inline-block",
+                       "px-2.5 py-1 rounded text-[9px] font-bold uppercase tracking-widest inline-block",
                       getRoleBadgeColor(user.role)
                     )}>
-                      {user.role}
+                      {user.role?.toLowerCase() === 'admin' ? 'Admin' : user.role?.toLowerCase() === 'mahasiswa' ? 'Mahasiswa' : user.role}
                     </span>
                   </td>
                   <td className="py-4 px-4">

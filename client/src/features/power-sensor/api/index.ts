@@ -1,5 +1,5 @@
 import { serverAPI } from '@/lib/api';
-import { PowerSensor } from '@/types';
+import type { PowerSensor } from '@/types';
 
 // --- Power Sensor Endpoints ---
 export const getPowerSensors = async (params?: any): Promise<PowerSensor[]> => {

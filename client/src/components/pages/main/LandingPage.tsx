@@ -25,7 +25,7 @@ export default function LandingPage() {
               <span>Mulai Sekarang</span>
               <ArrowRight className="w-5 h-5" />
             </Button>
-            <Button variant="outline" className="w-full sm:w-auto text-lg px-8 py-6 border-secondary-light text-secondary-dark hover:bg-white rounded-md flex items-center justify-center space-x-2 transition-colors">
+            <Button variant="outlined" className="w-full sm:w-auto text-lg px-8 py-6 border-secondary-light text-secondary-dark hover:bg-white rounded-md flex items-center justify-center space-x-2 transition-colors">
               <Play className="w-5 h-5 text-secondary" />
               <span>Lihat Demo</span>
             </Button>

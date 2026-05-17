@@ -1,5 +1,5 @@
 import api from '@/lib/axios';
-import { Zone } from '@/types';
+import type { Zone } from '@/types';
 
 export const getZoneByCamera = async (cameraId: string): Promise<Zone[]> => {
   const response = await api.get(`/zone/camera/${cameraId}`);

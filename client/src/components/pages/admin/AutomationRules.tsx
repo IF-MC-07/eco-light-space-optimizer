@@ -11,7 +11,7 @@ import { FullCalendarModal } from '../../../features/automation/components/FullC
 import { Button } from '../../../components/ui/Button';
 import { Plus } from 'lucide-react';
 import { useSchedules } from '../../../features/automation/hooks';
-import { AutomationSchedule } from '../../../features/automation/types';
+import type { AutomationSchedule } from '../../../features/automation/types';
 
 export default function AutomationRules() {
   const [selectedRule, setSelectedRule] = useState<AutomationSchedule | null>(null);
@@ -43,6 +43,13 @@ export default function AutomationRules() {
 
   return (
     <div className="flex flex-col space-y-8 w-full max-w-6xl mx-auto pb-10 mt-5">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
+        <div>
+          <h1 className="text-3xl font-heading font-extrabold text-black tracking-tight">Automation Schedules</h1>
+          <p className="text-sm text-secondary font-medium mt-1">Manage and optimize smart room schedules.</p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-4 gap-6 items-stretch">
         <div className="col-span-3">
           <AutomationStats schedules={schedules} />

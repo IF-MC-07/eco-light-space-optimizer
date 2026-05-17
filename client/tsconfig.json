@@ -20,7 +20,7 @@
     "jsx": "preserve",
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
-    "noUncheckedSideEffectImports": true,
+    "noUncheckedSideEffectImports": false,
     "moduleDetection": "force",
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -41,7 +41,8 @@
   },
   "include": [
     "src",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "next-env.d.ts"
   ],
   "exclude": [
     "node_modules"

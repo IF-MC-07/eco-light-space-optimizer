@@ -1,17 +1,22 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
+import { useSchedules } from '../hooks';
 
 interface WeeklyScheduleProps {
   onViewFullCalendar?: () => void;
 }
 
 export function WeeklySchedule({ onViewFullCalendar }: WeeklyScheduleProps) {
+  const { data: response } = useSchedules();
+  const schedules = response?.data || [];
+  const hasActiveSchedules = schedules.length > 0;
+
   const scheduleDays = [
-    { day: 'MON', status: 'Active', isHoliday: false },
-    { day: 'TUE', status: 'Active', isHoliday: false },
-    { day: 'WED', status: 'Active', isHoliday: false },
+    { day: 'MON', status: hasActiveSchedules ? 'Active' : 'Inactive', isHoliday: false },
+    { day: 'TUE', status: hasActiveSchedules ? 'Active' : 'Inactive', isHoliday: false },
+    { day: 'WED', status: hasActiveSchedules ? 'Active' : 'Inactive', isHoliday: false },
     { day: 'THU', status: 'Holiday', isHoliday: true },
-    { day: 'FRI', status: 'Active', isHoliday: false },
+    { day: 'FRI', status: hasActiveSchedules ? 'Active' : 'Inactive', isHoliday: false },
   ];
 
   return (

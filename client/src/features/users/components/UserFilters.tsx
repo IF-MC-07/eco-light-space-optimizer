@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Search, Filter, ChevronDown } from "lucide-react";
-import { UserFilters as UserFiltersType } from "../types";
+import type { UserFilters as UserFiltersType } from "../types";
 
 interface UserFiltersProps {
   onFilterChange?: (filters: UserFiltersType) => void;
@@ -12,10 +12,10 @@ export function UserFilters({ onFilterChange }: UserFiltersProps) {
 
   const handleApplyFilters = () => {
     if (onFilterChange) {
-      onFilterChange({
-        search: search || undefined,
-        role: role || undefined,
-      });
+      const filters: UserFiltersType = {};
+      if (search) filters.search = search;
+      if (role) filters.role = role;
+      onFilterChange(filters);
     }
   };
 
@@ -52,8 +52,8 @@ export function UserFilters({ onFilterChange }: UserFiltersProps) {
           className="w-full bg-[#E2E8F0] bg-opacity-60 border-none rounded-xl text-xs font-bold text-secondary-dark focus:outline-none focus:ring-2 focus:ring-primary/50 pl-4 pr-10 py-3 appearance-none cursor-pointer"
         >
           <option value="">All Roles</option>
-          <option value="ADMIN">Admin</option>
-          <option value="USER">Viewer</option>
+          <option value="admin">Admin</option>
+          <option value="mahasiswa">Mahasiswa</option>
         </select>
         <div className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-dark pointer-events-none">
           <ChevronDown className="w-4 h-4" />

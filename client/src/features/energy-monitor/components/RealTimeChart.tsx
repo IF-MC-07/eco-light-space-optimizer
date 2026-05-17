@@ -1,23 +1,39 @@
+"use client";
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { AreaChart, Area, XAxis, ResponsiveContainer, Tooltip } from 'recharts';
-
-const data = [
-  { time: '08:00', actual: 40, baseline: 30 },
-  { time: '10:00', actual: 45, baseline: 40 },
-  { time: '12:00', actual: 40, baseline: 45 },
-  { time: '14:00', actual: 42, baseline: 50 },
-  { time: '16:00', actual: 80, baseline: 55 },
-  { time: '18:00', actual: 45, baseline: 50 },
-  { time: '20:00', actual: 85, baseline: 40 },
-];
+import { usePowerSensors } from '../hooks';
 
 export function RealTimeChart() {
+  const { data: response, isLoading } = usePowerSensors();
+  const sensors = response?.data || [];
+
+  // Group or show latest read times
+  const formatted = sensors.length > 0
+    ? sensors.map((s, idx) => ({
+        time: new Date(s.read_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+        actual: parseFloat((s.power_watts / 1000).toFixed(2)),
+        baseline: parseFloat((s.power_watts * 0.9 / 1000).toFixed(2)) // Baseline estimation
+      })).slice(-10) // Show last 10 points
+    : [
+        { time: '08:00', actual: 4.0, baseline: 3.0 },
+        { time: '10:00', actual: 4.5, baseline: 4.0 },
+        { time: '12:00', actual: 4.0, baseline: 4.5 },
+        { time: '14:00', actual: 4.2, baseline: 5.0 },
+        { time: '16:00', actual: 8.0, baseline: 5.5 },
+        { time: '18:00', actual: 4.5, baseline: 5.0 },
+        { time: '20:00', actual: 8.5, baseline: 4.0 },
+      ];
+
+  if (isLoading) {
+    return <div className="text-center py-4">Loading real-time chart...</div>;
+  }
+
   return (
     <Card className="h-[300px] flex flex-col border-transparent bg-[#F5F7F5] shadow-sm mb-6">
       <CardHeader className="pb-2 flex flex-row items-start justify-between px-6 pt-6">
         <div>
-          <CardTitle className="text-lg text-black font-heading font-bold mb-1">Energy Consumption</CardTitle>
+          <CardTitle className="text-lg text-black font-heading font-bold mb-1">Energy Consumption (kW)</CardTitle>
         </div>
         <div className="flex items-center gap-4 text-[10px] font-bold text-secondary uppercase tracking-widest">
           <div className="flex items-center gap-1.5">
@@ -33,7 +49,7 @@ export function RealTimeChart() {
       <CardContent className="flex-1 pb-4 pt-4 px-0">
         <div className="h-full w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 10, right: 30, left: 30, bottom: 0 }}>
+            <AreaChart data={formatted} margin={{ top: 10, right: 30, left: 30, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#1B4D1E" stopOpacity={0.2}/>

@@ -27,20 +27,19 @@ export function Sidebar() {
   const role = userData?.user?.role;
   
   const allNavItems = [
-    { label: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/dashboard' },
-    { label: 'Energy Monitor', icon: <Activity size={20} />, href: '/energy-monitor' },
-    { label: 'Lighting & AC', icon: <Lightbulb size={20} />, href: '/lighting-ac' },
-    { label: 'Savings Report', icon: <BarChart2 size={20} />, href: '/savings-report' },
-    { label: 'Automation', icon: <Bot size={20} />, href: '/automation' },
-    { label: 'Room Availability', icon: <DoorOpen size={20} />, href: '/room-availability' },
-    { label: 'Users Management', icon: <Users size={20} />, href: '/users' },
+    { label: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/dashboard', roles: ['admin', 'mahasiswa'] },
+    { label: 'Energy Monitor', icon: <Activity size={20} />, href: '/energy-monitor', roles: ['admin'] },
+    { label: 'Lighting & AC', icon: <Lightbulb size={20} />, href: '/lighting-ac', roles: ['admin', 'mahasiswa'] },
+    { label: 'Savings Report', icon: <BarChart2 size={20} />, href: '/savings-report', roles: ['admin'] },
+    { label: 'Automation', icon: <Bot size={20} />, href: '/automation', roles: ['admin'] },
+    { label: 'Room Availability', icon: <DoorOpen size={20} />, href: '/rooms', roles: ['admin', 'mahasiswa'] },
+    { label: 'Users Management', icon: <Users size={20} />, href: '/users', roles: ['admin'] },
   ];
 
-  const allowedForUser = ['/dashboard', '/room-availability', '/lighting-ac', '/profile'];
-
-  const navItems = ['admin', 'manager', 'ADMIN', 'MANAGER'].includes(role) 
-    ? allNavItems 
-    : allNavItems.filter(item => allowedForUser.includes(item.href));
+  const normalizedRole = (role || '').toLowerCase();
+  const navItems = allNavItems.filter(item => 
+    item.roles.includes(normalizedRole)
+  );
 
   return (
     <>

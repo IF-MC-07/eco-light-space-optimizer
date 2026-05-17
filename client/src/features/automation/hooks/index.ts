@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { automationApi } from '../api';
-import { AutomationSchedule } from '../types';
+import type { AutomationSchedule } from '../types';
 
 export const useSchedules = () => {
   return useQuery({
@@ -30,7 +30,7 @@ export const useCreateSchedule = () => {
 export const useUpdateSchedule = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: Partial<AutomationSchedule> }) => 
+    mutationFn: ({ id, payload }: { id: string; payload: Partial<AutomationSchedule> }) => 
       automationApi.update(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['automation-schedules'] });
@@ -45,5 +45,12 @@ export const useRemoveSchedule = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['automation-schedules'] });
     },
+  });
+};
+
+export const useAutomationStats = () => {
+  return useQuery({
+    queryKey: ['automation-schedules', 'stats'],
+    queryFn: () => automationApi.getStats(),
   });
 };

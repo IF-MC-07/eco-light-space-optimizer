@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Zone } from '@/types';
+import type { Zone } from '@/types';
 import { getZoneByCamera, saveZone as apiSaveZone, deleteZone as apiDeleteZone } from '../api/zoneApi';
 import { MOCK_ZONES } from '@/mocks/zoneData';
 
@@ -65,7 +65,7 @@ export const useZone = (cameraId: string) => {
     }
   };
 
-  const selectZona = (id: string) => {
+  const selectZona = (id: string | null) => {
     setSelectedId(id);
   };
   const clearAll = async () => {

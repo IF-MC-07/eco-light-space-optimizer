@@ -2,6 +2,7 @@
 #  Eco-Light & Space Optimizer — .gitignore
 # ============================================================
 
+/walkthrough.md
 
 # ─── CLIENT (Next.js) ───────────────────────────────────────
 client/node_modules/

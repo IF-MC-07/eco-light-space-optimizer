@@ -41,7 +41,6 @@ export function AccountDetails() {
           <CardTitle className="text-lg font-bold text-black font-heading">Account Details</CardTitle>
         </div>
         <Button 
-          size="sm" 
           onClick={handleUpdate} 
           disabled={isPending}
           className="bg-primary-dark hover:bg-primary text-white flex items-center gap-2"

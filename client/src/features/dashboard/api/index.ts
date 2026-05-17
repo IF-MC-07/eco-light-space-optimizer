@@ -1,5 +1,5 @@
 import { serverAPI } from '@/lib/api';
-import { EnergyLog, DetectionLog, LightControl, ACControl } from '@/types';
+import type { EnergyLog, DetectionLog, LightControl, ACControl } from '@/types';
 
 // --- Energy Log Endpoints ---
 export const getEnergyLogs = async (params?: any): Promise<EnergyLog[]> => {

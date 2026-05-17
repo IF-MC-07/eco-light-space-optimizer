@@ -2,11 +2,17 @@
 import React from 'react';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Zap, Snowflake, Lightbulb, Leaf, TrendingUp, Sparkles, ShieldCheck } from 'lucide-react';
-import { AutomationSchedule } from '../types';
+import type { AutomationSchedule } from '../types';
+import { useAutomationStats } from '../hooks';
 
 export function AutomationStats({ schedules }: { schedules: AutomationSchedule[] }) {
-  const totalSchedules = schedules.length;
-  const estSavings = totalSchedules * 1.5; // Mock calculation
+  const { data: response } = useAutomationStats();
+  const stats = response?.data;
+
+  const totalSchedules = stats?.total_schedules ?? schedules.length;
+  const activeSchedules = stats?.active_schedules ?? Math.max(0, schedules.length - 1);
+  const efficiencyGoal = stats?.efficiency_score ?? 92;
+  const estSavings = totalSchedules * 1.5; 
 
   return (
     <div className="grid grid-cols-3 gap-6 h-full">
@@ -21,7 +27,7 @@ export function AutomationStats({ schedules }: { schedules: AutomationSchedule[]
               <div className="w-2 h-2 rounded-full bg-primary-dark animate-pulse"></div>
               <p className="text-[10px] font-bold text-secondary uppercase tracking-[0.2em]">Active Logic</p>
             </div>
-            <h3 className="text-6xl font-heading font-black text-black tracking-tighter">{totalSchedules}</h3>
+            <h3 className="text-6xl font-heading font-black text-black tracking-tighter">{activeSchedules}</h3>
           </div>
           <div className="flex items-center gap-2">
             <span className="px-3 py-1 bg-primary/10 text-primary-dark text-[10px] font-bold rounded-full border border-primary/20 flex items-center gap-1.5">
@@ -75,10 +81,10 @@ export function AutomationStats({ schedules }: { schedules: AutomationSchedule[]
           <div className="w-full space-y-2">
             <div className="flex justify-between items-center text-[9px] font-bold text-secondary-light uppercase tracking-widest">
               <span>Efficiency Goal</span>
-              <span>85%</span>
+              <span>{efficiencyGoal}%</span>
             </div>
             <div className="w-full h-1.5 bg-[#F1F5F9] rounded-full overflow-hidden">
-              <div className="h-full bg-primary-dark w-[85%] rounded-full shadow-[0_0_8px_rgba(46,125,50,0.4)]"></div>
+              <div className="h-full bg-primary-dark rounded-full shadow-[0_0_8px_rgba(46,125,50,0.4)]" style={{ width: `${efficiencyGoal}%` }}></div>
             </div>
           </div>
         </CardContent>

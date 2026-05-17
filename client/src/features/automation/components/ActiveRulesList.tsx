@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { Pencil, Clock, Power } from 'lucide-react';
-import { AutomationSchedule } from '../types';
+import type { AutomationSchedule } from '../types';
 
 interface ActiveRulesListProps {
   schedules: AutomationSchedule[];

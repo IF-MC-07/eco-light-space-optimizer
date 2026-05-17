@@ -1,4 +1,5 @@
-import React, { ButtonHTMLAttributes } from 'react';
+import React from 'react';
+import type { ButtonHTMLAttributes } from 'react';
 
 type ButtonVariant = 'primary' | 'secondary' | 'inverted' | 'outlined' | 'edit' | 'action' | 'icon-gray' | 'icon-red';
 

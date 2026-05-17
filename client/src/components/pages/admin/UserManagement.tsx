@@ -106,13 +106,13 @@ export default function UserManagement() {
       <EditUserModal 
         isOpen={isEditUserOpen} 
         onClose={() => setIsEditUserOpen(false)} 
-        userId={selectedUserId || undefined}
+        userId={selectedUserId || ""}
       />
 
       <RemoveUserModal 
         isOpen={isRemoveUserOpen} 
         onClose={() => setIsRemoveUserOpen(false)}
-        userName={selectedUserId ? "Selected User" : undefined} // Ideally you'd fetch the user data
+        userName={selectedUserId ? "Selected User" : ""} // Ideally you'd fetch the user data
       />
 
       <ExportReportModal 

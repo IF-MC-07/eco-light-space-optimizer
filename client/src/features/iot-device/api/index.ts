@@ -1,5 +1,5 @@
 import { serverAPI } from '@/lib/api';
-import { IotDevice, ApiResponse } from '../types';
+import type { IotDevice, ApiResponse } from '../types';
 
 export const iotDeviceApi = {
   getAll: async (roomId?: string): Promise<ApiResponse<IotDevice[]>> => {

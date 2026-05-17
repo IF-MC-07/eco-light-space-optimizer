@@ -21,8 +21,8 @@ export default function LightingAndAC() {
         <div className="col-span-1 space-y-6">
           <RoleGuard allowedRoles={['admin']}>
             <MasterControls />
-            <TargetClimate />
           </RoleGuard>
+          <TargetClimate />
         </div>
       </div>
     </div>

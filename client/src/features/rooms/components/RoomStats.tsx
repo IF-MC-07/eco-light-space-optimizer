@@ -1,6 +1,6 @@
 import React from 'react';
 import { DoorOpen, Users, Activity, MonitorOff } from 'lucide-react';
-import { Room } from '../types';
+import type { Room } from '../types';
 
 interface RoomStatsProps {
   rooms: Room[];

@@ -1,5 +1,5 @@
 import { serverAPI } from '@/lib/api';
-import { Camera } from '@/types';
+import type { Camera } from '@/types';
 
 // --- Camera Endpoints ---
 export const getCameras = async (params?: any): Promise<Camera[]> => {

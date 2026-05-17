@@ -1,5 +1,5 @@
 import { serverAPI } from '@/lib/api';
-import { Room, ApiResponse } from '../types';
+import type { Room, ApiResponse } from '../types';
 
 export const roomsApi = {
   getAll: async (): Promise<ApiResponse<Room[]>> => {

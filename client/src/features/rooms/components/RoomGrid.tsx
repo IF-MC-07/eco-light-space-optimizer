@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { RoomCard } from './RoomCard';
 import { RoomSummaryModal } from './RoomSummaryModal';
-import { Room } from '../types';
+import type { Room } from '../types';
 
 export function RoomGrid({ rooms, isLoading, isError, onDeleteRoom }: { 
   rooms: Room[], 
@@ -27,7 +27,7 @@ export function RoomGrid({ rooms, isLoading, isError, onDeleteRoom }: {
               key={room.room_id} 
               room={room} 
               onClick={() => setSelectedRoomId(room.room_id)}
-              onDelete={onDeleteRoom ? () => onDeleteRoom(room) : undefined}
+              {...(onDeleteRoom ? { onDelete: () => onDeleteRoom(room) } : {})}
             />
           ))
         )}

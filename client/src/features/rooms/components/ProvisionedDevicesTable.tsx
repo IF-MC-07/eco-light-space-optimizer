@@ -5,7 +5,7 @@ import { Button } from "../../../components/ui/Button";
 import { Switch } from "../../../components/ui/Switch";
 import { cn } from "../../../lib/utils";
 import { useRouter } from "next/navigation";
-import { IotDevice } from "../../iot-device/types";
+import type { IotDevice } from "../../iot-device/types";
 
 interface ProvisionedDevicesTableProps {
   devices: IotDevice[];

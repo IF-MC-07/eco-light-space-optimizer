@@ -170,3 +170,127 @@ export const exportSavingsReport = async (req, res, next) => {
   }
 };
 
+export const exportGeneric = async (req, res, next) => {
+  try {
+    const { resource, format } = req.params;
+    let data = [];
+    let columns = [];
+    let title = '';
+
+    switch (resource) {
+      case 'rooms':
+        data = await db.Room.findAll();
+        columns = [
+          { header: 'Room ID', key: 'room_id' },
+          { header: 'Room Name', key: 'room_name' },
+          { header: 'Floor', key: 'floor' },
+          { header: 'Capacity', key: 'capacity' }
+        ];
+        title = 'Rooms List';
+        break;
+      case 'users':
+        data = await db.User.findAll();
+        columns = [
+          { header: 'User ID', key: 'user_id' },
+          { header: 'Name', key: 'name' },
+          { header: 'Email', key: 'email' },
+          { header: 'Role', key: 'role' }
+        ];
+        title = 'Users List';
+        break;
+      case 'devices':
+      case 'iot-devices':
+        data = await db.IotDevice.findAll({ include: [{ model: db.Room }] });
+        columns = [
+          { header: 'Device ID', key: 'device_id' },
+          { header: 'Device Name', key: 'device_name' },
+          { header: 'Device Type', key: 'device_type' },
+          { header: 'Status', key: 'status' },
+          { header: 'Room', key: 'room_name' }
+        ];
+        data = data.map(d => {
+          const row = d.toJSON ? d.toJSON() : d;
+          row.room_name = d.Room ? d.Room.room_name : 'N/A';
+          return row;
+        });
+        title = 'IoT Devices List';
+        break;
+      case 'schedules':
+      case 'automation-schedules':
+        data = await db.AutomationSchedule.findAll({ include: [{ model: db.Room }] });
+        columns = [
+          { header: 'Schedule ID', key: 'schedule_id' },
+          { header: 'Room', key: 'room_name' },
+          { header: 'Device Type', key: 'device_type' },
+          { header: 'Action', key: 'action' },
+          { header: 'Time', key: 'time' },
+          { header: 'Days', key: 'days' }
+        ];
+        data = data.map(d => {
+          const row = d.toJSON ? d.toJSON() : d;
+          row.room_name = d.Room ? d.Room.room_name : 'N/A';
+          return row;
+        });
+        title = 'Automation Schedules';
+        break;
+      case 'zones':
+        data = await db.Zone.findAll({ include: [{ model: db.Room }] });
+        columns = [
+          { header: 'Zone ID', key: 'zone_id' },
+          { header: 'Zone Name', key: 'zone_name' },
+          { header: 'Room', key: 'room_name' },
+          { header: 'Light Threshold', key: 'light_threshold_lux' }
+        ];
+        data = data.map(d => {
+          const row = d.toJSON ? d.toJSON() : d;
+          row.room_name = d.Room ? d.Room.room_name : 'N/A';
+          return row;
+        });
+        title = 'Zones List';
+        break;
+      default:
+        return res.status(400).json({ success: false, message: 'Invalid resource type' });
+    }
+
+    const fmt = format.toLowerCase();
+    if (fmt === 'pdf') {
+      const doc = new PDFDocument();
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=${resource}.pdf`);
+      doc.pipe(res);
+      doc.fontSize(20).text(title, { align: 'center' });
+      doc.moveDown();
+
+      data.forEach(item => {
+        const text = columns.map(c => `${c.header}: ${item[c.key] || 'N/A'}`).join(' | ');
+        doc.fontSize(10).text(text);
+        doc.moveDown(0.5);
+      });
+      doc.end();
+    } else if (fmt === 'xlsx' || fmt === 'csv') {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet(title);
+      worksheet.columns = columns;
+
+      data.forEach(item => {
+        worksheet.addRow(item.toJSON ? item.toJSON() : item);
+      });
+
+      if (fmt === 'xlsx') {
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=${resource}.xlsx`);
+        await workbook.xlsx.write(res);
+      } else {
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename=${resource}.csv`);
+        await workbook.csv.write(res);
+      }
+      res.end();
+    } else {
+      res.status(400).json({ success: false, message: 'Invalid format. Use pdf, xlsx, or csv.' });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+

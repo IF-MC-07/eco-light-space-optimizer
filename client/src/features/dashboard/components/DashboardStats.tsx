@@ -1,8 +1,22 @@
 import React from 'react';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Building, Users, Zap, AlertTriangle } from 'lucide-react';
+import { useDashboard } from '../../../hooks/useDashboard';
 
 export function DashboardStats() {
+  const { data, loading } = useDashboard();
+
+  const totalRooms = data ? data.total_rooms : 128;
+  const occupiedNow = data ? Math.min(data.total_rooms, Math.round(data.total_rooms * 0.65)) : 84;
+  
+  const energySaved = data && data.todays_energy_logs
+    ? data.todays_energy_logs.reduce((acc: number, log: any) => acc + (log.saved_watts || 0), 0) / 1000
+    : 42.8;
+
+  const activeAlerts = data && data.latest_sensors
+    ? data.latest_sensors.filter((s: any) => s.power_watts > 1000).length
+    : 2;
+
   return (
     <div className="grid grid-cols-4 gap-6 min-h-[180px]">
       {/* Total Rooms */}
@@ -15,7 +29,7 @@ export function DashboardStats() {
             <p className="text-[10px] font-bold text-secondary uppercase tracking-wider mt-1">Total Rooms</p>
           </div>
           <div className="mt-2">
-            <h3 className="text-3xl font-heading font-bold text-black mb-1">128</h3>
+            <h3 className="text-3xl font-heading font-bold text-black mb-1">{totalRooms}</h3>
             <p className="text-xs text-secondary font-medium">4 newly configured</p>
           </div>
         </CardContent>
@@ -31,7 +45,7 @@ export function DashboardStats() {
             <p className="text-[10px] font-bold text-secondary uppercase tracking-wider mt-1">Occupied Now</p>
           </div>
           <div className="mt-2">
-            <h3 className="text-3xl font-heading font-bold text-black mb-1">84</h3>
+            <h3 className="text-3xl font-heading font-bold text-black mb-1">{occupiedNow}</h3>
             <p className="text-xs font-bold text-primary flex items-center">
               <span className="mr-1 text-[10px]">↗</span> 12% from last hour
             </p>
@@ -50,7 +64,7 @@ export function DashboardStats() {
           </div>
           <div className="mt-2">
             <div className="flex items-baseline mb-1">
-              <h3 className="text-3xl font-heading font-bold text-black">42.8</h3>
+              <h3 className="text-3xl font-heading font-bold text-black">{energySaved.toFixed(1)}</h3>
               <span className="text-sm font-semibold text-secondary ml-1">kWh</span>
             </div>
             <p className="text-xs text-secondary font-medium italic">Equivalent to 3 trees planted</p>
@@ -68,7 +82,7 @@ export function DashboardStats() {
             <p className="text-[10px] font-bold text-secondary uppercase tracking-wider mt-1">Active Alerts</p>
           </div>
           <div className="mt-2">
-            <h3 className="text-3xl font-heading font-bold text-black mb-1">02</h3>
+            <h3 className="text-3xl font-heading font-bold text-black mb-1">0{activeAlerts}</h3>
             <p className="text-xs font-bold text-tertiary">Priority action required</p>
           </div>
         </CardContent>

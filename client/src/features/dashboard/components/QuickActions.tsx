@@ -8,10 +8,11 @@ interface QuickActionsProps {
 
 export function QuickActions({ onExport }: QuickActionsProps) {
   const actions = [
-    { label: "All Lights Off", icon: <Sun className="w-5 h-5 text-primary-dark" /> },
-    { label: "Set Eco-Temp", icon: <Thermometer className="w-5 h-5 text-primary-dark" /> },
-    { label: "Update Schedule", icon: <Clock className="w-5 h-5 text-primary-dark" /> },
-    { label: "Night Mode", icon: <Shield className="w-5 h-5 text-primary-dark" /> },
+    { label: "All Lights Off", icon: <Sun className="w-5 h-5 text-primary-dark" />, onClick: () => {} },
+    { label: "Set Eco-Temp", icon: <Thermometer className="w-5 h-5 text-primary-dark" />, onClick: () => {} },
+    { label: "Update Schedule", icon: <Clock className="w-5 h-5 text-primary-dark" />, onClick: () => {} },
+    { label: "Night Mode", icon: <Shield className="w-5 h-5 text-primary-dark" />, onClick: () => {} },
+    { label: "Export Reports", icon: <Download className="w-5 h-5 text-primary-dark" />, onClick: onExport },
   ];
 
   return (

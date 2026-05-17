@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { iotDeviceApi } from '../api';
-import { IotDevice } from '../types';
+import type { IotDevice } from '../types';
 
 export const useDevices = (roomId?: string) => {
   return useQuery({

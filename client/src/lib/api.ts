@@ -12,7 +12,7 @@ const serverAPI = axios.create({
 });
 
 const pythonAPI = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_PYTHON_SERVICE_API_BASE_URL,
+  baseURL: process.env.NEXT_PUBLIC_PYTHON_SERVICE_API_BASE_URL || 'http://localhost:8000',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',

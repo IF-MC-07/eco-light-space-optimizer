@@ -1,6 +1,6 @@
 export interface IotDevice {
-  device_id: number;
-  room_id: number;
+  device_id: string;
+  room_id: string;
   device_name: string;
   device_type: string;
   status: string;
