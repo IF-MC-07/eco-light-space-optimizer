@@ -2,7 +2,8 @@ import * as cameraService from '../services/cameraService.js';
 
 export const getAll = async (req, res) => {
   try {
-    const data = await cameraService.getAll();
+    const { room_id } = req.query;
+    const data = await cameraService.getAll(room_id);
     res.status(200).json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

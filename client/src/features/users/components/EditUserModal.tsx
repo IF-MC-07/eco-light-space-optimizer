@@ -79,7 +79,15 @@ export function EditUserModal({ isOpen, onClose, userId }: EditUserModalProps) {
               <div className="relative">
                 <div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-primary-dark">
                   <div className="w-full h-full bg-secondary-dark flex items-center justify-center text-white font-bold text-xl">
-                    {userData?.data?.avatar || userInitial}
+                    {userData?.data?.avatar ? (
+                      <img 
+                        src={userData.data.avatar} 
+                        alt={name} 
+                        className="w-full h-full object-cover" 
+                      />
+                    ) : (
+                      userInitial
+                    )}
                   </div>
                 </div>
                 <button className="absolute -bottom-2 -right-2 w-7 h-7 bg-primary-dark text-white rounded-full flex items-center justify-center shadow-sm border-2 border-white hover:bg-primary transition-colors">

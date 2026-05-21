@@ -14,7 +14,7 @@ app = FastAPI()
 MODEL_PATH = os.getenv('MODEL_PATH', 'yolov8n.pt')
 model = YOLO(MODEL_PATH)
 
-def get_kamera_ip(camera_id: int) -> str:
+def get_kamera_ip(camera_id: str) -> str:
     try:
         conn = get_db_connection()
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
@@ -72,7 +72,7 @@ def process_frame(frame, id_kamera, zones):
 
     return annotated
 
-async def frame_generator(id_kamera: int):
+async def frame_generator(id_kamera: str):
     ip_address = get_kamera_ip(id_kamera)
     cam_source = 0
     if ip_address:
@@ -118,12 +118,12 @@ async def frame_generator(id_kamera: int):
         cap.release()
 
 @app.get("/kamera/{id_kamera}/stream")
-async def get_stream(id_kamera: int):
+async def get_stream(id_kamera: str):
     return StreamingResponse(frame_generator(id_kamera), media_type="multipart/x-mixed-replace; boundary=frame")
 
 
 @app.get("/kamera/{id_kamera}/snapshot")
-def get_snapshot(id_kamera: int):
+def get_snapshot(id_kamera: str):
     ip_address = get_kamera_ip(id_kamera)
     cam_source = 0
     if ip_address:
@@ -147,3 +147,65 @@ def get_snapshot(id_kamera: int):
         raise HTTPException(status_code=500, detail="Failed to encode image")
     
     return StreamingResponse(io.BytesIO(encoded_image.tobytes()), media_type="image/jpeg")
+
+
+# Fallback take_snapshot function to satisfy mqtt_subscriber.py imports
+def take_snapshot():
+    print("📸 take_snapshot trigger invoked!")
+
+
+# --- STATISTICS AND ENERGY ENDPOINTS ---
+try:
+    from app.statistics_engine import (
+        get_realtime_stats, get_top_consumers, detect_usage_alerts,
+        get_energy_summary, get_savings_breakdown, get_savings_trend,
+        get_yoy_comparison, calculate_carbon_savings
+    )
+except ImportError:
+    from statistics_engine import (
+        get_realtime_stats, get_top_consumers, detect_usage_alerts,
+        get_energy_summary, get_savings_breakdown, get_savings_trend,
+        get_yoy_comparison, calculate_carbon_savings
+    )
+
+
+@app.get("/stats/realtime")
+def api_realtime_stats(room_id: int = None):
+    return get_realtime_stats(room_id)
+
+
+@app.get("/stats/top-consumers")
+def api_top_consumers(limit: int = 5):
+    return get_top_consumers(limit)
+
+
+@app.get("/stats/alerts")
+def api_usage_alerts(threshold: float = None):
+    if threshold is None:
+        threshold = float(os.getenv("ENERGY_THRESHOLD_WATTS", 500))
+    return detect_usage_alerts(threshold)
+
+
+@app.get("/energy/summary")
+def api_energy_summary(room_id: int = None):
+    summary = get_energy_summary(room_id)
+    # Also calculate carbon/cost savings based on total_saved_watts
+    total_saved = summary.get("total_saved_watts", 0.0)
+    carbon_cost = calculate_carbon_savings(total_saved)
+    summary.update(carbon_cost)
+    return summary
+
+
+@app.get("/energy/breakdown")
+def api_energy_breakdown(room_id: int = None):
+    return get_savings_breakdown(room_id)
+
+
+@app.get("/energy/trend")
+def api_energy_trend(days: int = 7):
+    return get_savings_trend(days)
+
+
+@app.get("/energy/yoy")
+def api_energy_yoy():
+    return get_yoy_comparison()

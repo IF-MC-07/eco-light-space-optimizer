@@ -30,7 +30,7 @@ export function ActiveRulesList({ schedules, onEdit }: ActiveRulesListProps) {
         ) : (
           schedules.map((rule) => (
             <Card key={rule.schedule_id} className="border-none shadow-sm bg-white rounded-[24px] group hover:shadow-md transition-all duration-300">
-              <CardContent className="p-6 flex items-center justify-between">
+              <CardContent className="p-6 flex items-center justify-between mt-6">
                 <div className="flex items-center gap-6">
                   <div className="w-14 h-14 rounded-2xl bg-neutral flex items-center justify-center text-secondary-light group-hover:text-primary-dark group-hover:bg-primary/5 transition-all shrink-0">
                     <Clock size={24} />

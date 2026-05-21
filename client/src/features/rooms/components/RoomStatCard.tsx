@@ -28,7 +28,7 @@ export function RoomStatCard({
         <div className="flex justify-between items-start">
           <div
             className={cn(
-              "w-8 h-8 rounded-lg flex items-center justify-center",
+              "w-8 h-8 rounded-lg flex items-center justify-center mt-5",
               iconBgClass,
               iconColorClass
             )}

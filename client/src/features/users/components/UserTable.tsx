@@ -61,8 +61,16 @@ export function UserTable({ filters, onEdit, onRemove }: UserTableProps) {
                 <tr key={user.user_id || idx} className={cn("group transition-colors hover:bg-neutral-border/20", idx !== users.length - 1 && "border-b border-neutral-border/50")}>
                   <td className="py-4 px-4">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 rounded-full bg-secondary-dark text-white flex items-center justify-center text-sm font-bold shadow-sm shrink-0">
-                        {user.avatar || user.name?.substring(0, 2).toUpperCase() || 'U'}
+                      <div className="w-10 h-10 rounded-full bg-secondary-dark text-white flex items-center justify-center text-sm font-bold shadow-sm shrink-0 overflow-hidden">
+                        {user.avatar ? (
+                          <img 
+                            src={user.avatar} 
+                            alt={user.name} 
+                            className="w-full h-full object-cover" 
+                          />
+                        ) : (
+                          user.name?.substring(0, 2).toUpperCase() || 'U'
+                        )}
                       </div>
                       <div>
                         <h4 className="font-bold text-sm text-secondary-dark">{user.name}</h4>

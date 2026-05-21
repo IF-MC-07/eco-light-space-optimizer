@@ -19,7 +19,7 @@ def get_db_connection():
         port=os.environ.get('DB_PORT', '5432')
     )
 
-def ambil_zona_dari_db(camera_id: int) -> list[dict]:
+def ambil_zona_dari_db(camera_id: str) -> list[dict]:
     """
     Mengambil data zona dari database berdasarkan camera_id.
     Standardized to match Sequelize schema (zones, cameras, room_id, camera_id, etc.)
@@ -36,12 +36,14 @@ def ambil_zona_dari_db(camera_id: int) -> list[dict]:
                 SELECT 
                     zone_id, room_id, zone_name, zone_status, 
                     x1_pct, y1_pct, x2_pct, y2_pct, 
-                    color, sort_order 
+                    color, sort_order,
+                    COALESCE(skew_x, 0) as skew_x,
+                    COALESCE(skew_y, 0) as skew_y
                 FROM zones 
                 WHERE room_id = (
                     SELECT room_id FROM cameras WHERE camera_id = %s
                 )
-                AND zone_status = 'aktif'
+                AND zone_status = 'active'
                 ORDER BY sort_order
             """, (camera_id,))
             rows = cur.fetchall()

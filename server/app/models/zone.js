@@ -38,15 +38,15 @@ export default (sequelize, DataTypes) => {
       type: DataTypes.FLOAT,
       allowNull: true
     },
-    skew_x: {
-      type: DataTypes.FLOAT,
-      allowNull: true,
-      defaultValue: 0
+    skew_x: { 
+      type: DataTypes.DOUBLE, 
+      defaultValue: 0,
+      allowNull: true 
     },
-    skew_y: {
-      type: DataTypes.FLOAT,
-      allowNull: true,
-      defaultValue: 0
+    skew_y: { 
+      type: DataTypes.DOUBLE, 
+      defaultValue: 0,
+      allowNull: true 
     },
     color: {
       type: DataTypes.STRING(20),

@@ -22,8 +22,65 @@ export default function ZoneConfiguration() {
     if (typeof deviceId === 'string') {
       return deviceId;
     }
-    return "1";
+    return "";
   });
+  const [cameras, setCameras] = useState<Array<{
+    camera_id: string;
+    room_id: string;
+    ip_address: string;
+    resolution: string;
+    status: string;
+  }>>([]);
+
+  const [rooms, setRooms] = useState<Array<{
+    room_id: string;
+    room_name: string;
+    location: string;
+    status: string;
+  }>>([]);
+
+  const [selectedRoomId, setSelectedRoomId] = useState<string>('');
+
+  useEffect(() => {
+    fetch('/api/rooms', {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setRooms(data.data);
+          if (data.data.length > 0 && !selectedRoomId) {
+            setSelectedRoomId(data.data[0].room_id);
+          }
+        }
+      })
+      .catch(err => console.error('Failed to load rooms:', err));
+  }, []);
+
+  useEffect(() => {
+    if (!selectedRoomId) return;
+    
+    fetch(`/api/cameras?room_id=${selectedRoomId}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setCameras(data.data);
+          if (data.data.length > 0) {
+            setSelectedCameraId(data.data[0].camera_id);
+          } else {
+            setSelectedCameraId('');
+          }
+        }
+      })
+      .catch(err => console.error('Failed to load cameras:', err));
+  }, [selectedRoomId]);
+
   const [mode, setMode] = useState<'draw' | 'edit' | 'preview'>('edit');
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<fabric.Canvas | null>(null);
@@ -130,11 +187,16 @@ export default function ZoneConfiguration() {
     const ch = canvas.getHeight();
 
     zonas.forEach(z => {
+      const pixelLeft   = z.x1_pct * cw;
+      const pixelTop    = z.y1_pct * ch;
+      const pixelWidth  = (z.x2_pct - z.x1_pct) * cw;
+      const pixelHeight = (z.y2_pct - z.y1_pct) * ch;
+
       const rect = new fabric.Rect({
-        left: z.x1_pct * cw,
-        top: z.y1_pct * ch,
-        width: (z.x2_pct - z.x1_pct) * cw,
-        height: (z.y2_pct - z.y1_pct) * ch,
+        left: pixelLeft,
+        top: pixelTop,
+        width: pixelWidth,
+        height: pixelHeight,
         fill: `${z.color}33`, // 20% opacity hex
         stroke: z.color,
         strokeWidth: 2,
@@ -244,17 +306,21 @@ export default function ZoneConfiguration() {
           const ch = canvas.getHeight();
           const left = tempRect.current.left || 0;
           const top = tempRect.current.top || 0;
-          const width = tempRect.current.width || 0;
-          const height = tempRect.current.height || 0;
+          const scaleX = tempRect.current.scaleX ?? 1;
+          const scaleY = tempRect.current.scaleY ?? 1;
+          const width = (tempRect.current.width || 0) * scaleX;
+          const height = (tempRect.current.height || 0) * scaleY;
+
+          const clamp = (val: number) => Math.min(1, Math.max(0, val));
 
           // Only add if it's large enough
           if (width > 10 && height > 10) {
             addZona({
               zone_name: `Zone ${zonas.length + 1}`,
-              x1_pct: left / cw,
-              y1_pct: top / ch,
-              x2_pct: (left + width) / cw,
-              y2_pct: (top + height) / ch,
+              x1_pct: clamp(left / cw),
+              y1_pct: clamp(top / ch),
+              x2_pct: clamp((left + width) / cw),
+              y2_pct: clamp((top + height) / ch),
               skew_x: tempRect.current.skewX ?? 0,
               skew_y: tempRect.current.skewY ?? 0,
               color: '#4CAF50'
@@ -293,11 +359,13 @@ export default function ZoneConfiguration() {
         const width = (obj.width || 0) * scaleX;
         const height = (obj.height || 0) * scaleY;
 
+        const clamp = (val: number) => Math.min(1, Math.max(0, val));
+
         updateZona(obj.data.id, {
-          x1_pct: left / cw,
-          y1_pct: top / ch,
-          x2_pct: (left + width) / cw,
-          y2_pct: (top + height) / ch,
+          x1_pct: clamp(left / cw),
+          y1_pct: clamp(top / ch),
+          x2_pct: clamp((left + width) / cw),
+          y2_pct: clamp((top + height) / ch),
           skew_x: obj.skewX ?? 0,
           skew_y: obj.skewY ?? 0
         });
@@ -351,7 +419,25 @@ export default function ZoneConfiguration() {
 
           <div className="flex items-center gap-3">
              <div className="bg-white border border-neutral-border rounded-md px-3 py-2 flex items-center gap-3 cursor-pointer hover:border-neutral-muted shadow-sm">
-               <span className="text-sm font-bold text-secondary-dark leading-none">Living Room</span>
+               <select
+                 className="text-sm font-bold text-secondary-dark leading-none outline-none appearance-none bg-transparent"
+                 value={selectedRoomId}
+                 onChange={(e) => {
+                   setSelectedRoomId(e.target.value);
+                   // Reset camera selection when room changes
+                   setSelectedCameraId('');
+                 }}
+               >
+                 {rooms.length === 0 ? (
+                   <option value="">Loading rooms...</option>
+                 ) : (
+                   rooms.map(room => (
+                     <option key={room.room_id} value={room.room_id}>
+                       {room.room_name}
+                     </option>
+                   ))
+                 )}
+               </select>
                <ChevronDown size={14} className="text-secondary-light" />
              </div>
              <div className="bg-white border border-neutral-border rounded-md px-3 py-2 flex items-center gap-3 cursor-pointer hover:border-neutral-muted shadow-sm">
@@ -360,9 +446,15 @@ export default function ZoneConfiguration() {
                  value={selectedCameraId}
                  onChange={(e) => setSelectedCameraId(e.target.value)}
                >
-                 <option value="1">CCTV North-Entrance-01</option>
-                 <option value="2">CCTV Main-Lobby-02</option>
-                 <option value="3">CCTV Room-603-03</option>
+                 {cameras.length === 0 ? (
+                   <option value="">Loading cameras...</option>
+                 ) : (
+                   cameras.map(cam => (
+                     <option key={cam.camera_id} value={cam.camera_id}>
+                       {cam.camera_id} — {cam.ip_address}
+                     </option>
+                   ))
+                 )}
                </select>
                <ChevronDown size={14} className="text-secondary-light" />
              </div>
@@ -414,7 +506,7 @@ export default function ZoneConfiguration() {
                {/* Stream Background */}
                <img 
                  key={selectedCameraId}
-                 src={`http://localhost:8000/camera/${selectedCameraId}/stream`}
+                 src={`${process.env.NEXT_PUBLIC_CAMERA_BASE_URL}/kamera/${selectedCameraId}/stream`}
                  className="absolute inset-0 w-full h-full object-fill pointer-events-none"
                  alt="Camera Stream"
                />

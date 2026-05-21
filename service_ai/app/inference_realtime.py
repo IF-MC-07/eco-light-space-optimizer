@@ -26,11 +26,15 @@ MQTT_PORT           = int(os.getenv("MQTT_PORT", 1883))
 MQTT_USER           = os.getenv("MQTT_USER")
 MQTT_PASSWORD       = os.getenv("MQTT_PASSWORD")
 MQTT_TOPIC_TRIGGER  = os.getenv("MQTT_TOPIC_TRIGGER", "camera/trigger")
-MQTT_TOPIC_RESULT   = os.getenv("MQTT_TOPIC_RESULT", "ai/inference/result")
 MQTT_TOPIC_CONTROL  = os.getenv("MQTT_TOPIC_CONTROL", "kelas/control")
 
 CAMERA_SOURCE       = os.getenv("CAMERA_SOURCE", "0")
-ID_KAMERA           = int(os.getenv("ID_KAMERA", 1))
+ID_KAMERA           = os.getenv("ID_KAMERA", "CAM-001")
+
+MQTT_TOPIC_RESULT   = os.getenv(
+    "MQTT_TOPIC_RESULT",
+    f"ai/inference/result/{ID_KAMERA}"
+)
 
 SEND_INTERVAL       = float(os.getenv("SEND_INTERVAL", 2))       # detik
 ZONE_FETCH_INTERVAL = float(os.getenv("ZONE_FETCH_INTERVAL", 60)) # detik
@@ -97,7 +101,7 @@ class MQTTHandler:
 
 # ─── Zone Manager ─────────────────────────────────────────────────────────────
 class ZoneManager:
-    def __init__(self, id_kamera: int, fetch_interval: float):
+    def __init__(self, id_kamera: str, fetch_interval: float):
         self.id_kamera      = id_kamera
         self.fetch_interval = fetch_interval
         self.zones          = []
@@ -202,6 +206,25 @@ def run():
                 payload = {**count, "lampu": status, "camera_id": ID_KAMERA}
                 if mqtt_handler.publish(MQTT_TOPIC_RESULT, payload):
                     log.info(f"📤 {payload}")
+                    
+                    # Wire Decision Engine and Log Writer
+                    try:
+                        from app.decision_engine import decision_engine
+                        from app.log_writer import write_detection_logs
+                    except ImportError:
+                        from decision_engine import decision_engine
+                        from log_writer import write_detection_logs
+                        
+                    try:
+                        decision_engine.process_inference(ID_KAMERA, count)
+                    except Exception as ex:
+                        log.error(f"❌ Error in decision engine: {ex}")
+                        
+                    try:
+                        write_detection_logs(ID_KAMERA, count)
+                    except Exception as ex:
+                        log.error(f"❌ Error in log writer: {ex}")
+
                 prev_data      = count.copy()
                 last_send_time = now
 

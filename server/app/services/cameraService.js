@@ -2,8 +2,12 @@ import db from '../models/index.js';
 
 const { Camera } = db;
 
-export const getAll = async () => {
-  return await Camera.findAll();
+export const getAll = async (roomId) => {
+  const whereClause = { status: 'active' };
+  if (roomId) {
+    whereClause.room_id = roomId;
+  }
+  return await Camera.findAll({ where: whereClause });
 };
 
 export const getById = async (id) => {

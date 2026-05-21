@@ -6,7 +6,7 @@ const { User } = db;
 const SALT_ROUNDS = 10;
 
 export const getAll = async (filters = {}) => {
-  const { search, role } = filters;
+  const { search, role, page, limit } = filters;
   const where = {};
 
   if (search) {
@@ -19,6 +19,30 @@ export const getAll = async (filters = {}) => {
 
   if (role) {
     where.role = role.toLowerCase();
+  }
+
+  if (page && limit) {
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 10;
+    const offset = (pageNum - 1) * limitNum;
+
+    const { count, rows } = await User.findAndCountAll({
+      where,
+      attributes: { exclude: ['password'] },
+      order: [['name', 'ASC']],
+      limit: limitNum,
+      offset: offset
+    });
+
+    return {
+      users: rows,
+      pagination: {
+        total: count,
+        totalPages: Math.ceil(count / limitNum),
+        page: pageNum,
+        limit: limitNum
+      }
+    };
   }
 
   return await User.findAll({

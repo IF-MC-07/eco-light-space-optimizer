@@ -17,6 +17,7 @@ class MQTTSubscriber:
         
         self.topic_trigger = os.getenv("MQTT_TOPIC_TRIGGER", "camera/trigger")
         self.topic_request = os.getenv("MQTT_TOPIC_REQUEST", "ai/inference/request")
+        self.topic_esp32_online = "esp32/+/status/online"
         
         self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         self.client.on_connect = self._on_connect
@@ -32,6 +33,10 @@ class MQTTSubscriber:
             # Subscribe ke topic setelah connect
             client.subscribe(self.topic_trigger)
             client.subscribe(self.topic_request)
+            client.subscribe("esp32/+/status/response")
+            client.subscribe("esp32/+/light/+")
+            client.subscribe("esp32/+/ac")
+            client.subscribe(self.topic_esp32_online)
         else:
             logger.error(f"❌ Failed to connect, reason: {reason_code}")
 
@@ -54,6 +59,34 @@ class MQTTSubscriber:
             self._handle_camera_trigger(payload)
         elif topic == self.topic_request:
             self._handle_inference_request(payload)
+        elif topic.startswith("esp32/") and topic.endswith("/status/response"):
+            self._handle_status_response(payload)
+        elif topic.startswith("esp32/") and topic.endswith("/status/online"):
+            self._handle_esp32_online(topic, payload)
+        elif topic.startswith("esp32/") and ("light" in topic or "ac" in topic):
+            self._handle_device_command(topic, payload)
+
+    def _handle_device_command(self, topic: str, payload):
+        """Handle incoming command messages to track manual overrides"""
+        if not isinstance(payload, dict):
+            return
+        
+        source = payload.get("source")
+        if source == "manual":
+            parts = topic.split('/')
+            if len(parts) >= 2:
+                try:
+                    room_id = int(parts[1])
+                    try:
+                        from app.schedule_runner import last_manual_command_time
+                    except ImportError:
+                        from schedule_runner import last_manual_command_time
+                    
+                    import time
+                    last_manual_command_time[room_id] = time.time()
+                    logger.info(f"🚨 Recorded manual override command for Room {room_id}!")
+                except ValueError:
+                    pass
 
     def _handle_camera_trigger(self, payload):
         """Handle trigger untuk ambil snapshot"""
@@ -67,6 +100,39 @@ class MQTTSubscriber:
         image_path = payload.get("image_path") if isinstance(payload, dict) else None
         logger.info(f"🤖 Inference request received: {image_path}")
         run_inference(image_path)
+
+    def _handle_status_response(self, payload):
+        """Handle status response dari ESP32"""
+        try:
+            from app.mqtt_commands import mqtt_commander
+        except ImportError:
+            from mqtt_commands import mqtt_commander
+        logger.info("📡 ESP32 status response received, processing...")
+        mqtt_commander.handle_status_response(payload)
+
+    def _handle_esp32_online(self, topic: str, payload):
+        """Handle ESP32 reconnect online status message"""
+        parts = topic.split('/')
+        if len(parts) >= 2:
+            try:
+                room_id = parts[1]
+                logger.info(f"📡 ESP32 in Room {room_id} is online! Triggering state restoration...")
+                
+                try:
+                    from app.boot_recovery import BootRecoveryManager
+                except ImportError:
+                    from boot_recovery import BootRecoveryManager
+                
+                try:
+                    from app.mqtt_commands import mqtt_commander
+                except ImportError:
+                    from mqtt_commands import mqtt_commander
+                
+                recovery = BootRecoveryManager(mqtt_commander)
+                recovery.restore_for_room(room_id)
+                logger.info(f"✅ Successfully restored state for Room {room_id} on ESP32 reconnect.")
+            except Exception as e:
+                logger.error(f"❌ Error restoring state for Room {room_id}: {e}")
 
     def publish(self, topic: str, payload: dict):
         """Publish hasil ke topic tertentu"""

@@ -1,46 +1,37 @@
 import db from '../models/index.js';
 
+const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+
 export const getSummary = async (req, res) => {
   try {
-    const latestSensors = await db.PowerSensor.findAll({
-      order: [['read_at', 'DESC']],
-      limit: 20
-    });
+    const { room_id } = req.query;
     
-    const current_consumption = latestSensors.reduce((acc, sensor) => acc + (sensor.power_watts || 0), 0);
+    // Construct URLs
+    const summaryUrl = room_id 
+      ? `${AI_SERVICE_URL}/energy/summary?room_id=${room_id}` 
+      : `${AI_SERVICE_URL}/energy/summary`;
+    
+    const realtimeUrl = room_id 
+      ? `${AI_SERVICE_URL}/stats/realtime?room_id=${room_id}` 
+      : `${AI_SERVICE_URL}/stats/realtime`;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Fetch in parallel
+    const [summaryRes, realtimeRes] = await Promise.all([
+      fetch(summaryUrl),
+      fetch(realtimeUrl)
+    ]);
 
-    const todayLogs = await db.EnergyLog.findAll({
-      where: {
-        date: today.toISOString().split('T')[0]
-      }
-    });
-
-    const today_usage = todayLogs.reduce((acc, log) => acc + (log.total_watts || 0), 0);
-    const today_saved = todayLogs.reduce((acc, log) => acc + (log.saved_watts || 0), 0);
-
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const monthlyLogs = await db.EnergyLog.findAll({
-      where: {
-        date: {
-          [db.Sequelize.Op.gte]: startOfMonth.toISOString().split('T')[0]
-        }
-      }
-    });
-
-    const monthly_usage = monthlyLogs.reduce((acc, log) => acc + (log.total_watts || 0), 0);
-    const monthly_saved = monthlyLogs.reduce((acc, log) => acc + (log.saved_watts || 0), 0);
+    const summaryData = await summaryRes.json();
+    const realtimeData = await realtimeRes.json();
 
     res.status(200).json({
       success: true,
       data: {
-        current_consumption: parseFloat(current_consumption.toFixed(2)),
-        today_usage: parseFloat(today_usage.toFixed(2)),
-        today_saved: parseFloat(today_saved.toFixed(2)),
-        monthly_usage: parseFloat(monthly_usage.toFixed(2)),
-        monthly_saved: parseFloat(monthly_saved.toFixed(2))
+        current_consumption: realtimeData.mean_watts || 0.0,
+        today_usage: summaryData.avg_daily_watts || 0.0,
+        today_saved: (summaryData.total_saved_watts / 30) || 0.0, // daily average estimate
+        monthly_usage: summaryData.total_consumption_watts || 0.0,
+        monthly_saved: summaryData.total_saved_watts || 0.0
       }
     });
   } catch (error) {
@@ -51,18 +42,22 @@ export const getSummary = async (req, res) => {
 export const getLogs = async (req, res) => {
   try {
     const { room_id } = req.query;
-    let whereClause = {};
-    if (room_id) {
-      whereClause.room_id = room_id;
-    }
+    
+    // Construct URL for daily savings trend
+    const url = `${AI_SERVICE_URL}/energy/trend?days=30`;
+    const response = await fetch(url);
+    const trendData = await response.json();
 
-    const logs = await db.EnergyLog.findAll({
-      where: Object.keys(whereClause).length > 0 ? whereClause : undefined,
-      include: [{ model: db.Room }],
-      order: [['date', 'DESC']]
+    // Map logs to format expected by frontend or fallback to database if failed
+    res.status(200).json({ 
+      success: true, 
+      data: trendData.map(t => ({
+        date: t.date,
+        total_watts: t.total_watts,
+        saved_watts: t.saved_watts,
+        savings_percentage: t.savings_pct
+      }))
     });
-
-    res.status(200).json({ success: true, data: logs });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -70,22 +65,22 @@ export const getLogs = async (req, res) => {
 
 export const getBreakdown = async (req, res) => {
   try {
-    const logs = await db.EnergyLog.findAll({
-      attributes: [
-        'room_id',
-        [db.sequelize.fn('SUM', db.sequelize.col('total_watts')), 'total_watts'],
-        [db.sequelize.fn('SUM', db.sequelize.col('saved_watts')), 'saved_watts'],
-      ],
-      group: ['room_id', 'Room.room_id'],
-      include: [{ model: db.Room, attributes: ['room_name'] }],
-      order: [[db.sequelize.fn('SUM', db.sequelize.col('total_watts')), 'DESC']]
-    });
+    const { room_id } = req.query;
+    
+    const url = room_id 
+      ? `${AI_SERVICE_URL}/energy/breakdown?room_id=${room_id}` 
+      : `${AI_SERVICE_URL}/energy/breakdown`;
+      
+    const response = await fetch(url);
+    const breakdownData = await response.json();
 
-    const formatted = logs.map(l => ({
-      room_id: l.room_id,
-      room_name: l.Room ? l.Room.room_name : 'Unknown Room',
-      total_watts: parseFloat(Number(l.getDataValue('total_watts')).toFixed(2)),
-      saved_watts: parseFloat(Number(l.getDataValue('saved_watts')).toFixed(2)),
+    const formatted = breakdownData.map(item => ({
+      room_id: item.room_id,
+      room_name: item.room_name,
+      total_watts: item.total_watts,
+      saved_watts: item.saved_watts,
+      savings_pct: item.savings_pct,
+      rank: item.rank
     }));
 
     res.status(200).json({ success: true, data: formatted });

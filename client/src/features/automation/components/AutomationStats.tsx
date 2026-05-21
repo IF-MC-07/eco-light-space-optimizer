@@ -23,7 +23,7 @@ export function AutomationStats({ schedules }: { schedules: AutomationSchedule[]
         </div>
         <CardContent className="p-8 flex flex-col justify-between h-full relative z-10">
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2 mt-5">
               <div className="w-2 h-2 rounded-full bg-primary-dark animate-pulse"></div>
               <p className="text-[10px] font-bold text-secondary uppercase tracking-[0.2em]">Active Logic</p>
             </div>
@@ -32,7 +32,7 @@ export function AutomationStats({ schedules }: { schedules: AutomationSchedule[]
           <div className="flex items-center gap-2">
             <span className="px-3 py-1 bg-primary/10 text-primary-dark text-[10px] font-bold rounded-full border border-primary/20 flex items-center gap-1.5">
               <TrendingUp size={12} />
-              LIVE SYSTEM SYNC
+              SYSTEM SYNC
             </span>
           </div>
         </CardContent>
@@ -43,7 +43,7 @@ export function AutomationStats({ schedules }: { schedules: AutomationSchedule[]
         <div className="absolute top-0 right-0 p-6 opacity-20 group-hover:opacity-40 transition-opacity">
           <Sparkles size={80} className="text-secondary" />
         </div>
-        <CardContent className="p-8 flex flex-col justify-between h-full relative z-10">
+        <CardContent className="p-8 flex flex-col justify-between h-full relative z-10 mt-5">
           <div>
             <p className="text-[10px] font-bold text-secondary uppercase tracking-[0.2em] mb-2">Scheduled Tasks</p>
             <h3 className="text-6xl font-heading font-black text-black tracking-tighter">{totalSchedules}</h3>
@@ -70,7 +70,7 @@ export function AutomationStats({ schedules }: { schedules: AutomationSchedule[]
         <div className="absolute top-0 right-0 p-6 opacity-20 group-hover:opacity-40 transition-opacity">
           <TrendingUp size={80} className="text-primary-dark" />
         </div>
-        <CardContent className="p-8 flex flex-col justify-between h-full relative z-10">
+        <CardContent className="p-8 flex flex-col justify-between h-full relative z-10 mt-5">
           <div>
             <p className="text-[10px] font-bold text-secondary uppercase tracking-[0.2em] mb-2">Daily Est. Savings</p>
             <div className="flex items-baseline gap-1">
