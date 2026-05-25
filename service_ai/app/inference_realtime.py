@@ -103,6 +103,13 @@ class MQTTHandler:
 
 
 # ─── Zone Manager ─────────────────────────────────────────────────────────────
+FORCE_ZONE_RELOAD = False
+
+def force_zone_reload():
+    global FORCE_ZONE_RELOAD
+    FORCE_ZONE_RELOAD = True
+    log.info("🔄 Force zone reload requested via MQTT.")
+
 class ZoneManager:
     def __init__(self, id_kamera: str, fetch_interval: float):
         self.id_kamera      = id_kamera
@@ -111,12 +118,14 @@ class ZoneManager:
         self._last_fetch    = 0.0
 
     def get_zones(self) -> list:
-        """Return zones, reload dari DB jika sudah expired."""
+        """Return zones, reload dari DB jika sudah expired atau dipaksa."""
+        global FORCE_ZONE_RELOAD
         now = time.time()
-        if (now - self._last_fetch) >= self.fetch_interval or not self.zones:
+        if FORCE_ZONE_RELOAD or (now - self._last_fetch) >= self.fetch_interval or not self.zones:
             try:
                 self.zones       = ambil_zona_dari_db(self.id_kamera)
                 self._last_fetch = now
+                FORCE_ZONE_RELOAD = False
                 log.info(f"🔄 Reloaded {len(self.zones)} zona dari DB.")
             except Exception as e:
                 log.error(f"❌ Gagal fetch zona: {e}")

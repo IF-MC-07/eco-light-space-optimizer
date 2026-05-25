@@ -1,4 +1,5 @@
 import logging
+import uuid
 import psycopg2
 import psycopg2.extras
 from dotenv import load_dotenv
@@ -51,9 +52,11 @@ def write_detection_logs(camera_id: str, occupancy_counts: dict):
                     continue
 
                 status = 'occupied' if count > 0 else 'empty'
+                detection_id = f"DET-{uuid.uuid4().hex[:8]}"
                 insert_tuples.append((
-                    zone_id,
+                    detection_id,
                     camera_id,
+                    zone_id,
                     count,
                     status
                 ))
@@ -64,11 +67,11 @@ def write_detection_logs(camera_id: str, occupancy_counts: dict):
                     cur,
                     """
                     INSERT INTO detection_logs 
-                      (zone_id, camera_id, occupancy_count, zone_status, detection_time)
+                      (detection_id, camera_id, zone_id, occupancy_count, zone_status, detection_time)
                     VALUES %s
                     """,
                     insert_tuples,
-                    template="(%s, %s, %s, %s, NOW())"
+                    template="(%s, %s, %s, %s, %s, NOW())"
                 )
                 conn.commit()
                 logger.info(f"📝 Batch inserted {len(insert_tuples)} detection logs for Camera {camera_id}.")

@@ -17,6 +17,7 @@ class MQTTSubscriber:
         
         self.topic_trigger = os.getenv("MQTT_TOPIC_TRIGGER", "camera/trigger")
         self.topic_request = os.getenv("MQTT_TOPIC_REQUEST", "ai/inference/request")
+        self.topic_zone_reload = "ai/zone/reload"
         self.topic_esp32_online = "esp32/+/status/online"
         
         self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
@@ -33,6 +34,7 @@ class MQTTSubscriber:
             # Subscribe ke topic setelah connect
             client.subscribe(self.topic_trigger)
             client.subscribe(self.topic_request)
+            client.subscribe(self.topic_zone_reload)
             client.subscribe("esp32/+/status/response")
             client.subscribe("esp32/+/light/+")
             client.subscribe("esp32/+/ac")
@@ -59,6 +61,8 @@ class MQTTSubscriber:
             self._handle_camera_trigger(payload)
         elif topic == self.topic_request:
             self._handle_inference_request(payload)
+        elif topic == self.topic_zone_reload:
+            self._handle_zone_reload()
         elif topic.startswith("esp32/") and topic.endswith("/status/response"):
             self._handle_status_response(payload)
         elif topic.startswith("esp32/") and topic.endswith("/status/online"):
@@ -100,6 +104,14 @@ class MQTTSubscriber:
         image_path = payload.get("image_path") if isinstance(payload, dict) else None
         logger.info(f"🤖 Inference request received: {image_path}")
         run_inference(image_path)
+
+    def _handle_zone_reload(self):
+        """Force zone reload via MQTT"""
+        try:
+            from app.inference_realtime import force_zone_reload
+            force_zone_reload()
+        except ImportError:
+            pass
 
     def _handle_status_response(self, payload):
         """Handle status response dari ESP32"""

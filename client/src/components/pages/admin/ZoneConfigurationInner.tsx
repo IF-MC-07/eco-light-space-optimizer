@@ -11,6 +11,7 @@ import { fabric } from 'fabric';
 import { formatDistanceToNow } from 'date-fns';
 import { useMe } from '../../../features/auth/hooks';
 import { serverAPI } from '../../../lib/api';
+import { AlertDialog } from '../../ui/AlertDialog';
 
 export default function ZoneConfiguration() {
   const params = useParams();
@@ -86,6 +87,8 @@ export default function ZoneConfiguration() {
   const tempRect = useRef<fabric.Rect | null>(null);
   const selectedIdRef = useRef<string | null>(null);
   const [timeAgo, setTimeAgo] = useState('Belum disimpan');
+  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | 'all' | null>(null);
 
   const {
     zonas,
@@ -386,14 +389,14 @@ export default function ZoneConfiguration() {
   const abs = Math.abs;
 
   const handleClearAll = () => {
-    if (confirm('Yakin ingin menghapus semua zona?')) {
-      clearAll();
-    }
+    setDeleteTarget('all');
+    setDeleteAlertOpen(true);
   };
 
   const selectedZoneData = zonas.find(z => z.zone_id === selectedId);
 
   return (
+    <>
       <div className="max-w-[1400px] mx-auto w-full pb-10 mt-10">
         {/* Header & Controls */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
@@ -411,9 +414,10 @@ export default function ZoneConfiguration() {
           </div>
 
           <div className="flex items-center gap-3">
-             <div className="bg-white border border-neutral-border rounded-md px-3 py-2 flex items-center gap-3 cursor-pointer hover:border-neutral-muted shadow-sm">
+             <div className="relative group bg-white/80 backdrop-blur-sm border border-neutral-border/80 rounded-xl px-4 py-2.5 flex items-center gap-3 cursor-pointer hover:border-primary/40 hover:bg-white transition-all shadow-sm focus-within:ring-4 focus-within:ring-primary/10">
+               <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                <select
-                 className="text-sm font-bold text-secondary-dark leading-none outline-none appearance-none bg-transparent"
+                 className="relative z-10 w-full text-sm font-bold text-secondary-dark leading-none outline-none appearance-none bg-transparent cursor-pointer pr-6"
                  value={selectedRoomId}
                  onChange={(e) => {
                    setSelectedRoomId(e.target.value);
@@ -431,11 +435,13 @@ export default function ZoneConfiguration() {
                    ))
                  )}
                </select>
-               <ChevronDown size={14} className="text-secondary-light" />
+               <ChevronDown size={14} className="text-secondary-light absolute right-4 group-hover:text-primary transition-colors" />
              </div>
-             <div className="bg-white border border-neutral-border rounded-md px-3 py-2 flex items-center gap-3 cursor-pointer hover:border-neutral-muted shadow-sm">
+             
+             <div className="relative group bg-white/80 backdrop-blur-sm border border-neutral-border/80 rounded-xl px-4 py-2.5 flex items-center gap-3 cursor-pointer hover:border-primary/40 hover:bg-white transition-all shadow-sm focus-within:ring-4 focus-within:ring-primary/10">
+               <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                <select 
-                 className="text-sm font-bold text-secondary-dark leading-none outline-none appearance-none bg-transparent"
+                 className="relative z-10 w-full text-sm font-bold text-secondary-dark leading-none outline-none appearance-none bg-transparent cursor-pointer pr-6"
                  value={selectedCameraId}
                  onChange={(e) => setSelectedCameraId(e.target.value)}
                >
@@ -449,7 +455,7 @@ export default function ZoneConfiguration() {
                    ))
                  )}
                </select>
-               <ChevronDown size={14} className="text-secondary-light" />
+               <ChevronDown size={14} className="text-secondary-light absolute right-4 group-hover:text-primary transition-colors" />
              </div>
           </div>
         </div>
@@ -564,7 +570,7 @@ export default function ZoneConfiguration() {
                         <Pencil size={14} />
                       </button>
                       <button 
-                        onClick={(e) => { e.stopPropagation(); deleteZone(z.zone_id!); }}
+                        onClick={(e) => { e.stopPropagation(); setDeleteTarget(z.zone_id!); setDeleteAlertOpen(true); }}
                         className="text-secondary-light hover:text-tertiary transition-colors"
                       >
                         <Trash2 size={14} />
@@ -689,5 +695,24 @@ export default function ZoneConfiguration() {
         </div>
 
       </div>
+      
+      <AlertDialog 
+        isOpen={deleteAlertOpen}
+        onClose={() => { setDeleteAlertOpen(false); setDeleteTarget(null); }}
+        onConfirm={() => {
+          if (deleteTarget === 'all') {
+            clearAll();
+          } else if (deleteTarget) {
+            deleteZone(deleteTarget);
+          }
+          setDeleteAlertOpen(false);
+          setDeleteTarget(null);
+        }}
+        title={deleteTarget === 'all' ? "Hapus Semua Zona" : "Hapus Zona"}
+        description={deleteTarget === 'all' ? "Yakin ingin menghapus semua zona pada kamera ini? Tindakan ini tidak dapat dibatalkan." : "Yakin ingin menghapus zona ini? Tindakan ini tidak dapat dibatalkan."}
+        confirmText="Hapus"
+        cancelText="Batal"
+      />
+    </>
   );
 }

@@ -73,6 +73,6 @@ export const upsertZone = async (zoneList) => {
 export const deleteZone = async (zoneId) => {
   const zone = await Zone.findByPk(zoneId);
   if (!zone) return null;
-  await zone.update({ zone_status: 'nonaktif' });
+  await zone.destroy();
   return true;
 };

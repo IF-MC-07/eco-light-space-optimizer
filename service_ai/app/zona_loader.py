@@ -43,7 +43,7 @@ def ambil_zona_dari_db(camera_id: str) -> list[dict]:
                 WHERE room_id = (
                     SELECT room_id FROM cameras WHERE camera_id = %s
                 )
-                AND zone_status = 'active'
+                AND zone_status IN ('active', 'aktif')
                 ORDER BY sort_order
             """, (camera_id,))
             rows = cur.fetchall()

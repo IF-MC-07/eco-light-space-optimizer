@@ -14,6 +14,6 @@ const zonePayloadSchema = Joi.object({
   skew_y: Joi.number().optional().allow(null),
   color: Joi.string().max(20).required(),
   sort_order: Joi.number().optional().allow(null)
-});
+}).unknown(true);
 
 export const saveZoneValidation = Joi.array().items(zonePayloadSchema).required();
