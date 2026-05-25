@@ -14,7 +14,7 @@ export function ActiveRulesList({ schedules, onEdit }: ActiveRulesListProps) {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 sm">
           <h2 className="text-xl font-heading font-black text-black tracking-tight">Active Automation Rules</h2>
           <span className="bg-primary/10 text-primary-dark text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest border border-primary/20">
             {schedules.length} Live

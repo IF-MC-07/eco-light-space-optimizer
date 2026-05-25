@@ -10,6 +10,7 @@ import { useZone } from '../../../features/zone/hooks/useZone';
 import { fabric } from 'fabric';
 import { formatDistanceToNow } from 'date-fns';
 import { useMe } from '../../../features/auth/hooks';
+import { serverAPI } from '../../../lib/api';
 
 export default function ZoneConfiguration() {
   const params = useParams();
@@ -42,13 +43,9 @@ export default function ZoneConfiguration() {
   const [selectedRoomId, setSelectedRoomId] = useState<string>('');
 
   useEffect(() => {
-    fetch('/api/rooms', {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-      .then(res => res.json())
-      .then(data => {
+    serverAPI.get('/rooms')
+      .then(res => {
+        const data = res.data;
         if (data.success) {
           setRooms(data.data);
           if (data.data.length > 0 && !selectedRoomId) {
@@ -61,14 +58,10 @@ export default function ZoneConfiguration() {
 
   useEffect(() => {
     if (!selectedRoomId) return;
-    
-    fetch(`/api/cameras?room_id=${selectedRoomId}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-      .then(res => res.json())
-      .then(data => {
+      
+    serverAPI.get(`/cameras?room_id=${selectedRoomId}`)
+      .then(res => {
+        const data = res.data;
         if (data.success) {
           setCameras(data.data);
           if (data.data.length > 0) {
@@ -504,12 +497,19 @@ export default function ZoneConfiguration() {
             {/* Canvas / Image Area */}
             <div ref={containerRef} className="relative w-full bg-[#0F172A] rounded-2xl overflow-hidden shadow-elevated border border-neutral-border border-opacity-50 min-h-[400px]">
                {/* Stream Background */}
-               <img 
-                 key={selectedCameraId}
-                 src={`${process.env.NEXT_PUBLIC_CAMERA_BASE_URL}/kamera/${selectedCameraId}/stream`}
-                 className="absolute inset-0 w-full h-full object-fill pointer-events-none"
-                 alt="Camera Stream"
-               />
+               {selectedCameraId ? (
+                 <img 
+                   key={selectedCameraId}
+                   src={`${process.env.NEXT_PUBLIC_CAMERA_BASE_URL}/kamera/${selectedCameraId}/stream`}
+                   className="absolute inset-0 w-full h-full object-fill pointer-events-none"
+                   alt="Camera Stream"
+                 />
+               ) : (
+                 <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-neutral-900 text-white/60">
+                   <Info size={32} className="mb-2 opacity-50" />
+                   <span className="text-sm font-semibold">Silakan pilih kamera terlebih dahulu</span>
+                 </div>
+               )}
 
                {/* Fabric overlay */}
                <div className={`relative w-full h-full z-10 ${mode === 'preview' ? 'hidden' : 'block'}`}>

@@ -36,6 +36,7 @@ def process_frame(frame, id_kamera, zones):
     results = model.predict(
         frame,  
         conf=0.20,
+        classes=[0],
         verbose=False
     )
     
@@ -81,7 +82,11 @@ async def frame_generator(id_kamera: str):
         else:
             cam_source = ip_address
             
-    cap = cv2.VideoCapture(cam_source)
+    if isinstance(cam_source, int) and os.name == 'nt':
+        cap = cv2.VideoCapture(cam_source, cv2.CAP_DSHOW)
+    else:
+        cap = cv2.VideoCapture(cam_source)
+        
     if not cap.isOpened():
         raise HTTPException(status_code=503, detail="Kamera tidak dapat diakses")
 
@@ -129,7 +134,11 @@ def get_snapshot(id_kamera: str):
     if ip_address:
         cam_source = int(ip_address) if ip_address.isdigit() else ip_address
         
-    cap = cv2.VideoCapture(cam_source)
+    if isinstance(cam_source, int) and os.name == 'nt':
+        cap = cv2.VideoCapture(cam_source, cv2.CAP_DSHOW)
+    else:
+        cap = cv2.VideoCapture(cam_source)
+        
     if not cap.isOpened():
         raise HTTPException(status_code=503, detail="Kamera tidak dapat diakses")
     

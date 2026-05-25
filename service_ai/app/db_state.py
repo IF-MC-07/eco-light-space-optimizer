@@ -24,7 +24,9 @@ def ensure_device_states_exist():
                 FROM iot_devices d
                 JOIN zones z ON d.room_id = z.room_id
                 WHERE d.type = 'light'
-                ON CONFLICT (device_id) DO NOTHING;
+                  AND NOT EXISTS (
+                      SELECT 1 FROM light_controls lc WHERE lc.device_id = d.device_id
+                  );
             """)
             
             # For every iot_device of type 'ac'
@@ -34,7 +36,9 @@ def ensure_device_states_exist():
                 SELECT 'ACC' || substring(md5(d.device_id), 1, 15), d.room_id, d.device_id, 22.0, 'OFF', NOW()
                 FROM iot_devices d
                 WHERE d.type = 'ac'
-                ON CONFLICT (device_id) DO NOTHING;
+                  AND NOT EXISTS (
+                      SELECT 1 FROM ac_controls ac WHERE ac.device_id = d.device_id
+                  );
             """)
             conn.commit()
             logger.info("✅ Device states successfully ensured in DB.")

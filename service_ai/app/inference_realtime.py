@@ -8,7 +8,10 @@ import paho.mqtt.client as mqtt
 from dotenv import load_dotenv
 from ultralytics import YOLO
 
-from zona_loader import ambil_zona_dari_db, titik_di_zona
+try:
+    from app.zona_loader import ambil_zona_dari_db, titik_di_zona
+except ImportError:
+    from zona_loader import ambil_zona_dari_db, titik_di_zona
 
 load_dotenv()
 
@@ -165,7 +168,11 @@ def run():
     log.info("✅ Model loaded.")
 
     # Init kamera
-    cap = cv2.VideoCapture(camera_input)
+    if isinstance(camera_input, int) and os.name == 'nt':
+        cap = cv2.VideoCapture(camera_input, cv2.CAP_DSHOW)
+    else:
+        cap = cv2.VideoCapture(camera_input)
+        
     if not cap.isOpened():
         log.error(f"❌ Kamera tidak bisa dibuka: {CAMERA_SOURCE}")
         mqtt_handler.stop()

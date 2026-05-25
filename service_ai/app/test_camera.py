@@ -4,11 +4,12 @@ import json
 import time
 import os
 from dotenv import load_dotenv
+from ultralytics import YOLO
 
 load_dotenv()
 
-MODEL_PATH = os.getenv('MODEL_PATH', 'yolov8n.pt')
-model = YOLO(MODEL_PATH)
+MODEL_PATH = os.getenv('yolov8n.pt')
+model = YOLO('yolov8n.pt')
 
 MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
