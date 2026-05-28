@@ -518,7 +518,7 @@ export default function ZoneConfiguration() {
                )}
 
                {/* Fabric overlay */}
-               <div className={`relative w-full h-full z-10 ${mode === 'preview' ? 'hidden' : 'block'}`}>
+               <div className={`relative w-full h-full z-10 ${mode === 'preview' ? 'opacity-0 pointer-events-none' : 'block'}`}>
                  <canvas ref={canvasRef} />
                </div>
                

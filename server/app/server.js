@@ -1,3 +1,6 @@
+import fs from 'fs';
+import https from 'https';
+import http from 'http';
 import app from './app.js';
 import db from './models/index.js';
 import mqttService from './services/mqttService.js';
@@ -42,9 +45,31 @@ const startServer = async () => {
     });
     digestJob.start();
 
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}.`);
-    });
+    if (process.env.NODE_ENV === 'development') {
+      // Development: Gunakan HTTPS dengan self-signed certificate (mkcert)
+      const certPath = './certs/localhost.pem';
+      const keyPath = './certs/localhost-key.pem';
+      
+      if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
+        const httpsOptions = {
+          key: fs.readFileSync(keyPath),
+          cert: fs.readFileSync(certPath)
+        };
+        https.createServer(httpsOptions, app).listen(PORT, () => {
+          console.log(`HTTPS Server is running on port ${PORT} in development mode.`);
+        });
+      } else {
+        console.warn('⚠️ Certificates not found. Fallback to HTTP. Run mkcert to generate them.');
+        http.createServer(app).listen(PORT, () => {
+          console.log(`HTTP Server is running on port ${PORT} in development mode.`);
+        });
+      }
+    } else {
+      // Production: Gunakan HTTP biasa, HTTPS di-handle oleh Nginx (Reverse Proxy)
+      http.createServer(app).listen(PORT, () => {
+        console.log(`HTTP Server is running on port ${PORT} in production mode.`);
+      });
+    }
   } catch (error) {
     console.error('Unable to start server:', error);
   }

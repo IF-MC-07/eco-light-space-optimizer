@@ -19,8 +19,12 @@ import savingsRoute from './savings.route.js';
 import exportRoute from './exportRoute.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { requireRole } from '../middlewares/role.middleware.js';
+import { apiLimiter, controlLimiter } from '../middlewares/rateLimiter.middleware.js';
 
 const router = Router();
+
+// Aplikasikan general API rate limiter ke semua endpoints
+router.use(apiLimiter);
 
 router.use('/auth', authRoute);
 router.use('/dashboard', authenticate, dashboardRoute);
@@ -36,8 +40,8 @@ router.use('/power-sensors', authenticate, requireRole(['admin']), powerSensorRo
 router.use('/energy-logs', authenticate, requireRole(['admin']), energyLogRoute);
 router.use('/automation-schedules', authenticate, requireRole(['admin']), automationScheduleRoute);
 router.use('/detection-logs', authenticate, detectionLogRoute);
-router.use('/light-controls', authenticate, requireRole(['admin']), lightControlRoute);
-router.use('/ac-controls', authenticate, requireRole(['admin']), acControlRoute);
+router.use('/light-controls', authenticate, requireRole(['admin']), controlLimiter, lightControlRoute);
+router.use('/ac-controls', authenticate, requireRole(['admin']), controlLimiter, acControlRoute);
 router.use('/export', authenticate, requireRole(['admin']), exportRoute);
 
 export default router;

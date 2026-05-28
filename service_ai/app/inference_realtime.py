@@ -1,3 +1,13 @@
+"""
+PRIVACY BY DESIGN - ECO-LIGHT & AC SPACE OPTIMIZER
+==================================================
+1. Sistem ini dirancang untuk beroperasi sepenuhnya IN-MEMORY.
+2. Tidak ada frame kamera, video (footage), atau gambar yang disimpan ke disk secara permanen.
+3. Data yang dikirimkan ke sistem pengambilan keputusan (Decision Engine) dan log hanyalah
+   metadata numerik (jumlah orang per zona), BUKAN gambar.
+4. Mode visualisasi (DEBUG_MODE) hanya merender tampilan buffer in-memory ke layar sementara
+   via cv2.imshow() dan otomatis dihancurkan tanpa tersimpan ke hard drive.
+"""
 import cv2
 import json
 import logging
@@ -45,6 +55,7 @@ CONF_THRESHOLD      = float(os.getenv("CONF_THRESHOLD", 0.25))
 IOU_THRESHOLD       = float(os.getenv("IOU_THRESHOLD", 0.45))
 
 MODEL_PATH          = os.getenv("MODEL_PATH", "yolov8n.pt")
+DEBUG_MODE          = os.getenv("DEBUG_MODE", "False").lower() in ("true", "1", "yes")
 
 camera_input = int(CAMERA_SOURCE) if CAMERA_SOURCE.isdigit() else CAMERA_SOURCE
 
@@ -212,10 +223,35 @@ def run():
                 show_labels=False,
                 show_conf=False,
                 verbose=False,
+                save=False,         # Pastikan tidak mensave gambar
+                save_txt=False,     # Pastikan tidak mensave txt file
+                save_conf=False,
+                save_crop=False
             )
 
             count  = hitung_per_zona(results[0].boxes, zones, width, height)
             status = "ON" if count["total"] > 0 else "OFF"
+            
+            # --- DEBUG VISUALIZATION (IN-MEMORY ONLY) ---
+            if DEBUG_MODE:
+                annotated = results[0].plot()
+                for z in zones:
+                    zx1, zy1 = int(z['x1_pct'] * width), int(z['y1_pct'] * height)
+                    zx2, zy2 = int(z['x2_pct'] * width), int(z['y2_pct'] * height)
+                    
+                    hex_color = z['color'].lstrip('#') if 'color' in z else '00ff00'
+                    try:
+                        r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+                        color = (b, g, r)
+                    except:
+                        color = (0, 255, 0)
+                        
+                    cv2.rectangle(annotated, (zx1, zy1), (zx2, zy2), color, 2)
+                    cv2.putText(annotated, f"{z['zone_name']} | Orang: {count[z['zone_name']]}", 
+                                (zx1, zy1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+                                
+                cv2.imshow("Eco-Light Debug View (IN-MEMORY)", annotated)
+                cv2.waitKey(1)
 
             now = time.time()
             if count != prev_data and (now - last_send_time) >= SEND_INTERVAL:
@@ -249,6 +285,8 @@ def run():
 
     finally:
         cap.release()
+        if DEBUG_MODE:
+            cv2.destroyAllWindows()
         mqtt_handler.stop()
         log.info("✅ Resource dilepas, service berhenti.")
 
