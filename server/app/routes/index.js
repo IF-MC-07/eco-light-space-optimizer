@@ -23,10 +23,9 @@ import { apiLimiter, controlLimiter } from '../middlewares/rateLimiter.middlewar
 
 const router = Router();
 
-// Aplikasikan general API rate limiter ke semua endpoints
+router.use('/auth', authRoute);
 router.use(apiLimiter);
 
-router.use('/auth', authRoute);
 router.use('/dashboard', authenticate, dashboardRoute);
 router.use('/monitoring', authenticate, monitoringRoute);
 router.use('/energy', authenticate, requireRole(['admin']), energyRoute);
