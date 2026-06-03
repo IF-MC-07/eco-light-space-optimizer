@@ -19,7 +19,7 @@ const FULL_RESPONSE_ROUTES = process.env.LOG_FULL_RESPONSE_ROUTES
   ? process.env.LOG_FULL_RESPONSE_ROUTES.split(',').map(s => s.trim()).filter(Boolean)
   : ['/api/auth/login'];
 
-const MAX_LENGTH = parseInt(process.env.LOG_MAX_LENGTH, 10) || 10240;
+const MAX_LENGTH = parseInt(process.env.LOG_MAX_LENGTH, 50) || 51200;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

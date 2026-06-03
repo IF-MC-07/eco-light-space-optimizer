@@ -1,4 +1,4 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 
 // Rate limiter khusus untuk endpoint autentikasi (login, register, forgot/reset password)
 // Key: kombinasi IP + email — mencegah satu user di jaringan bersama (NAT kampus)
@@ -6,9 +6,9 @@ import rateLimit from 'express-rate-limit';
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
-  keyGenerator: (req) => {
+  keyGenerator: (req, res) => {
     const email = req.body?.email?.toLowerCase().trim() || 'unknown';
-    return `auth_${req.ip}_${email}`;
+    return `auth_${ipKeyGenerator(req, res)}_${email}`;
   },
   message: {
     success: false,
@@ -27,9 +27,9 @@ export const authLimiter = rateLimit({
 export const controlLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 30,
-  keyGenerator: (req) => {
+  keyGenerator: (req, res) => {
     // req.user tersedia karena middleware authenticate() sudah jalan sebelum controlLimiter
-    return `control_${req.user?.id || req.ip}`;
+    return `control_${req.user?.id || ipKeyGenerator(req, res)}`;
   },
   message: {
     success: false,
@@ -44,7 +44,7 @@ export const controlLimiter = rateLimit({
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 200,
-  keyGenerator: (req) => `api_${req.ip}`,
+  keyGenerator: (req, res) => `api_${ipKeyGenerator(req, res)}`,
   message: {
     success: false,
     message: 'Terlalu banyak request. Silakan coba lagi nanti.',
