@@ -101,3 +101,5 @@ CREATE TABLE power_sensors (
     current_a DOUBLE PRECISION,
     read_at TIMESTAMP WITH TIME ZONE
 );
+
+activity_logs

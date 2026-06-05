@@ -59,8 +59,13 @@ class DetectionPipelineService {
     const { camera_id, zone_id, person_count, light_status, timestamp } = payload;
 
     // Required fields check
-    if (camera_id === undefined || person_count === undefined) {
+    if (camera_id === undefined || camera_id === null || person_count === undefined || person_count === null) {
       console.warn('[DetectionPipeline] Invalid payload: missing mandatory fields', payload);
+      return null;
+    }
+
+    if (isNaN(parseInt(camera_id)) || isNaN(parseInt(person_count))) {
+      console.warn('[DetectionPipeline] Invalid payload: fields must be numbers', payload);
       return null;
     }
 
@@ -103,6 +108,11 @@ class DetectionPipelineService {
   static async processBulkAIResult(payload) {
     const { camera_id, lampu, ...counts } = payload;
     const results = [];
+
+    if (camera_id === undefined || camera_id === null || isNaN(parseInt(camera_id))) {
+      console.warn('[DetectionPipeline] Invalid bulk payload: missing or invalid camera_id', payload);
+      return results;
+    }
 
     // Filter out metadata fields
     const zoneEntries = Object.entries(counts).filter(([key]) => 
