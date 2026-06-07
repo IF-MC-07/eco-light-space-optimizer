@@ -13,13 +13,6 @@ interface Holiday {
   is_national_holiday: boolean;
 }
 
-const MOCK_EVENTS = [
-  { date: "2024-05-14", title: "Morning Ambience", time: "07:00 AM" },
-  { date: "2024-05-14", title: "Night Mode", time: "10:00 PM" },
-  { date: "2024-05-15", title: "Hallway Auto-Off", time: "All Day" },
-  { date: "2024-05-18", title: "Peak Hour Saver", time: "01:00 PM" },
-];
-
 export function FullCalendarModal({ isOpen, onClose }: FullCalendarModalProps) {
   const [currentDate, setCurrentDate] = useState(new Date()); // Use real current date (2026)
   const [holidays, setHolidays] = useState<Holiday[]>([]);
@@ -46,7 +39,6 @@ export function FullCalendarModal({ isOpen, onClose }: FullCalendarModalProps) {
             throw new Error("Invalid Data");
           }
         } catch (error) {
-          console.warn("Holiday API unreachable, using system fallback for 2026.");
           // Comprehensive 2026 Indonesian Holiday Fallback
           setHolidays([
             { holiday_date: "2026-01-01", holiday_name: "Tahun Baru 2026 Masehi", is_national_holiday: true },
@@ -100,7 +92,6 @@ export function FullCalendarModal({ isOpen, onClose }: FullCalendarModalProps) {
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const holiday = holidays.find(h => h.holiday_date === dateStr);
-    const events = MOCK_EVENTS.filter(e => e.date === dateStr);
     
     // Real-time "Today" detection
     const now = new Date();
@@ -127,12 +118,6 @@ export function FullCalendarModal({ isOpen, onClose }: FullCalendarModalProps) {
         </div>
 
         <div className="space-y-1 overflow-y-auto max-h-[80px] scrollbar-hide">
-          {events.map((event, idx) => (
-            <div key={idx} className="text-[9px] bg-primary-dark text-white p-1 rounded font-medium truncate flex items-center gap-1">
-              <span className="w-1 h-1 bg-[#86EFAC] rounded-full"></span>
-              {event.title}
-            </div>
-          ))}
         </div>
       </div>
     );

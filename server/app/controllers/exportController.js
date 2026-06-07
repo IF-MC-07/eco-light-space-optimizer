@@ -1,3 +1,4 @@
+import responseFormatter from '../utils/response.js';
 import PDFDocument from 'pdfkit';
 import ExcelJS from 'exceljs';
 import * as roomService from '../services/roomService.js';
@@ -45,7 +46,7 @@ export const exportUsers = async (req, res, next) => {
       }
       res.end();
     } else {
-      res.status(400).json({ success: false, message: 'Invalid format. Use pdf, xlsx, or csv.' });
+      return responseFormatter.error(res, 'Invalid format. Use pdf, xlsx, or csv.' , 400);
     }
   } catch (error) {
     next(error);
@@ -99,7 +100,7 @@ export const exportEnergyLogs = async (req, res, next) => {
       }
       res.end();
     } else {
-      res.status(400).json({ success: false, message: 'Invalid format. Use pdf, xlsx, or csv.' });
+      return responseFormatter.error(res, 'Invalid format. Use pdf, xlsx, or csv.' , 400);
     }
   } catch (error) {
     next(error);
@@ -163,7 +164,7 @@ export const exportSavingsReport = async (req, res, next) => {
       }
       res.end();
     } else {
-      res.status(400).json({ success: false, message: 'Invalid format. Use pdf, xlsx, or csv.' });
+      return responseFormatter.error(res, 'Invalid format. Use pdf, xlsx, or csv.' , 400);
     }
   } catch (error) {
     next(error);
@@ -249,7 +250,7 @@ export const exportGeneric = async (req, res, next) => {
         title = 'Zones List';
         break;
       default:
-        return res.status(400).json({ success: false, message: 'Invalid resource type' });
+        return responseFormatter.error(res, 'Invalid resource type' , 400);
     }
 
     const fmt = format.toLowerCase();
@@ -287,7 +288,7 @@ export const exportGeneric = async (req, res, next) => {
       }
       res.end();
     } else {
-      res.status(400).json({ success: false, message: 'Invalid format. Use pdf, xlsx, or csv.' });
+      return responseFormatter.error(res, 'Invalid format. Use pdf, xlsx, or csv.' , 400);
     }
   } catch (error) {
     next(error);

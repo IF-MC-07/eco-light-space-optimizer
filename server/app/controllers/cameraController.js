@@ -1,50 +1,51 @@
+import responseFormatter from '../utils/response.js';
 import * as cameraService from '../services/cameraService.js';
 
-export const getAll = async (req, res) => {
+export const getAll = async (req, res, next) => {
   try {
     const { room_id } = req.query;
     const data = await cameraService.getAll(room_id);
-    res.status(200).json({ success: true, data });
+    return responseFormatter.success(res, data, 'Success');
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const getById = async (req, res) => {
+export const getById = async (req, res, next) => {
   try {
     const data = await cameraService.getById(req.params.id);
-    if (!data) return res.status(404).json({ success: false, message: 'Camera not found' });
-    res.status(200).json({ success: true, data });
+    if (!data) return responseFormatter.error(res, 'Camera not found' , 404);
+    return responseFormatter.success(res, data, 'Success');
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const create = async (req, res) => {
+export const create = async (req, res, next) => {
   try {
     const data = await cameraService.create(req.body);
-    res.status(201).json({ success: true, data });
+    return responseFormatter.success(res, data, 'Created', 201);
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const update = async (req, res) => {
+export const update = async (req, res, next) => {
   try {
     const data = await cameraService.update(req.params.id, req.body);
-    if (!data) return res.status(404).json({ success: false, message: 'Camera not found' });
-    res.status(200).json({ success: true, data });
+    if (!data) return responseFormatter.error(res, 'Camera not found' , 404);
+    return responseFormatter.success(res, data, 'Success');
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const remove = async (req, res) => {
+export const remove = async (req, res, next) => {
   try {
     const isDeleted = await cameraService.remove(req.params.id);
-    if (!isDeleted) return res.status(404).json({ success: false, message: 'Camera not found' });
-    res.status(200).json({ success: true, message: 'Camera deleted successfully' });
+    if (!isDeleted) return responseFormatter.error(res, 'Camera not found' , 404);
+    return responseFormatter.success(res, null, 'Camera deleted successfully' );
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };

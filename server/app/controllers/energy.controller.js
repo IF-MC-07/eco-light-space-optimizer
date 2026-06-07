@@ -1,8 +1,9 @@
+import responseFormatter from '../utils/response.js';
 import db from '../models/index.js';
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
 
-export const getSummary = async (req, res) => {
+export const getSummary = async (req, res, next) => {
   try {
     const { room_id } = req.query;
     
@@ -24,22 +25,19 @@ export const getSummary = async (req, res) => {
     const summaryData = await summaryRes.json();
     const realtimeData = await realtimeRes.json();
 
-    res.status(200).json({
-      success: true,
-      data: {
+    return responseFormatter.success(res, {
         current_consumption: realtimeData.mean_watts || 0.0,
         today_usage: summaryData.avg_daily_watts || 0.0,
         today_saved: (summaryData.total_saved_watts / 30) || 0.0, // daily average estimate
         monthly_usage: summaryData.total_consumption_watts || 0.0,
         monthly_saved: summaryData.total_saved_watts || 0.0
-      }
-    });
+      }, 'Success');
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const getLogs = async (req, res) => {
+export const getLogs = async (req, res, next) => {
   try {
     const { room_id } = req.query;
     
@@ -49,21 +47,18 @@ export const getLogs = async (req, res) => {
     const trendData = await response.json();
 
     // Map logs to format expected by frontend or fallback to database if failed
-    res.status(200).json({ 
-      success: true, 
-      data: trendData.map(t => ({
-        date: t.date,
-        total_watts: t.total_watts,
-        saved_watts: t.saved_watts,
-        savings_percentage: t.savings_pct
-      }))
-    });
+    return responseFormatter.success(res, trendData.map(t => ({
+      date: t.date,
+      total_watts: t.total_watts,
+      saved_watts: t.saved_watts,
+      savings_percentage: t.savings_pct
+    })), 'Success');
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const getBreakdown = async (req, res) => {
+export const getBreakdown = async (req, res, next) => {
   try {
     const { room_id } = req.query;
     
@@ -83,8 +78,8 @@ export const getBreakdown = async (req, res) => {
       rank: item.rank
     }));
 
-    res.status(200).json({ success: true, data: formatted });
+    return responseFormatter.success(res, formatted , 'Success');
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };

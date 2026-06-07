@@ -1,115 +1,181 @@
--- Database Schema Translated to English
+-- ============================================================
+-- CORE TABLES
+-- ============================================================
 
 CREATE TABLE rooms (
-    room_id INTEGER PRIMARY KEY,
-    room_name CHARACTER VARYING,
-    location CHARACTER VARYING,
-    capacity INTEGER,
-    status CHARACTER VARYING
+    room_id         CHARACTER VARYING(30) PRIMARY KEY,
+    room_name       CHARACTER VARYING(100),
+    location        CHARACTER VARYING(255),
+    capacity        INTEGER,
+    status          CHARACTER VARYING(20) DEFAULT 'aktif'
 );
 
 CREATE TABLE users (
-    user_id INTEGER PRIMARY KEY,
-    name CHARACTER VARYING,
-    email CHARACTER VARYING,
-    password CHARACTER VARYING,
-    role CHARACTER VARYING
+    user_id         CHARACTER VARYING(30) PRIMARY KEY,
+    name            CHARACTER VARYING(100),
+    email           CHARACTER VARYING(255) UNIQUE NOT NULL,
+    password        CHARACTER VARYING(255) NOT NULL,
+    role            CHARACTER VARYING(20) NOT NULL DEFAULT 'mahasiswa'
 );
 
 CREATE TABLE iot_devices (
-    device_id INTEGER PRIMARY KEY,
-    room_id INTEGER REFERENCES rooms(room_id),
-    device_name CHARACTER VARYING,
-    type CHARACTER VARYING,
-    status CHARACTER VARYING
+    device_id       CHARACTER VARYING(30) PRIMARY KEY,
+    room_id         CHARACTER VARYING(30) REFERENCES rooms(room_id) ON UPDATE CASCADE ON DELETE SET NULL,
+    device_name     CHARACTER VARYING(100),
+    type            CHARACTER VARYING(50),
+    status          CHARACTER VARYING(20) DEFAULT 'aktif',
+    -- Added: MQTT LWT offline detection
+    last_seen       TIMESTAMP WITH TIME ZONE NULL
 );
 
 CREATE TABLE cameras (
-    camera_id INTEGER PRIMARY KEY,
-    room_id INTEGER REFERENCES rooms(room_id),
-    ip_address CHARACTER VARYING,
-    resolution CHARACTER VARYING,
-    status CHARACTER VARYING
+    camera_id       CHARACTER VARYING(30) PRIMARY KEY,
+    room_id         CHARACTER VARYING(30) REFERENCES rooms(room_id) ON UPDATE CASCADE ON DELETE SET NULL,
+    ip_address      CHARACTER VARYING(100),
+    resolution      CHARACTER VARYING(20),
+    status          CHARACTER VARYING(20) DEFAULT 'aktif'
 );
 
 CREATE TABLE zones (
-    zone_id INTEGER PRIMARY KEY,
-    room_id INTEGER REFERENCES rooms(room_id),
-    zone_name CHARACTER VARYING,
-    sort_order INTEGER,
-    color CHARACTER VARYING,
-    zone_status CHARACTER VARYING,
-    x1_pct DOUBLE PRECISION,
-    y1_pct DOUBLE PRECISION,
-    x2_pct DOUBLE PRECISION,
-    y2_pct DOUBLE PRECISION,
-    skew_x DOUBLE PRECISION DEFAULT 0,
-    skew_y DOUBLE PRECISION DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE,
-    updated_at TIMESTAMP WITH TIME ZONE
+    zone_id         CHARACTER VARYING(30) PRIMARY KEY,
+    room_id         CHARACTER VARYING(30) REFERENCES rooms(room_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    zone_name       CHARACTER VARYING(100),
+    sort_order      INTEGER DEFAULT 0,
+    color           CHARACTER VARYING(20),
+    zone_status     CHARACTER VARYING(20) DEFAULT 'aktif',
+    x1_pct          DOUBLE PRECISION,
+    y1_pct          DOUBLE PRECISION,
+    x2_pct          DOUBLE PRECISION,
+    y2_pct          DOUBLE PRECISION,
+    skew_x          DOUBLE PRECISION DEFAULT 0,
+    skew_y          DOUBLE PRECISION DEFAULT 0,
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE TABLE automation_schedules (
-    schedule_id INTEGER PRIMARY KEY,
-    room_id INTEGER REFERENCES rooms(room_id),
-    user_id INTEGER REFERENCES users(user_id),
-    schedule_name CHARACTER VARYING,
-    start_time TIME WITHOUT TIME ZONE,
-    end_time TIME WITHOUT TIME ZONE
-);
+-- ============================================================
+-- CONTROL TABLES
+-- ============================================================
 
 CREATE TABLE ac_controls (
-    ac_control_id INTEGER PRIMARY KEY,
-    room_id INTEGER REFERENCES rooms(room_id),
-    device_id INTEGER REFERENCES iot_devices(device_id),
-    temperature_setting DOUBLE PRECISION,
-    ac_status CHARACTER VARYING,
-    updated_at TIMESTAMP WITH TIME ZONE
+    ac_control_id   CHARACTER VARYING(30) PRIMARY KEY,
+    -- NOT NULL: AC without a room is invalid
+    room_id         CHARACTER VARYING(30) NOT NULL REFERENCES rooms(room_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    -- NOT NULL: AC without a device is invalid
+    device_id       CHARACTER VARYING(30) NOT NULL REFERENCES iot_devices(device_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    temperature_setting DOUBLE PRECISION DEFAULT 24.0,
+    ac_status       CHARACTER VARYING(10) DEFAULT 'OFF',
+    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE light_controls (
-    control_id INTEGER PRIMARY KEY,
-    zone_id INTEGER REFERENCES zones(zone_id),
-    device_id INTEGER REFERENCES iot_devices(device_id),
-    relay_channel INTEGER,
-    light_status CHARACTER VARYING,
-    updated_at TIMESTAMP WITH TIME ZONE
+    control_id      CHARACTER VARYING(30) PRIMARY KEY,
+    -- NOT NULL: Light without a zone is invalid
+    zone_id         CHARACTER VARYING(30) NOT NULL REFERENCES zones(zone_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    -- NOT NULL: Light without a device is invalid
+    device_id       CHARACTER VARYING(30) NOT NULL REFERENCES iot_devices(device_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    relay_channel   INTEGER,
+    light_status    CHARACTER VARYING(10) DEFAULT 'OFF',
+    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+CREATE TABLE automation_schedules (
+    schedule_id     CHARACTER VARYING(30) PRIMARY KEY,
+    room_id         CHARACTER VARYING(30) REFERENCES rooms(room_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    user_id         CHARACTER VARYING(30) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL,
+    schedule_name   CHARACTER VARYING(100),
+    start_time      TIME WITHOUT TIME ZONE,
+    end_time        TIME WITHOUT TIME ZONE
+);
+
+-- ============================================================
+-- LOG & SENSOR TABLES
+-- ============================================================
+
 CREATE TABLE detection_logs (
-    detection_id INTEGER PRIMARY KEY,
-    zone_id INTEGER REFERENCES zones(zone_id),
-    camera_id INTEGER REFERENCES cameras(camera_id),
-    occupancy_count INTEGER,
-    zone_status CHARACTER VARYING,
-    detection_time TIMESTAMP WITH TIME ZONE
+    detection_id    CHARACTER VARYING(30) PRIMARY KEY,
+    zone_id         CHARACTER VARYING(30) REFERENCES zones(zone_id) ON UPDATE CASCADE ON DELETE SET NULL,
+    camera_id       CHARACTER VARYING(30) REFERENCES cameras(camera_id) ON UPDATE CASCADE ON DELETE SET NULL,
+    occupancy_count INTEGER DEFAULT 0,
+    zone_status     CHARACTER VARYING(20),
+    detection_time  TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE energy_logs (
-    log_id INTEGER PRIMARY KEY,
-    room_id INTEGER REFERENCES rooms(room_id),
-    date DATE,
-    total_watts DOUBLE PRECISION,
-    saved_watts DOUBLE PRECISION
+    log_id          CHARACTER VARYING(30) PRIMARY KEY,
+    room_id         CHARACTER VARYING(30) REFERENCES rooms(room_id) ON UPDATE CASCADE ON DELETE SET NULL,
+    date            DATE NOT NULL,
+    total_watts     DOUBLE PRECISION DEFAULT 0,
+    saved_watts     DOUBLE PRECISION DEFAULT 0
 );
 
 CREATE TABLE power_sensors (
-    sensor_id INTEGER PRIMARY KEY,
-    room_id INTEGER REFERENCES rooms(room_id),
-    power_watts DOUBLE PRECISION,
-    voltage_v DOUBLE PRECISION,
-    current_a DOUBLE PRECISION,
-    read_at TIMESTAMP WITH TIME ZONE
+    sensor_id       CHARACTER VARYING(30) PRIMARY KEY,
+    room_id         CHARACTER VARYING(30) REFERENCES rooms(room_id) ON UPDATE CASCADE ON DELETE SET NULL,
+    power_watts     DOUBLE PRECISION DEFAULT 0,
+    voltage_v       DOUBLE PRECISION DEFAULT 0,
+    current_a       DOUBLE PRECISION DEFAULT 0,
+    read_at         TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-create table activity_logs (
-  log_id character varying(30) not null,
-  user_id character varying(30) null,
-  action character varying(255) not null,
-  details text null,
-  timestamp timestamp with time zone null,
-  resource_id character varying null,
-  resource_type character varying null,
-  constraint activity_logs_pkey primary key (log_id),
-  constraint activity_logs_user_id_fkey foreign KEY (user_id) references users (user_id) on update CASCADE on delete set null
-) TABLESPACE pg_default;
+-- ============================================================
+-- ACTIVITY LOGS
+-- Tracks all user actions in the system for audit purposes.
+-- Privacy: frame/image data is never stored here (in-memory only in AI service).
+-- Data that is redacted before storage: password, avatar, token, base64 data.
+-- Retention: auto-cleanup after 90 days via cron job in server.js.
+-- ============================================================
+
+CREATE TABLE activity_logs (
+    log_id          CHARACTER VARYING(30) NOT NULL,
+    user_id         CHARACTER VARYING(30) NULL,
+    action          CHARACTER VARYING(255) NOT NULL,
+    details         TEXT NULL,
+    -- Added: network metadata for security audit
+    ip_address      CHARACTER VARYING(45) NULL,
+    status_code     SMALLINT NULL,
+    -- Added: resource tracking for accountability
+    resource_id     CHARACTER VARYING NULL,
+    resource_type   CHARACTER VARYING NULL,
+    timestamp       TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    CONSTRAINT activity_logs_pkey PRIMARY KEY (log_id),
+    CONSTRAINT activity_logs_user_id_fkey FOREIGN KEY (user_id)
+        REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
+);
+
+-- ============================================================
+-- INDEXES
+-- Applied on high-frequency filter columns to prevent
+-- full table scans when rendering dashboard charts.
+-- ============================================================
+
+-- detection_logs
+CREATE INDEX idx_detection_logs_zone_id       ON detection_logs(zone_id);
+CREATE INDEX idx_detection_logs_camera_id     ON detection_logs(camera_id);
+CREATE INDEX idx_detection_logs_time          ON detection_logs(detection_time);
+
+-- energy_logs
+CREATE INDEX idx_energy_logs_room_id          ON energy_logs(room_id);
+CREATE INDEX idx_energy_logs_date             ON energy_logs(date);
+CREATE INDEX idx_energy_logs_room_date        ON energy_logs(room_id, date);
+
+-- activity_logs
+CREATE INDEX idx_activity_logs_user_id        ON activity_logs(user_id);
+CREATE INDEX idx_activity_logs_timestamp      ON activity_logs(timestamp);
+
+-- power_sensors
+CREATE INDEX idx_power_sensors_room_id        ON power_sensors(room_id);
+CREATE INDEX idx_power_sensors_read_at        ON power_sensors(read_at);
+
+-- iot_devices
+CREATE INDEX idx_iot_devices_room_id          ON iot_devices(room_id);
+
+-- zones
+CREATE INDEX idx_zones_room_id                ON zones(room_id);
+
+-- light_controls
+CREATE INDEX idx_light_controls_zone_id       ON light_controls(zone_id);
+CREATE INDEX idx_light_controls_device_id     ON light_controls(device_id);
+
+-- ac_controls
+CREATE INDEX idx_ac_controls_room_id          ON ac_controls(room_id);

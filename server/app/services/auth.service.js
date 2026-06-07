@@ -3,6 +3,10 @@ import jwt from 'jsonwebtoken';
 import db from '../models/index.js';
 import { sendEmail } from '../utils/email.js';
 
+if (!process.env.JWT_ACCESS_SECRET) {
+  throw new Error('FATAL: JWT_ACCESS_SECRET is not defined in environment variables');
+}
+
 const { User } = db;
 
 export const register = async (data) => {
@@ -38,7 +42,7 @@ export const login = async (email, password) => {
 
   const token = jwt.sign(
     { user_id: user.user_id, role: user.role },
-    process.env.JWT_SECRET || 'super_secret_jwt_key_2026',
+    process.env.JWT_ACCESS_SECRET,
     { expiresIn: '7d' }
   );
 
@@ -64,7 +68,7 @@ export const forgotPassword = async (email) => {
 
   const resetToken = jwt.sign(
     { user_id: user.user_id },
-    (process.env.JWT_SECRET || 'super_secret_jwt_key_2026') + user.password, // using current hash to invalidate token once changed
+    process.env.JWT_ACCESS_SECRET + user.password, // using current hash to invalidate token once changed
     { expiresIn: '15m' }
   );
 
@@ -94,7 +98,7 @@ export const resetPassword = async (user_id, token, new_password) => {
     throw new Error('Invalid user.');
   }
 
-  const secret = (process.env.JWT_SECRET || 'super_secret_jwt_key_2026') + user.password;
+  const secret = process.env.JWT_ACCESS_SECRET + user.password;
   try {
     jwt.verify(token, secret);
   } catch (error) {

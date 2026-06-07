@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import api from '../lib/axios';
 import { setAuthCookie, removeAuthCookie } from '../features/auth/actions';
+import { toast } from 'sonner';
 
 export const useAuth = () => {
   const [loading, setLoading] = useState(false);
@@ -71,8 +72,12 @@ export const useAuth = () => {
     try {
       await removeAuthCookie();
       window.location.href = '/login';
-    } catch (err) {
-      console.error('Logout failed', err);
+    } catch (err: any) {
+      if (err?.response?.status === 401 || err?.response?.status === 403) {
+        toast.error('Sesi habis. Silakan login kembali.');
+      } else {
+        toast.error('Gagal memuat data. Silakan coba lagi.');
+      }
       // Fallback for client side
       document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
       window.location.href = '/login';

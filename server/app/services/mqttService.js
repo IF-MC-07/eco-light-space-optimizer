@@ -1,6 +1,7 @@
 import mqtt from 'mqtt';
 import dotenv from 'dotenv';
 import DetectionPipelineService from './detectionPipelineService.js';
+import db from '../models/index.js';
 
 dotenv.config();
 
@@ -24,7 +25,8 @@ class MqttService {
     this.topics = {
       result: process.env.MQTT_TOPIC_RESULT || 'ai/inference/result',
       trigger: process.env.MQTT_TOPIC_TRIGGER || 'camera/trigger',
-      control: process.env.MQTT_TOPIC_CONTROL || 'kelas/control'
+      control: process.env.MQTT_TOPIC_CONTROL || 'kelas/control',
+      deviceStatus: 'devices/+/status/+'
     };
   }
 
@@ -36,7 +38,7 @@ class MqttService {
       console.log('[MQTT] Connected successfully');
       
       // Subscribe to relevant topics
-      const subscribeTopics = [this.topics.result];
+      const subscribeTopics = [this.topics.result, this.topics.deviceStatus];
       this.client.subscribe(subscribeTopics, (err) => {
         if (!err) {
           console.log(`[MQTT] Subscribed to topics: ${subscribeTopics.join(', ')}`);
@@ -46,6 +48,19 @@ class MqttService {
 
     this.client.on('message', async (topic, message) => {
       try {
+        const topicString = topic.toString();
+        
+        // Handle Device Status (LWT & Online)
+        if (topicString.startsWith('devices/') && topicString.includes('/status/')) {
+          const parts = topicString.split('/');
+          if (parts.length >= 4) {
+            const deviceId = parts[1];
+            const statusType = parts[3]; // 'online' or 'offline'
+            await this.handleDeviceStatusChange(deviceId, statusType);
+            return;
+          }
+        }
+
         const payload = JSON.parse(message.toString());
         console.log(`[MQTT] Received message on topic ${topic}`);
 
@@ -82,6 +97,34 @@ class MqttService {
       }
     });
     return true;
+  }
+
+  async handleDeviceStatusChange(deviceId, status) {
+    try {
+      const device = await db.IotDevice.findOne({ where: { device_id: deviceId } });
+      if (!device) {
+        console.warn(`[MQTT] Device ${deviceId} not found in DB for status update.`);
+        return;
+      }
+
+      const updateData = { status: status }; // 'online' or 'offline'
+      if (status === 'online') {
+        updateData.last_seen = new Date();
+      }
+
+      await device.update(updateData);
+
+      await db.ActivityLog.create({
+        action: status === 'online' ? 'DEVICE_ONLINE' : 'DEVICE_OFFLINE',
+        details: `Device ${deviceId} is now ${status}`,
+        resource_id: deviceId,
+        resource_type: 'IotDevice'
+      });
+
+      console.log(`[MQTT] Device ${deviceId} status updated to ${status}`);
+    } catch (error) {
+      console.error(`[MQTT] Error updating device status:`, error.message);
+    }
   }
 }
 

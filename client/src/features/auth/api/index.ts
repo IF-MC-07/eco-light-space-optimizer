@@ -29,8 +29,6 @@ export const resetPassword = async (data: any): Promise<any> => {
 
 export const me = async (): Promise<{ user: User }> => {
   const response = await serverAPI.get('/auth/me');
-  console.log('[AUTH] raw response:', response.data);
-  console.log('[AUTH] role from response:', response.data?.user?.role ?? response.data?.role ?? response.data?.data?.role);
   return { user: response.data.data };
 };
 

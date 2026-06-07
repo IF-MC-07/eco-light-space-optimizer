@@ -1,3 +1,4 @@
+import responseFormatter from '../utils/response.js';
 import * as iotDeviceService from '../services/iotDeviceService.js';
 
 export const getAll = async (req, res, next) => {
@@ -9,7 +10,7 @@ export const getAll = async (req, res, next) => {
     } else {
       data = await iotDeviceService.getAll();
     }
-    res.status(200).json({ success: true, data, message: 'IoT devices retrieved successfully' });
+    return responseFormatter.success(res, data, 'IoT devices retrieved successfully' );
   } catch (error) {
     next(error);
   }
@@ -19,9 +20,9 @@ export const getById = async (req, res, next) => {
   try {
     const data = await iotDeviceService.getById(req.params.id);
     if (!data) {
-      return res.status(404).json({ success: false, message: 'IoT device not found' });
+      return responseFormatter.error(res, 'IoT device not found' , 404);
     }
-    res.status(200).json({ success: true, data, message: 'IoT device retrieved successfully' });
+    return responseFormatter.success(res, data, 'IoT device retrieved successfully' );
   } catch (error) {
     next(error);
   }
@@ -30,7 +31,7 @@ export const getById = async (req, res, next) => {
 export const create = async (req, res, next) => {
   try {
     const data = await iotDeviceService.create(req.body);
-    res.status(201).json({ success: true, data, message: 'IoT device created successfully' });
+    return responseFormatter.success(res, data, 'IoT device created successfully' , 201);
   } catch (error) {
     next(error);
   }
@@ -40,9 +41,9 @@ export const update = async (req, res, next) => {
   try {
     const data = await iotDeviceService.update(req.params.id, req.body);
     if (!data) {
-      return res.status(404).json({ success: false, message: 'IoT device not found' });
+      return responseFormatter.error(res, 'IoT device not found' , 404);
     }
-    res.status(200).json({ success: true, data, message: 'IoT device updated successfully' });
+    return responseFormatter.success(res, data, 'IoT device updated successfully' );
   } catch (error) {
     next(error);
   }
@@ -52,9 +53,9 @@ export const remove = async (req, res, next) => {
   try {
     const isDeleted = await iotDeviceService.remove(req.params.id);
     if (!isDeleted) {
-      return res.status(404).json({ success: false, message: 'IoT device not found' });
+      return responseFormatter.error(res, 'IoT device not found' , 404);
     }
-    res.status(200).json({ success: true, data: null, message: 'IoT device deleted successfully' });
+    return responseFormatter.success(res, null, 'IoT device deleted successfully' );
   } catch (error) {
     next(error);
   }

@@ -9,7 +9,7 @@ export default (sequelize, DataTypes) => {
     },
     zone_id: {
       type: DataTypes.STRING(30),
-      allowNull: true,
+      allowNull: false,
       references: {
         model: 'zones',
         key: 'zone_id'
@@ -17,7 +17,7 @@ export default (sequelize, DataTypes) => {
     },
     device_id: {
       type: DataTypes.STRING(30),
-      allowNull: true,
+      allowNull: false,
       references: {
         model: 'iot_devices',
         key: 'device_id'

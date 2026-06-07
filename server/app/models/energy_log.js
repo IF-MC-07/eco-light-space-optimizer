@@ -28,6 +28,11 @@ export default (sequelize, DataTypes) => {
   }, {
     tableName: 'energy_logs',
     timestamps: false,
+    indexes: [
+      { fields: ['room_id'] },
+      { fields: ['date'] },
+      { fields: ['room_id', 'date'] }
+    ]
   });
 
   EnergyLog.associate = (models) => {

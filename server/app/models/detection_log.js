@@ -37,6 +37,11 @@ export default (sequelize, DataTypes) => {
   }, {
     tableName: 'detection_logs',
     timestamps: false,
+    indexes: [
+      { fields: ['zone_id'] },
+      { fields: ['camera_id'] },
+      { fields: ['detection_time'] }
+    ]
   });
 
   DetectionLog.associate = (models) => {

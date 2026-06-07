@@ -24,6 +24,10 @@ export default (sequelize, DataTypes) => {
     status: {
       type: DataTypes.STRING(20),
       defaultValue: 'aktif'
+    },
+    last_seen: {
+      type: DataTypes.DATE,
+      allowNull: true
     }
   }, {
     tableName: 'iot_devices',

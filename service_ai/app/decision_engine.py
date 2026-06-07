@@ -36,20 +36,29 @@ class DecisionEngine:
         #     "room_id": int,
         #     "current_status": "ON" | "OFF",
         #     "occupied_since": float | None,
-        #     "empty_since": float | None
+        #     "empty_since": float | None,
+        #     "last_turned_off": float | None
         # }
         self.ac_states = {}
 
-        # Load delay configurations (minutes to seconds conversion)
-        self.delay_on = float(os.getenv("DELAY_ON_MINUTES", 3)) * 60
-        self.delay_off = float(os.getenv("DELAY_OFF_MINUTES", 5)) * 60
+        self._camera_room_cache = {}
+        self._initialized_cameras = set()
 
-        logger.info(f"⚙️ Decision Engine Initialized with DELAY_ON={self.delay_on}s, DELAY_OFF={self.delay_off}s")
+        # Load delay configurations
+        self.delay_on_light = float(os.getenv("DELAY_ON_LIGHT_SECONDS", 5))
+        self.delay_on_ac = float(os.getenv("DELAY_ON_AC_MINUTES", 3)) * 60
+        self.delay_off = float(os.getenv("DELAY_OFF_MINUTES", 5)) * 60
+        self.compressor_protection_seconds = float(os.getenv("COMPRESSOR_PROTECTION_SECONDS", 180))
+
+        logger.info(f"⚙️ Decision Engine Initialized with DELAY_ON_LIGHT={self.delay_on_light}s, DELAY_ON_AC={self.delay_on_ac}s, DELAY_OFF={self.delay_off}s, COMPRESSOR_PROTECTION={self.compressor_protection_seconds}s")
 
     def _initialize_camera_states(self, camera_id: str):
         """
         Initializes zone and AC states from the database for the given camera.
         """
+        if camera_id in self._initialized_cameras:
+            return
+
         conn = None
         try:
             conn = get_db_connection()
@@ -61,6 +70,7 @@ class DecisionEngine:
                     logger.error(f"❌ Camera ID {camera_id} not found in DB")
                     return
                 room_id = room_row[0]
+                self._camera_room_cache[camera_id] = room_id
 
                 # 2. Fetch Active Zones and their Light Control states
                 cur.execute("""
@@ -101,9 +111,12 @@ class DecisionEngine:
                         "room_id": room_id,
                         "current_status": ac_status,
                         "occupied_since": None,
-                        "empty_since": None
+                        "empty_since": None,
+                        "last_turned_off": None
                     }
                     logger.info(f"🔹 Initialized AC state: Room {room_id} as {ac_status}")
+
+                self._initialized_cameras.add(camera_id)
 
         except Exception as e:
             logger.error(f"❌ DB Error during state initialization for Camera {camera_id}: {e}")
@@ -119,17 +132,15 @@ class DecisionEngine:
         # Ensure states are initialized
         self._initialize_camera_states(camera_id)
 
+        room_id = self._camera_room_cache.get(camera_id)
+        if not room_id:
+            return
+
         # Filter zone states belonging to the current camera's room
         conn = None
         try:
             conn = get_db_connection()
             with conn.cursor() as cur:
-                cur.execute("SELECT room_id FROM cameras WHERE camera_id = %s", (camera_id,))
-                room_row = cur.fetchone()
-                if not room_row:
-                    return
-                room_id = room_row[0]
-
                 # Filter zone states for this room
                 active_room_zones = [z for z in self.zone_states.values() if z["room_id"] == room_id]
                 now = time.time()
@@ -149,9 +160,9 @@ class DecisionEngine:
                             if zone["occupied_since"] is None:
                                 zone["occupied_since"] = now
                                 zone["pending_on"] = True
-                                logger.info(f"⏳ Zone '{z_name}' (ID {z_id}) occupancy detected. Pending ON in {self.delay_on/60} mins.")
+                                logger.info(f"⏳ Zone '{z_name}' (ID {z_id}) occupancy detected. Pending ON in {self.delay_on_light} secs.")
                             
-                            if (now - zone["occupied_since"]) >= self.delay_on:
+                            if (now - zone["occupied_since"]) >= self.delay_on_light:
                                 # Fetch relay channel
                                 cur.execute("""
                                     SELECT relay_channel FROM light_controls
@@ -238,33 +249,39 @@ class DecisionEngine:
                                 ac_state["occupied_since"] = now
                                 logger.info(f"⏳ Room {room_id} AC pending ON (occupancy detected).")
 
-                            if (now - ac_state["occupied_since"]) >= self.delay_on:
-                                # Fetch AC settings
-                                cur.execute("""
-                                    SELECT temperature_setting FROM ac_controls
-                                    WHERE room_id = %s LIMIT 1
-                                """, (room_id,))
-                                ac_row = cur.fetchone()
-                                temp = ac_row[0] if ac_row else 22.0
+                            if (now - ac_state["occupied_since"]) >= self.delay_on_ac:
+                                last_off = ac_state.get("last_turned_off")
+                                if last_off is not None and (now - last_off) < self.compressor_protection_seconds:
+                                    remaining = self.compressor_protection_seconds - (now - last_off)
+                                    logger.info(f"⏸️ AC Room {room_id}: compressor protection active, {remaining:.0f}s remaining.")
+                                    pass
+                                else:
+                                    # Fetch AC settings
+                                    cur.execute("""
+                                        SELECT temperature_setting FROM ac_controls
+                                        WHERE room_id = %s LIMIT 1
+                                    """, (room_id,))
+                                    ac_row = cur.fetchone()
+                                    temp = ac_row[0] if ac_row else 22.0
 
-                                # Emit TURN ON
-                                mqtt_commander.send_ac_command(
-                                    room_id=room_id,
-                                    command="ON",
-                                    temperature=temp,
-                                    source="ai_decision"
-                                )
-                                ac_state["current_status"] = "ON"
-                                ac_state["occupied_since"] = None
+                                    # Emit TURN ON
+                                    mqtt_commander.send_ac_command(
+                                        room_id=room_id,
+                                        command="ON",
+                                        temperature=temp,
+                                        source="ai_decision"
+                                    )
+                                    ac_state["current_status"] = "ON"
+                                    ac_state["occupied_since"] = None
 
-                                # Update DB status
-                                cur.execute("""
-                                    UPDATE ac_controls
-                                    SET ac_status = 'ON', updated_at = NOW()
-                                    WHERE room_id = %s
-                                """, (room_id,))
-                                conn.commit()
-                                logger.info(f"🟢 AC turned ON for Room {room_id}")
+                                    # Update DB status
+                                    cur.execute("""
+                                        UPDATE ac_controls
+                                        SET ac_status = 'ON', updated_at = NOW()
+                                        WHERE room_id = %s
+                                    """, (room_id,))
+                                    conn.commit()
+                                    logger.info(f"🟢 AC turned ON for Room {room_id}")
                     else:
                         ac_state["occupied_since"] = None
 
@@ -291,6 +308,7 @@ class DecisionEngine:
                                 )
                                 ac_state["current_status"] = "OFF"
                                 ac_state["empty_since"] = None
+                                ac_state["last_turned_off"] = now
 
                                 # Update DB status
                                 cur.execute("""

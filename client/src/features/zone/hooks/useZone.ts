@@ -2,6 +2,15 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Zone } from '@/types';
 import { getZoneByCamera, saveZone as apiSaveZone, deleteZone as apiDeleteZone } from '../api/zoneApi';
 import { MOCK_ZONES } from '@/mocks/zoneData';
+import { toast } from 'sonner';
+
+const handleError = (error: any) => {
+  if (error?.response?.status === 401 || error?.response?.status === 403) {
+    toast.error('Sesi habis. Silakan login kembali.');
+  } else {
+    toast.error('Gagal memuat data. Silakan coba lagi.');
+  }
+};
 
 export const useZone = (cameraId: string) => {
   const [zonas, setZonas] = useState<Zone[]>([]);
@@ -22,8 +31,8 @@ export const useZone = (cameraId: string) => {
       // If not in mock, try API
       const data = await getZoneByCamera(cameraId);
       setZonas(data);
-    } catch (error) {
-      console.error('Failed to fetch zones', error);
+    } catch (error: any) {
+      handleError(error);
       // Final fallback to empty if everything fails
       setZonas([]);
     }
@@ -60,8 +69,8 @@ export const useZone = (cameraId: string) => {
       await apiDeleteZone(id);
       setZonas(prev => prev.filter(z => z.zone_id !== id));
       if (selectedId === id) setSelectedId(null);
-    } catch (error) {
-      console.error('Failed to delete zone', error);
+    } catch (error: any) {
+      handleError(error);
     }
   };
 
@@ -79,8 +88,8 @@ export const useZone = (cameraId: string) => {
       // Baru kosongkan state lokal
       setZonas([]);
       setSelectedId(null);
-    } catch (error) {
-      console.error('Failed to clear all zones', error);
+    } catch (error: any) {
+      handleError(error);
     }
   };
 
@@ -97,8 +106,8 @@ export const useZone = (cameraId: string) => {
       setLastSaved(new Date());
       // Re-fetch to get real DB IDs for newly added zones
       await fetchZonas();
-    } catch (error) {
-      console.error('Failed to save zones', error);
+    } catch (error: any) {
+      handleError(error);
     } finally {
       setIsSaving(false);
     }

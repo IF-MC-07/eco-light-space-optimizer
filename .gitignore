@@ -35,7 +35,8 @@ service_ai/.env
 
 # Model files (ukuran besar, tidak perlu di-commit)
 service_ai/app/models/*.pkl
-service_ai/app/models/*.pt
+service_ai/*.pt
+service_ai/**/*.pt
 !service_ai/app/models/best.pt
 service_ai/app/models/*.h5
 service_ai/app/models/*.onnx
@@ -112,10 +113,18 @@ service_ai/runs/detect/deteksi-kelas/*
 
 # ─── MODEL ──────────────────────────────────────────────────
 # Abaikan semua .pt kecuali best.pt
-service_ai/app/models/*.pt
+service_ai/*.pt
+service_ai/**/*.pt
 !service_ai/app/models/best.pt
 
 # ─── NODE_MODULES ───────────────────────────────────────────
 node_modules/
 client/src/mocks/
 scratch/
+
+# ─── CERTIFICATES & OTHERS ──────────────────────────────────
+service_ai/runs/
+service_ai/certs/
+server/certs/
+*.pem
+*.key
