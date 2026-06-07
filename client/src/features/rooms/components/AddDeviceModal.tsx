@@ -1,8 +1,11 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, QrCode, Info, MonitorSpeaker } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
 import { useCreateDevice } from "../../iot-device/hooks";
+import { serverAPI } from "@/lib/api";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface AddDeviceModalProps {
   isOpen: boolean;
@@ -11,19 +14,119 @@ interface AddDeviceModalProps {
 }
 
 export function AddDeviceModal({ isOpen, onClose, roomId }: AddDeviceModalProps) {
+  const queryClient = useQueryClient();
+
   const [name, setName] = useState("");
   const [type, setType] = useState<string>("LIGHT");
 
+  // State tambahan untuk field dinamis
+  const [relayChannel, setRelayChannel] = useState(1);
+  const [zoneId, setZoneId] = useState("");
+  const [temperatureSetting, setTemperatureSetting] = useState(24);
+  const [ipAddress, setIpAddress] = useState("");
+  const [resolution, setResolution] = useState("800x600");
+  const [ipError, setIpError] = useState("");
+  const [cameraError, setCameraError] = useState("");
+  const [zones, setZones] = useState<any[]>([]);
+  
+  // State untuk loading form submission kustom
+  const [isCustomPending, setIsCustomPending] = useState(false);
+
   const { mutate: createDevice, isPending, error } = useCreateDevice();
 
+  // Fetch zones ketika tipe LIGHT dan roomId tersedia
+  useEffect(() => {
+    if (type === 'LIGHT' && roomId) {
+      serverAPI.get(`/zones?room_id=${roomId}`)
+        .then(r => setZones(r.data?.data || []))
+        .catch(err => console.error("Gagal mengambil data zones", err));
+    }
+  }, [type, roomId]);
+
   const handleClose = () => {
+    // Reset state dasar
     setName("");
     setType("LIGHT");
+    // Reset state tambahan ke nilai default
+    setRelayChannel(1);
+    setZoneId("");
+    setTemperatureSetting(24);
+    setIpAddress("");
+    setResolution("800x600");
+    setIpError("");
+    setCameraError("");
     onClose();
   };
 
-  const handleCreate = () => {
+  const handleIpChange = (val: string) => {
+    setIpAddress(val);
+    const parts = val.split(".");
+    
+    if (parts.length === 4) {
+      const isValid = parts.every(part => {
+        if (part === "") return false;
+        const num = Number(part);
+        return !isNaN(num) && num >= 0 && num <= 255;
+      });
+      
+      if (!isValid) {
+        setIpError("Format IP tidak valid");
+      } else {
+        setIpError("");
+      }
+    } else if (parts.length > 4) {
+      setIpError("Format IP tidak valid");
+    } else {
+      // Do not show error while user is still typing (e.g. less than 4 parts)
+      setIpError("");
+    }
+  };
+
+  const isFormValid = () => {
+    if (type === 'CAMERA') {
+      const parts = ipAddress.split(".");
+      const isValidIp = parts.length === 4 && parts.every(part => {
+        if (part === "") return false;
+        const num = Number(part);
+        return !isNaN(num) && num >= 0 && num <= 255;
+      });
+      return isValidIp;
+    }
+    
+    if (!name) return false;
+    if (type === 'LIGHT') return !!zoneId && !!relayChannel;
+    return true; // AC & SENSOR
+  };
+
+  const handleCreate = async () => {
     if (!roomId) return;
+    setCameraError("");
+    
+    // Logic khusus untuk CAMERA (tidak submit ke iot-devices)
+    if (type === "CAMERA") {
+      setIsCustomPending(true);
+      try {
+        await serverAPI.post('/cameras', {
+          room_id: roomId,
+          ip_address: ipAddress,
+          resolution: resolution,
+          status: 'aktif'
+        });
+        toast.success("Kamera berhasil ditambahkan");
+        queryClient.invalidateQueries({ queryKey: ['cameras'] });
+        queryClient.invalidateQueries({ queryKey: ['iot-devices'] });
+        handleClose();
+      } catch (err: any) {
+        const errMsg = err.response?.data?.message || err.message || "Gagal menambahkan kamera. Coba lagi.";
+        setCameraError(errMsg);
+        console.error("Gagal menambahkan kamera", err);
+      } finally {
+        setIsCustomPending(false);
+      }
+      return;
+    }
+
+    // Logic untuk LIGHT, AC, dan SENSOR
     createDevice(
       { 
         room_id: roomId, 
@@ -32,7 +135,40 @@ export function AddDeviceModal({ isOpen, onClose, roomId }: AddDeviceModalProps)
         status: 'ACTIVE' 
       },
       {
-        onSuccess: () => {
+        onSuccess: async (res: any) => {
+          const deviceId = res?.data?.device_id;
+          if (!deviceId) {
+            toast.success("Perangkat berhasil ditambahkan");
+            queryClient.invalidateQueries({ queryKey: ['iot-devices'] });
+            handleClose();
+            return;
+          }
+
+          // Request tambahan berurutan setelah device terbuat
+          try {
+            if (type === 'LIGHT') {
+              await serverAPI.post('/light-controls', {
+                zone_id: zoneId,
+                device_id: deviceId,
+                relay_channel: Number(relayChannel),
+                light_status: 'OFF'
+              });
+            } else if (type === 'AC') {
+              await serverAPI.post('/ac-controls', {
+                room_id: roomId,
+                device_id: deviceId,
+                temperature_setting: Number(temperatureSetting),
+                ac_status: 'OFF'
+              });
+            }
+            toast.success("Perangkat berhasil ditambahkan");
+            queryClient.invalidateQueries({ queryKey: ['iot-devices'] });
+          } catch (err) {
+            console.error("Gagal membuat control tambahan", err);
+            toast.error("Perangkat terbuat, tetapi gagal menyimpan konfigurasi tambahan");
+            queryClient.invalidateQueries({ queryKey: ['iot-devices'] });
+          }
+          
           handleClose();
         }
       }
@@ -64,22 +200,30 @@ export function AddDeviceModal({ isOpen, onClose, roomId }: AddDeviceModalProps)
         </div>
 
         <div className="px-8 space-y-5">
-          {error && (
+          {error && type !== 'CAMERA' && (
             <div className="p-3 bg-red-100 text-red-600 rounded-lg text-sm">
               Error creating device. Please try again.
             </div>
           )}
 
-          <div className="space-y-2">
-            <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">Device Name</label>
-            <input 
-              type="text" 
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Room Light 1"
-              className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-dark placeholder-secondary-light focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3.5"
-            />
-          </div>
+          {cameraError && type === 'CAMERA' && (
+            <div className="p-3 bg-red-100 text-red-600 rounded-lg text-sm">
+              {cameraError}
+            </div>
+          )}
+
+          {type !== 'CAMERA' && (
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">Device Name</label>
+              <input 
+                type="text" 
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Room Light 1"
+                className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-dark placeholder-secondary-light focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3.5"
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">Device Type</label>
@@ -100,6 +244,98 @@ export function AddDeviceModal({ isOpen, onClose, roomId }: AddDeviceModalProps)
             </div>
           </div>
 
+          {/* Container Field Dinamis dengan Animasi */}
+          <div className="transition-all duration-300 space-y-5">
+            {type === 'LIGHT' && (
+              <>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">Zone*</label>
+                  <div className="relative">
+                    <select
+                      value={zoneId}
+                      onChange={(e) => setZoneId(e.target.value)}
+                      className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-dark focus:outline-none focus:ring-2 focus:ring-primary/50 pl-4 pr-10 py-3.5 appearance-none cursor-pointer"
+                    >
+                      <option value="" disabled>Select Zone</option>
+                      {zones.map((zone) => (
+                        <option key={zone.zone_id} value={zone.zone_id}>{zone.zone_name}</option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-secondary-dark">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">Relay Channel*</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="4"
+                    value={relayChannel}
+                    onChange={(e) => setRelayChannel(Number(e.target.value))}
+                    placeholder="1"
+                    className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-dark placeholder-secondary-light focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3.5"
+                  />
+                  <p className="text-xs text-secondary-light">Relay channel pada ESP32 (1-4)</p>
+                </div>
+              </>
+            )}
+
+            {type === 'AC' && (
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">Temperature Setting</label>
+                <input
+                  type="number"
+                  min="16"
+                  max="30"
+                  value={temperatureSetting}
+                  onChange={(e) => setTemperatureSetting(Number(e.target.value))}
+                  placeholder="24"
+                  className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-dark placeholder-secondary-light focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3.5"
+                />
+                <p className="text-xs text-secondary-light">Suhu default AC dalam Celcius</p>
+              </div>
+            )}
+
+            {type === 'CAMERA' && (
+              <>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">IP Address*</label>
+                  <input
+                    type="text"
+                    value={ipAddress}
+                    onChange={(e) => handleIpChange(e.target.value)}
+                    placeholder="192.168.1.100"
+                    className={`w-full bg-[#E2E8F0] bg-opacity-50 border ${ipError ? 'border-red-500' : 'border-none'} rounded-lg text-base text-secondary-dark placeholder-secondary-light focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3.5`}
+                  />
+                  {ipError && <p className="text-xs text-red-500 mt-1">{ipError}</p>}
+                  {!ipError && <p className="text-xs text-secondary-light mt-1">IP address ESP32-CAM di jaringan Wi-Fi lokal</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">Resolution</label>
+                  <div className="relative">
+                    <select
+                      value={resolution}
+                      onChange={(e) => setResolution(e.target.value)}
+                      className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-dark focus:outline-none focus:ring-2 focus:ring-primary/50 pl-4 pr-10 py-3.5 appearance-none cursor-pointer"
+                    >
+                      <option value="320x240">320x240</option>
+                      <option value="640x480">640x480</option>
+                      <option value="800x600">800x600</option>
+                      <option value="1024x768">1024x768</option>
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-secondary-dark">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
           <div className="bg-[#F8FAFC] rounded-xl p-4 flex space-x-3 mt-4 border border-neutral-border/40">
             <div className="mt-0.5">
               <Info className="w-5 h-5 text-primary-dark" />
@@ -113,18 +349,18 @@ export function AddDeviceModal({ isOpen, onClose, roomId }: AddDeviceModalProps)
         <div className="px-8 py-8 bg-white flex items-center justify-end space-x-8 mt-2">
           <button 
             onClick={handleClose}
-            disabled={isPending}
+            disabled={isPending || isCustomPending}
             className="text-sm font-bold text-secondary-dark hover:text-primary transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <Button 
             onClick={handleCreate}
-            disabled={isPending || !roomId || !name}
+            disabled={isPending || isCustomPending || !roomId || !isFormValid()}
             className="bg-primary-dark hover:bg-primary text-white py-3 px-6 rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center space-x-2 disabled:opacity-50"
           >
             <MonitorSpeaker className="w-5 h-5" />
-            <span>{isPending ? "Adding..." : "Add Device"}</span>
+            <span>{isPending || isCustomPending ? "Adding..." : "Add Device"}</span>
           </Button>
         </div>
       </div>
