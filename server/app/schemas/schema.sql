@@ -102,4 +102,14 @@ CREATE TABLE power_sensors (
     read_at TIMESTAMP WITH TIME ZONE
 );
 
-activity_logs
+create table activity_logs (
+  log_id character varying(30) not null,
+  user_id character varying(30) null,
+  action character varying(255) not null,
+  details text null,
+  timestamp timestamp with time zone null,
+  resource_id character varying null,
+  resource_type character varying null,
+  constraint activity_logs_pkey primary key (log_id),
+  constraint activity_logs_user_id_fkey foreign KEY (user_id) references users (user_id) on update CASCADE on delete set null
+) TABLESPACE pg_default;
