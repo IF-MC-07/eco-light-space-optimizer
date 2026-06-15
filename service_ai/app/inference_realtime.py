@@ -1,31 +1,22 @@
-"""
-PRIVACY BY DESIGN - ECO-LIGHT & AC SPACE OPTIMIZER
-==================================================
-1. Sistem ini dirancang untuk beroperasi sepenuhnya IN-MEMORY.
-2. Tidak ada frame kamera, video (footage), atau gambar yang disimpan ke disk secara permanen.
-3. Data yang dikirimkan ke sistem pengambilan keputusan (Decision Engine) dan log hanyalah
-   metadata numerik (jumlah orang per zona), BUKAN gambar.
-4. Mode visualisasi (DEBUG_MODE) hanya merender tampilan buffer in-memory ke layar sementara
-   via cv2.imshow() dan otomatis dihancurkan tanpa tersimpan ke hard drive.
-"""
 import cv2
 import json
 import logging
 import os
 import time
+import threading
+import requests
 
 import paho.mqtt.client as mqtt
 from dotenv import load_dotenv
 from ultralytics import YOLO
 
 try:
-    from app.zona_loader import ambil_zona_dari_db, titik_di_zona
+    from app.zona_loader import ambil_zona_dari_db, titik_di_zona, get_db_connection, release_connection
 except ImportError:
-    from zona_loader import ambil_zona_dari_db, titik_di_zona
+    from zona_loader import ambil_zona_dari_db, titik_di_zona, get_db_connection, release_connection
 
 load_dotenv()
 
-# ─── Logging ────────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -33,77 +24,63 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-# ─── Config ─────────────────────────────────────────────────────────────────
-MQTT_BROKER         = os.getenv("MQTT_BROKER", "localhost")
-MQTT_PORT           = int(os.getenv("MQTT_PORT", 1883))
-MQTT_USER           = os.getenv("MQTT_USER")
-MQTT_PASSWORD       = os.getenv("MQTT_PASSWORD")
-MQTT_TOPIC_TRIGGER  = os.getenv("MQTT_TOPIC_TRIGGER", "camera/trigger")
-MQTT_TOPIC_CONTROL  = os.getenv("MQTT_TOPIC_CONTROL", "kelas/control")
+# ─── Config ──────────────────────────────────────────────────────────────────
+MQTT_BROKER        = os.getenv("MQTT_BROKER", "localhost")
+MQTT_PORT          = int(os.getenv("MQTT_PORT", 1883))
+MQTT_USER          = os.getenv("MQTT_USER")
+MQTT_PASSWORD      = os.getenv("MQTT_PASSWORD")
+SNAPSHOT_INTERVAL  = float(os.getenv("SNAPSHOT_INTERVAL", 3))
+ZONE_FETCH_INTERVAL= float(os.getenv("ZONE_FETCH_INTERVAL", 60))
+CONF_THRESHOLD     = float(os.getenv("CONF_THRESHOLD", 0.25))
+IOU_THRESHOLD      = float(os.getenv("IOU_THRESHOLD", 0.45))
+MODEL_PATH         = os.getenv("MODEL_PATH", "yolov8n.pt")
+API_URL            = os.getenv("API_URL", "http://localhost:5000/api")
+CAMERA_SECRET_KEY  = os.getenv("CAMERA_SECRET_KEY")
 
-CAMERA_SOURCE       = os.getenv("CAMERA_SOURCE", "0")
-ID_KAMERA           = os.getenv("ID_KAMERA", "CAM-001")
+# ─── Shared Model + Lock ─────────────────────────────────────────────────────
+_model = None
+_model_lock = threading.Lock()
 
-MQTT_TOPIC_RESULT   = os.getenv(
-    "MQTT_TOPIC_RESULT",
-    f"ai/inference/result/{ID_KAMERA}"
-)
+def get_model():
+    global _model
+    if _model is None:
+        log.info(f"🔃 Loading YOLOv8 model from {MODEL_PATH}...")
+        _model = YOLO(MODEL_PATH)
+        log.info("✅ Model loaded.")
+    return _model
 
-SEND_INTERVAL       = float(os.getenv("SEND_INTERVAL", 2))       # detik
-ZONE_FETCH_INTERVAL = float(os.getenv("ZONE_FETCH_INTERVAL", 60)) # detik
-CONF_THRESHOLD      = float(os.getenv("CONF_THRESHOLD", 0.25))
-IOU_THRESHOLD       = float(os.getenv("IOU_THRESHOLD", 0.45))
-
-MODEL_PATH          = os.getenv("MODEL_PATH", "yolov8n.pt")
-DEBUG_MODE          = os.getenv("DEBUG_MODE", "False").lower() in ("true", "1", "yes")
-
-camera_input = int(CAMERA_SOURCE) if CAMERA_SOURCE.isdigit() else CAMERA_SOURCE
-
-
-# ─── MQTT Handler ────────────────────────────────────────────────────────────
+# ─── MQTT Handler ─────────────────────────────────────────────────────────────
 class MQTTHandler:
     def __init__(self):
         self.connected = False
-        # Fix: gunakan CallbackAPIVersion untuk paho-mqtt v2+
         self.client = mqtt.Client(
             callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
-            client_id=f"service_ai_{ID_KAMERA}",
+            client_id="service_ai_multicam",
         )
         if MQTT_USER and MQTT_PASSWORD:
             self.client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
-
-        self.client.on_connect    = self._on_connect
+        self.client.on_connect = self._on_connect
         self.client.on_disconnect = self._on_disconnect
-
-        # Auto-reconnect bawaan paho
         self.client.reconnect_delay_set(min_delay=1, max_delay=30)
 
     def _on_connect(self, client, userdata, flags, reason_code, properties):
         if reason_code == 0:
             self.connected = True
             log.info(f"✅ MQTT terhubung ke {MQTT_BROKER}:{MQTT_PORT}")
-            # Subscribe topic control (start/stop service via MQTT)
-            client.subscribe(MQTT_TOPIC_CONTROL)
         else:
             self.connected = False
             log.error(f"❌ MQTT gagal connect, kode: {reason_code}")
 
     def _on_disconnect(self, client, userdata, flags, reason_code, properties):
         self.connected = False
-        log.warning(f"⚠️  MQTT terputus (kode: {reason_code}), mencoba reconnect...")
+        log.warning(f"⚠️ MQTT terputus (kode: {reason_code}), mencoba reconnect...")
 
     def connect(self):
-        try:
-            self.client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
-            self.client.loop_start()
-        except Exception as e:
-            log.error(f"❌ Tidak bisa connect ke MQTT: {e}")
-            raise
+        self.client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
+        self.client.loop_start()
 
     def publish(self, topic: str, payload: dict) -> bool:
-        """Publish payload, return False jika tidak terkoneksi."""
         if not self.connected:
-            log.warning("⚠️  MQTT tidak terhubung, skip publish.")
             return False
         result = self.client.publish(topic, json.dumps(payload), qos=1)
         return result.rc == mqtt.MQTT_ERR_SUCCESS
@@ -112,47 +89,35 @@ class MQTTHandler:
         self.client.loop_stop()
         self.client.disconnect()
 
+# ─── Fetch semua kamera aktif dari DB/API ─────────────────────────────────────
+def get_active_cameras() -> list:
+    if not CAMERA_SECRET_KEY:
+        log.error("❌ CAMERA_SECRET_KEY tidak diatur dalam environment variables!")
+        return []
 
-# ─── Zone Manager ─────────────────────────────────────────────────────────────
-FORCE_ZONE_RELOAD = False
+    try:
+        headers = {"x-ai-secret": CAMERA_SECRET_KEY}
+        response = requests.get(f"{API_URL}/cameras/ai/stream-urls", headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("success"):
+                return data.get("data", [])
+            else:
+                log.error(f"❌ API Error: {data.get('message')}")
+        else:
+            log.error(f"❌ API returned status {response.status_code}: {response.text}")
+            
+    except Exception as e:
+        log.error(f"❌ Error fetching cameras from API: {e}")
+        
+    return []
 
-def force_zone_reload():
-    global FORCE_ZONE_RELOAD
-    FORCE_ZONE_RELOAD = True
-    log.info("🔄 Force zone reload requested via MQTT.")
-
-class ZoneManager:
-    def __init__(self, id_kamera: str, fetch_interval: float):
-        self.id_kamera      = id_kamera
-        self.fetch_interval = fetch_interval
-        self.zones          = []
-        self._last_fetch    = 0.0
-
-    def get_zones(self) -> list:
-        """Return zones, reload dari DB jika sudah expired atau dipaksa."""
-        global FORCE_ZONE_RELOAD
-        now = time.time()
-        if FORCE_ZONE_RELOAD or (now - self._last_fetch) >= self.fetch_interval or not self.zones:
-            try:
-                self.zones       = ambil_zona_dari_db(self.id_kamera)
-                self._last_fetch = now
-                FORCE_ZONE_RELOAD = False
-                log.info(f"🔄 Reloaded {len(self.zones)} zona dari DB.")
-            except Exception as e:
-                log.error(f"❌ Gagal fetch zona: {e}")
-        return self.zones
-
-
-# ─── Inference ────────────────────────────────────────────────────────────────
+# ─── Hitung per zona ──────────────────────────────────────────────────────────
 def hitung_per_zona(boxes, zones: list, width: int, height: int) -> dict:
-    """
-    Hitung jumlah orang per zona dan total.
-    Orang yang tidak masuk zona manapun tetap dihitung di 'total'
-    tapi tidak menambah count zona (konsisten).
-    """
     count = {z["zone_name"]: 0 for z in zones}
-    count["luar_zona"] = 0  # ✅ Fix: orang di luar semua zona
-    count["total"]     = 0
+    count["luar_zona"] = 0
+    count["total"] = 0
 
     for box in boxes:
         x1, y1, x2, y2 = map(int, box.xyxy[0])
@@ -168,128 +133,144 @@ def hitung_per_zona(boxes, zones: list, width: int, height: int) -> dict:
 
         if not masuk_zona:
             count["luar_zona"] += 1
-
         count["total"] += 1
 
     return count
 
+def open_capture(cam_source):
+    if isinstance(cam_source, int) and os.name == 'nt':
+        cap = cv2.VideoCapture(cam_source, cv2.CAP_DSHOW)
+    else:
+        cap = cv2.VideoCapture(cam_source)
+        cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 5000)   # 5 detik timeout koneksi
+        cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, 5000)   # 5 detik timeout baca frame
+    return cap
 
+# ─── Worker per kamera ────────────────────────────────────────────────────────
+def camera_worker(camera_id: str, ip_address: str, mqtt_handler: MQTTHandler, stop_event: threading.Event):
+    log.info(f"🎥 Starting worker for {camera_id} ({ip_address})")
+
+    cam_source = int(ip_address) if ip_address.isdigit() else ip_address
+    zones = []
+    last_zone_fetch = 0.0
+    prev_data = {}
+
+    while not stop_event.is_set():
+        now = time.time()
+
+        # Refresh zona dari DB
+        if (now - last_zone_fetch) >= ZONE_FETCH_INTERVAL or last_zone_fetch == 0.0:
+            try:
+                zones = ambil_zona_dari_db(camera_id)
+                last_zone_fetch = now
+                log.info(f"🔄 [{camera_id}] Reloaded {len(zones)} zona dari DB.")
+            except Exception as e:
+                log.error(f"❌ [{camera_id}] Gagal fetch zona: {e}")
+
+        # Ambil snapshot
+        try:
+            cap = open_capture(cam_source)
+            if not cap.isOpened():
+                log.warning(f"⚠️ [{camera_id}] Kamera tidak bisa dibuka, retry dalam {SNAPSHOT_INTERVAL}s")
+                time.sleep(SNAPSHOT_INTERVAL)
+                continue
+
+            ret, frame = cap.read()
+            cap.release()
+
+            if not ret:
+                log.warning(f"⚠️ [{camera_id}] Frame tidak terbaca, skip.")
+                time.sleep(SNAPSHOT_INTERVAL)
+                continue
+
+        except Exception as e:
+            log.error(f"❌ [{camera_id}] Error capture: {e}")
+            try:
+                cap.release()
+            except:
+                pass
+            time.sleep(SNAPSHOT_INTERVAL)
+            continue
+        # Inference dengan lock
+        try:
+            with _model_lock:
+                model = get_model()
+                results = model.predict(
+                    frame,
+                    conf=CONF_THRESHOLD,
+                    iou=IOU_THRESHOLD,
+                    classes=[0],
+                    verbose=False,
+                    save=False,
+                    save_txt=False,
+                )
+        except Exception as e:
+            log.error(f"❌ [{camera_id}] Inference error: {e}")
+            time.sleep(SNAPSHOT_INTERVAL)
+            continue
+
+        height, width = frame.shape[:2]
+        count = hitung_per_zona(results[0].boxes, zones, width, height)
+        status = "ON" if count["total"] > 0 else "OFF"
+
+        if count != prev_data:
+            topic = f"ai/inference/result/{camera_id}"
+            payload = {**count, "lampu": status, "camera_id": camera_id}
+            if mqtt_handler.publish(topic, payload):
+                log.info(f"📤 [{camera_id}] {payload}")
+
+            try:
+                from app.decision_engine import decision_engine
+                from app.log_writer import write_detection_logs
+                decision_engine.process_inference(camera_id, count)
+                write_detection_logs(camera_id, count)
+            except Exception as e:
+                log.error(f"❌ [{camera_id}] Decision/log error: {e}")
+
+            prev_data = count.copy()
+
+        time.sleep(SNAPSHOT_INTERVAL)
+
+    log.info(f"🛑 [{camera_id}] Worker stopped.")
+
+# ─── Entry point ──────────────────────────────────────────────────────────────
 def run():
-    # Init MQTT
     mqtt_handler = MQTTHandler()
     mqtt_handler.connect()
 
-    # Init zona manager
-    zone_mgr = ZoneManager(ID_KAMERA, ZONE_FETCH_INTERVAL)
-
-    # Init model
-    log.info(f"🔃 Loading YOLOv8 model from {MODEL_PATH}...")
-    model = YOLO(MODEL_PATH)
-    log.info("✅ Model loaded.")
-
-    # Init kamera
-    if isinstance(camera_input, int) and os.name == 'nt':
-        cap = cv2.VideoCapture(camera_input, cv2.CAP_DSHOW)
-    else:
-        cap = cv2.VideoCapture(camera_input)
-        
-    if not cap.isOpened():
-        log.error(f"❌ Kamera tidak bisa dibuka: {CAMERA_SOURCE}")
+    cameras = get_active_cameras()
+    if not cameras:
+        log.error("❌ Tidak ada kamera aktif di DB. Service berhenti.")
         mqtt_handler.stop()
         return
 
-    log.info(f"✅ Kamera aktif (source: {CAMERA_SOURCE})")
-    log.info("▶️  Inferensi berjalan. Tekan Ctrl+C untuk keluar.")
+    log.info(f"📷 {len(cameras)} kamera aktif ditemukan: {[c['camera_id'] for c in cameras]}")
 
-    prev_data      = {}
-    last_send_time = 0.0
+    stop_event = threading.Event()
+    threads = []
+
+    for cam in cameras:
+        t = threading.Thread(
+            target=camera_worker,
+            args=(cam["camera_id"], cam["ip_address"], mqtt_handler, stop_event),
+            daemon=True,
+            name=f"worker-{cam['camera_id']}"
+        )
+        t.start()
+        threads.append(t)
 
     try:
         while True:
-            ret, frame = cap.read()
-            if not ret:
-                log.warning("⚠️  Frame tidak terbaca, mencoba lagi...")
-                time.sleep(0.5)
-                continue
-
-            height, width = frame.shape[:2]
-            zones         = zone_mgr.get_zones()
-
-            results = model.predict(
-                frame,
-                conf=CONF_THRESHOLD,
-                iou=IOU_THRESHOLD,
-                classes=[0],        # hanya 'person'
-                show_labels=False,
-                show_conf=False,
-                verbose=False,
-                save=False,         # Pastikan tidak mensave gambar
-                save_txt=False,     # Pastikan tidak mensave txt file
-                save_conf=False,
-                save_crop=False
-            )
-
-            count  = hitung_per_zona(results[0].boxes, zones, width, height)
-            status = "ON" if count["total"] > 0 else "OFF"
-            
-            # --- DEBUG VISUALIZATION (IN-MEMORY ONLY) ---
-            if DEBUG_MODE:
-                annotated = results[0].plot()
-                for z in zones:
-                    zx1, zy1 = int(z['x1_pct'] * width), int(z['y1_pct'] * height)
-                    zx2, zy2 = int(z['x2_pct'] * width), int(z['y2_pct'] * height)
-                    
-                    hex_color = z['color'].lstrip('#') if 'color' in z else '00ff00'
-                    try:
-                        r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
-                        color = (b, g, r)
-                    except:
-                        color = (0, 255, 0)
-                        
-                    cv2.rectangle(annotated, (zx1, zy1), (zx2, zy2), color, 2)
-                    cv2.putText(annotated, f"{z['zone_name']} | Orang: {count[z['zone_name']]}", 
-                                (zx1, zy1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
-                                
-                cv2.imshow("Eco-Light Debug View (IN-MEMORY)", annotated)
-                cv2.waitKey(1)
-
-            now = time.time()
-            if count != prev_data and (now - last_send_time) >= SEND_INTERVAL:
-                payload = {**count, "lampu": status, "camera_id": ID_KAMERA}
-                if mqtt_handler.publish(MQTT_TOPIC_RESULT, payload):
-                    log.info(f"📤 {payload}")
-                    
-                    # Wire Decision Engine and Log Writer
-                    try:
-                        from app.decision_engine import decision_engine
-                        from app.log_writer import write_detection_logs
-                    except ImportError:
-                        from decision_engine import decision_engine
-                        from log_writer import write_detection_logs
-                        
-                    try:
-                        decision_engine.process_inference(ID_KAMERA, count)
-                    except Exception as ex:
-                        log.error(f"❌ Error in decision engine: {ex}")
-                        
-                    try:
-                        write_detection_logs(ID_KAMERA, count)
-                    except Exception as ex:
-                        log.error(f"❌ Error in log writer: {ex}")
-
-                prev_data      = count.copy()
-                last_send_time = now
-
+            time.sleep(1)
     except KeyboardInterrupt:
         log.info("\n🛑 Dihentikan oleh user.")
+        stop_event.set()
 
-    finally:
-        cap.release()
-        if DEBUG_MODE:
-            cv2.destroyAllWindows()
-        mqtt_handler.stop()
-        log.info("✅ Resource dilepas, service berhenti.")
+    for t in threads:
+        t.join(timeout=5)
 
+    mqtt_handler.stop()
+    log.info("✅ Semua worker berhenti, service selesai.")
 
 if __name__ == "__main__":
     run()

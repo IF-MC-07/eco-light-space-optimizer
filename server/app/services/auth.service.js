@@ -2,12 +2,25 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import db from '../models/index.js';
 import { sendEmail } from '../utils/email.js';
-
-if (!process.env.JWT_ACCESS_SECRET) {
-  throw new Error('FATAL: JWT_ACCESS_SECRET is not defined in environment variables');
-}
+import jwtConfig from '../config/jwt.js';
 
 const { User } = db;
+
+const generateAccessToken = (user) => {
+  return jwt.sign(
+    { user_id: user.user_id, role: user.role },
+    jwtConfig.JWT_SECRET,
+    { expiresIn: jwtConfig.ACCESS_TOKEN_EXPIRY }
+  );
+};
+
+const generateRefreshToken = (user) => {
+  return jwt.sign(
+    { user_id: user.user_id, role: user.role },
+    jwtConfig.JWT_REFRESH_SECRET,
+    { expiresIn: jwtConfig.REFRESH_TOKEN_EXPIRY }
+  );
+};
 
 export const register = async (data) => {
   const existingUser = await User.findOne({ where: { email: data.email } });
@@ -40,14 +53,11 @@ export const login = async (email, password) => {
     throw new Error('Email or password is wrong.');
   }
 
-  const token = jwt.sign(
-    { user_id: user.user_id, role: user.role },
-    process.env.JWT_ACCESS_SECRET,
-    { expiresIn: '7d' }
-  );
+  const token = generateAccessToken(user);
+  const refreshToken = generateRefreshToken(user);
 
   const { password: userPassword, ...userWithoutPassword } = user.toJSON();
-  return { token, user: userWithoutPassword };
+  return { token, refreshToken, user: userWithoutPassword };
 };
 
 export const getProfile = async (user_id) => {
@@ -68,8 +78,8 @@ export const forgotPassword = async (email) => {
 
   const resetToken = jwt.sign(
     { user_id: user.user_id },
-    process.env.JWT_ACCESS_SECRET + user.password, // using current hash to invalidate token once changed
-    { expiresIn: '15m' }
+    jwtConfig.JWT_SECRET + user.password, // using current hash to invalidate token once changed
+    { expiresIn: jwtConfig.ACCESS_TOKEN_EXPIRY }
   );
 
   const clientUrl = process.env.NEXT_PUBLIC_CLIENT_URL || 'http://localhost:3000';
@@ -98,7 +108,7 @@ export const resetPassword = async (user_id, token, new_password) => {
     throw new Error('Invalid user.');
   }
 
-  const secret = process.env.JWT_ACCESS_SECRET + user.password;
+  const secret = jwtConfig.JWT_SECRET + user.password;
   try {
     jwt.verify(token, secret);
   } catch (error) {

@@ -46,7 +46,7 @@ export function AddDeviceModal({
         .then((r) => {
           const allZones = r.data?.data || [];
           const filteredZones = allZones.filter(
-            (zone: any) => String(zone.room_id) === String(roomId)
+            (zone: any) => String(zone.room_id) === String(roomId),
           );
           setZones(filteredZones);
         })
@@ -71,41 +71,33 @@ export function AddDeviceModal({
 
   const handleIpChange = (val: string) => {
     setIpAddress(val);
-    const parts = val.split(".");
+    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+    const rtspRegex = /^rtsp:\/\/.+/i;
+    const httpRegex = /^https?:\/\/.+/i;
 
-    if (parts.length === 4) {
-      const isValid = parts.every((part) => {
-        if (part === "") return false;
-        const num = Number(part);
-        return !isNaN(num) && num >= 0 && num <= 255;
-      });
-
-      if (!isValid) {
-        setIpError("Invalid IP format");
-      } else {
-        setIpError("");
-      }
-    } else if (parts.length > 4) {
-      setIpError("Invalid IP format");
-    } else {
-      // Do not show error while user is still typing (e.g. less than 4 parts)
+    if (val === "") {
       setIpError("");
+    } else if (ipRegex.test(val)) {
+      const parts = val.split(".");
+      const valid = parts.every((p) => parseInt(p) >= 0 && parseInt(p) <= 255);
+      setIpError(valid ? "" : "Invalid IP format");
+    } else if (rtspRegex.test(val) || httpRegex.test(val)) {
+      setIpError("");
+    } else {
+      setIpError("Enter a valid IP address or stream URL (rtsp:// / http://)");
     }
   };
 
   const isFormValid = () => {
     if (type === "CAMERA") {
       const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
-      const parts = ipAddress.split(".");
-      const isValidIp =
-        parts.length === 4 &&
-        parts.every((part) => {
-          parts.every((p) => parseInt(p) >= 0 && parseInt(p) <= 255);
-          if (part === "") return false;
-          const num = Number(part);
-          return !isNaN(num) && num >= 0 && num <= 255;
-        });
-      return !ipAddress && isValidIp;
+      const rtspRegex = /^rtsp:\/\/.+/i;
+      const httpRegex = /^https?:\/\/.+/i;
+      const isValid =
+        ipRegex.test(ipAddress) ||
+        rtspRegex.test(ipAddress) ||
+        httpRegex.test(ipAddress);
+      return !!ipAddress && isValid && !ipError;
     }
 
     if (!name) return false;
@@ -368,13 +360,13 @@ export function AddDeviceModal({
               <>
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">
-                    IP Address*
+                    IP Address or Stream URL (RTSP/HTTP)
                   </label>
                   <input
                     type="text"
                     value={ipAddress}
                     onChange={(e) => handleIpChange(e.target.value)}
-                    placeholder="192.168.1.100"
+                    placeholder="192.168.1.100 or rtsp://user:pass@ip:port/"
                     className={`w-full bg-[#E2E8F0] bg-opacity-50 border ${ipError ? "border-red-500" : "border-none"} rounded-lg text-base text-secondary-dark placeholder-secondary-light focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3.5`}
                   />
                   {ipError && (

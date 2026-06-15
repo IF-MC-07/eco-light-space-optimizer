@@ -64,8 +64,12 @@ class DetectionPipelineService {
       return null;
     }
 
-    if (isNaN(parseInt(camera_id)) || isNaN(parseInt(person_count))) {
-      console.warn('[DetectionPipeline] Invalid payload: fields must be numbers', payload);
+    const normalizedCameraId = typeof camera_id === 'string' ? camera_id.trim() : camera_id;
+    const normalizedZoneId = zone_id !== undefined && zone_id !== null ? String(zone_id).trim() : null;
+    const parsedPersonCount = parseInt(person_count, 10);
+
+    if (normalizedCameraId === '' || Number.isNaN(parsedPersonCount) || (zone_id !== undefined && zone_id !== null && normalizedZoneId === '')) {
+      console.warn('[DetectionPipeline] Invalid payload: missing or malformed fields', payload);
       return null;
     }
 
@@ -73,10 +77,10 @@ class DetectionPipelineService {
     const normalizedTimestamp = timestamp ? dayjs(timestamp).toDate() : new Date();
 
     return {
-      camera_id: parseInt(camera_id),
-      zone_id: zone_id ? parseInt(zone_id) : null,
-      person_count: parseInt(person_count),
-      light_status: light_status || (person_count > 0 ? 'ON' : 'OFF'),
+      camera_id: normalizedCameraId,
+      zone_id: normalizedZoneId,
+      person_count: parsedPersonCount,
+      light_status: light_status || (parsedPersonCount > 0 ? 'ON' : 'OFF'),
       timestamp: normalizedTimestamp
     };
   }
@@ -103,14 +107,21 @@ class DetectionPipelineService {
 
   /**
    * Bulk process results (Useful for multi-zone payloads from AI)
-   * Example: { "Zone A": 2, "Zone B": 0, "camera_id": 1, "lampu": "ON" }
+   * Example: { "Zone A": 2, "Zone B": 0, "camera_id": "CAM-001", "lampu": "ON" }
    */
   static async processBulkAIResult(payload) {
     const { camera_id, lampu, ...counts } = payload;
     const results = [];
+    const normalizedCameraId = camera_id !== undefined && camera_id !== null ? String(camera_id).trim() : null;
 
-    if (camera_id === undefined || camera_id === null || isNaN(parseInt(camera_id))) {
+    if (!normalizedCameraId) {
       console.warn('[DetectionPipeline] Invalid bulk payload: missing or invalid camera_id', payload);
+      return results;
+    }
+
+    const camera = await db.Camera.findByPk(normalizedCameraId);
+    if (!camera) {
+      console.warn('[DetectionPipeline] Camera not found for camera_id', normalizedCameraId);
       return results;
     }
 
@@ -121,19 +132,17 @@ class DetectionPipelineService {
 
     for (const [zoneName, count] of zoneEntries) {
       try {
-        // Find zone_id by name and camera
+        // Find zone_id by name and camera room
         const zone = await Zone.findOne({ 
           where: { 
             zone_name: zoneName,
-            room_id: {
-              [Op.in]: db.sequelize.literal(`(SELECT room_id FROM cameras WHERE camera_id = ${parseInt(camera_id)})`)
-            }
+            room_id: camera.room_id
           } 
         });
 
         if (zone) {
           const event = await this.processEvent({
-            camera_id,
+            camera_id: normalizedCameraId,
             zone_id: zone.zone_id,
             person_count: count,
             light_status: lampu || (count > 0 ? 'ON' : 'OFF'),

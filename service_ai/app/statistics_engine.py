@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 try:
     from app.zona_loader import get_db_connection
 except ImportError:
-    from zona_loader import get_db_connection
+    from app.zona_loader import get_db_connection
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -113,8 +113,9 @@ def get_realtime_stats(room_id=None) -> dict:
         logger.error(f"❌ Error in get_realtime_stats: {e}")
         return {}
     finally:
-        if conn and not conn.closed:
-            conn.close()
+        if conn:
+            from app.zona_loader import release_connection
+            release_connection(conn)
 
 
 def get_top_consumers(limit=5) -> list:
@@ -166,8 +167,9 @@ def get_top_consumers(limit=5) -> list:
         logger.error(f"❌ Error in get_top_consumers: {e}")
         return []
     finally:
-        if conn and not conn.closed:
-            conn.close()
+        if conn:
+            from app.zona_loader import release_connection
+            release_connection(conn)
 
 
 def detect_usage_alerts(threshold_watts=500) -> list:
@@ -214,8 +216,9 @@ def detect_usage_alerts(threshold_watts=500) -> list:
         logger.error(f"❌ Error in detect_usage_alerts: {e}")
         return []
     finally:
-        if conn and not conn.closed:
-            conn.close()
+        if conn:
+            from app.zona_loader import release_connection
+            release_connection(conn)
 
 
 # --- 5B. Energy Log Statistics ---
@@ -316,8 +319,9 @@ def get_energy_summary(room_id=None) -> dict:
         logger.error(f"❌ Error in get_energy_summary: {e}")
         return {}
     finally:
-        if conn and not conn.closed:
-            conn.close()
+        if conn:
+            from app.zona_loader import release_connection
+            release_connection(conn)
 
 
 def get_savings_breakdown(room_id=None) -> list:
@@ -374,8 +378,9 @@ def get_savings_breakdown(room_id=None) -> list:
         logger.error(f"❌ Error in get_savings_breakdown: {e}")
         return []
     finally:
-        if conn and not conn.closed:
-            conn.close()
+        if conn:
+            from app.zona_loader import release_connection
+            release_connection(conn)
 
 
 def get_savings_trend(days=7) -> list:
@@ -421,8 +426,9 @@ def get_savings_trend(days=7) -> list:
         logger.error(f"❌ Error in get_savings_trend: {e}")
         return []
     finally:
-        if conn and not conn.closed:
-            conn.close()
+        if conn:
+            from app.zona_loader import release_connection
+            release_connection(conn)
 
 
 def get_yoy_comparison() -> dict:
@@ -515,5 +521,6 @@ def get_yoy_comparison() -> dict:
         logger.error(f"❌ Error in get_yoy_comparison: {e}")
         return {}
     finally:
-        if conn and not conn.closed:
-            conn.close()
+        if conn:
+            from app.zona_loader import release_connection
+            release_connection(conn)

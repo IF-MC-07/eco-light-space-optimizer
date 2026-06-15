@@ -62,8 +62,15 @@ export const getStats = async (req, res, next) => {
       }
     });
 
-    const avg_temp_val = await db.AcControl.avg('temperature_setting');
-    const avg_temperature = avg_temp_val ? parseFloat(Number(avg_temp_val).toFixed(1)) : 24.0;
+    const result = await db.AcControl.findOne({
+      attributes: [
+        [db.Sequelize.fn('AVG', db.Sequelize.col('temperature_setting')), 'avg_val']
+      ],
+      raw: true
+    });
+    const avg_temperature = result?.avg_val
+      ? parseFloat(Number(result.avg_val).toFixed(1))
+      : 24.0;
 
     return responseFormatter.success(res, {
         lights_active,
@@ -171,8 +178,15 @@ export const postMasterControl = async (req, res, next) => {
 
 export const getClimate = async (req, res, next) => {
   try {
-    const avg_temp_val = await db.AcControl.avg('temperature_setting');
-    const avg_temperature = avg_temp_val ? parseFloat(Number(avg_temp_val).toFixed(1)) : 24.0;
+    const result = await db.AcControl.findOne({
+      attributes: [
+        [db.Sequelize.fn('AVG', db.Sequelize.col('temperature_setting')), 'avg_val']
+      ],
+      raw: true
+    });
+    const avg_temperature = result?.avg_val
+      ? parseFloat(Number(result.avg_val).toFixed(1))
+      : 24.0;
 
     return responseFormatter.success(res, {
         target_temperature: avg_temperature,

@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 try:
     from app.zona_loader import get_db_connection
 except ImportError:
-    from zona_loader import get_db_connection
+    from app.zona_loader import get_db_connection
 
 try:
     from app.mqtt_commands import mqtt_commander
@@ -124,8 +124,9 @@ class ScheduleRunner:
         except Exception as e:
             logger.error(f"❌ DB Error in ScheduleRunner process_schedules: {e}")
         finally:
-            if conn and not conn.closed:
-                conn.close()
+            if conn:
+                from app.zona_loader import release_connection
+                release_connection(conn)
 
     def _trigger_room_devices(self, room_id: int, command: str):
         """
@@ -205,5 +206,6 @@ class ScheduleRunner:
             if conn:
                 conn.rollback()
         finally:
-            if conn and not conn.closed:
-                conn.close()
+            if conn:
+                from app.zona_loader import release_connection
+                release_connection(conn)

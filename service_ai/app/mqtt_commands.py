@@ -1,8 +1,22 @@
+# ============================================================================
+# FINAL MQTT TOPICS FOR FIRMWARE SYNCHRONIZATION REFERENCE
+# ----------------------------------------------------------------------------
+# Command (Backend -> ESP32):
+# - Light : devices/{room_id}/light/{relay_channel}
+# - AC    : devices/{room_id}/ac
+# - Status: devices/{room_id}/status/request
+#
+# Event/Response (ESP32 -> Backend):
+# - Online: devices/{room_id}/status/online
+# - Status: devices/{room_id}/status/response
+#
+# NOTE: The firmware (ESP32) MUST subscribe to and publish on these exact
+# prefixes (`devices/`). Ensure {room_id} and {relay_channel} types match!
+# ============================================================================
+
 import json
 import logging
 from datetime import datetime
-import psycopg2
-import psycopg2.extras
 from dotenv import load_dotenv
 
 # Try importing zone_loader using absolute or relative imports
@@ -24,9 +38,9 @@ class MQTTCommander:
                            zone_id: int, zone_name: str, source: str = "ai_decision"):
         """
         Sends light control command to ESP32 via MQTT.
-        Topic: esp32/{room_id}/light/{relay_channel}
+        Topic: devices/{room_id}/light/{relay_channel}
         """
-        topic = f"esp32/{room_id}/light/{relay_channel}"
+        topic = f"devices/{room_id}/light/{relay_channel}"
         payload = {
             "command": command,
             "zone_id": zone_id,
@@ -44,9 +58,9 @@ class MQTTCommander:
     def send_ac_command(self, room_id: int, command: str, temperature: float, source: str = "ai_decision"):
         """
         Sends AC control command to ESP32 via MQTT.
-        Topic: esp32/{room_id}/ac
+        Topic: devices/{room_id}/ac
         """
-        topic = f"esp32/{room_id}/ac"
+        topic = f"devices/{room_id}/ac"
         payload = {
             "command": command,
             "room_id": room_id,
@@ -63,9 +77,9 @@ class MQTTCommander:
     def request_status(self, room_id: int):
         """
         Sends a request to ESP32 to get current status.
-        Topic: esp32/{room_id}/status/request
+        Topic: devices/{room_id}/status/request
         """
-        topic = f"esp32/{room_id}/status/request"
+        topic = f"devices/{room_id}/status/request"
         payload = {
             "room_id": room_id,
             "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -89,7 +103,7 @@ class MQTTCommander:
                 return
 
         room_id = payload.get("room_id")
-        if not room_id:
+        if room_id is None:
             logger.error("❌ Status response payload missing room_id")
             return
 
@@ -113,7 +127,10 @@ class MQTTCommander:
                                 SELECT zone_id FROM zones WHERE room_id = %s
                             )
                         """, (status, relay_channel, room_id))
-                        logger.info(f"💾 Updated light status in DB: Room {room_id}, Relay {relay_channel} -> {status}")
+                        if cur.rowcount == 0:
+                            logger.warning(f"⚠️ 0 rows updated for light_controls: Room {room_id}, Relay {relay_channel} -> {status} (Not found in DB)")
+                        else:
+                            logger.info(f"💾 Updated light status in DB: Room {room_id}, Relay {relay_channel} -> {status}")
 
                 # Update AC
                 if ac_status is not None:
@@ -129,7 +146,11 @@ class MQTTCommander:
                             SET ac_status = %s, updated_at = NOW()
                             WHERE room_id = %s
                         """, (ac_status, room_id))
-                    logger.info(f"💾 Updated AC status in DB: Room {room_id} -> {ac_status} (Temp: {temperature})")
+                        
+                    if cur.rowcount == 0:
+                        logger.warning(f"⚠️ 0 rows updated for ac_controls: Room {room_id} -> {ac_status} (Temp: {temperature}) (Not found in DB)")
+                    else:
+                        logger.info(f"💾 Updated AC status in DB: Room {room_id} -> {ac_status} (Temp: {temperature})")
 
                 conn.commit()
         except Exception as e:
@@ -137,8 +158,9 @@ class MQTTCommander:
             if conn:
                 conn.rollback()
         finally:
-            if conn and not conn.closed:
-                conn.close()
+            if conn:
+                from app.zona_loader import release_connection
+                release_connection(conn)
 
 # Create a singleton instance of MQTTCommander
 mqtt_commander = MQTTCommander()

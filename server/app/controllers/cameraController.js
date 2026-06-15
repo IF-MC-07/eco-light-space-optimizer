@@ -1,5 +1,34 @@
 import responseFormatter from '../utils/response.js';
 import * as cameraService from '../services/cameraService.js';
+import { decryptCameraUrl } from '../utils/cameraCrypto.js';
+
+export const getAiStreamUrls = async (req, res, next) => {
+  try {
+    const aiSecret = req.headers['x-ai-secret'];
+    if (!aiSecret || aiSecret !== process.env.CAMERA_SECRET_KEY) {
+      return responseFormatter.error(res, 'Forbidden: Invalid AI Secret', 403);
+    }
+    
+    const cameras = await cameraService.getAllRaw();
+    const activeCameras = cameras.filter(c => 
+        (c.status === 'aktif' || c.status === 'active') && 
+        c.ip_address && c.ip_address !== '0' && c.ip_address !== ''
+    );
+    
+    const result = activeCameras.map(cam => {
+      const decryptedUrl = decryptCameraUrl(cam.ip_address);
+      return {
+        camera_id: cam.camera_id,
+        camera_hash: cam.camera_hash,
+        ip_address: decryptedUrl
+      };
+    });
+    
+    return responseFormatter.success(res, result, 'Success');
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const getAll = async (req, res, next) => {
   try {

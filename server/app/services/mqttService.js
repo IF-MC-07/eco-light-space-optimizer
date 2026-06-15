@@ -23,7 +23,7 @@ class MqttService {
     
     // Topics from env
     this.topics = {
-      result: process.env.MQTT_TOPIC_RESULT || 'ai/inference/result',
+      result: process.env.MQTT_TOPIC_RESULT || 'ai/inference/result/#',
       trigger: process.env.MQTT_TOPIC_TRIGGER || 'camera/trigger',
       control: process.env.MQTT_TOPIC_CONTROL || 'kelas/control',
       deviceStatus: 'devices/+/status/+'
@@ -64,9 +64,15 @@ class MqttService {
         const payload = JSON.parse(message.toString());
         console.log(`[MQTT] Received message on topic ${topic}`);
 
-        if (topic === this.topics.result) {
+        const baseResultTopic = this.topics.result.replace('/#', '');
+        if (topic.startsWith(baseResultTopic)) {
+          // Parse camera_id from topic (e.g. ai/inference/result/CAM-001 -> CAM-001)
+          const topicParts = topic.split('/');
+          const cameraId = topicParts[topicParts.length - 1];
+          payload.camera_id = cameraId;
+          
           // Standard standardized payload (Bulk zone result)
-          await DetectionPipelineService.processBulkAIResult(payload);
+          await DetectionPipelineService.processBulkAIResult(payload, cameraId);
         }
       } catch (error) {
         console.error(`[MQTT] Error handling message on ${topic}:`, error.message);

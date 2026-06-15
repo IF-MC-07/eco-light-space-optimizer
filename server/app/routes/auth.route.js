@@ -8,6 +8,7 @@ const router = Router();
 // Terapkan authLimiter pada endpoint yang sensitif (login, register, dll)
 router.post("/register", authLimiter, authController.register);
 router.post("/login", authLimiter, authController.login);
+router.post("/refresh", authLimiter, authController.refresh);
 router.post("/forgot-password", authLimiter, authController.forgotPassword);
 router.post("/reset-password", authLimiter, authController.resetPassword);
 

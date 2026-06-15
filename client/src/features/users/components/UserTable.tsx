@@ -15,8 +15,9 @@ export function UserTable({ filters, onEdit, onRemove }: UserTableProps) {
   const limit = 10;
 
   const { data, isLoading, error } = useUsers({ ...filters, page, limit });
-  const users = data?.data || [];
-  const pagination = data?.pagination;
+  const responseData = data?.data as any;
+  const users = responseData?.users ? responseData.users : (Array.isArray(responseData) ? responseData : []);
+  const pagination = responseData?.pagination || (data as any)?.pagination;
   const total = pagination?.total || 0;
   const totalPages = pagination?.totalPages || 1;
 

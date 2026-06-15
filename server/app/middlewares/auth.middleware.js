@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import db from '../models/index.js';
+import jwtConfig from '../config/jwt.js';
 
 const { User } = db;
 
@@ -21,7 +22,7 @@ export const authenticate = async (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+    const decoded = jwt.verify(token, jwtConfig.JWT_SECRET);
 
     const user = await User.findByPk(decoded.user_id);
     if (!user) {
@@ -35,11 +36,11 @@ export const authenticate = async (req, res, next) => {
     next();
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ success: false, message: 'Token kadaluarsa.' });
+      return res.status(401).json({ error: 'TOKEN_EXPIRED', message: 'Access token expired' });
     }
     return res.status(401).json({
-      success: false,
-      message: 'Token tidak valid.',
+      error: 'TOKEN_INVALID',
+      message: 'Invalid token',
     });
   }
 };

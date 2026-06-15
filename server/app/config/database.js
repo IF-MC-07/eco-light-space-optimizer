@@ -7,13 +7,22 @@ const dbUrl = process.env.DATABASE_URL || process.env.SUPABASE_DATABASE_URL;
 const sequelize = new Sequelize(dbUrl, {
   dialect: 'postgres',
   protocol: 'postgres',
-  dialectOptions: isProduction ? {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false
-    }
-  } : {},
-  logging: false, // Ubah ke console.log jika ingin melihat log query SQL
+  dialectOptions: {
+    keepAlive: true,
+    ...(isProduction ? {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    } : {})
+  },
+  pool: {
+    max: 5,
+    min: 0,
+    acquire: 30000,
+    idle: 10000
+  },
+  logging: false,
 });
 
 export default sequelize;

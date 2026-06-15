@@ -1,3 +1,5 @@
+import jwt from 'jsonwebtoken';
+import jwtConfig from '../config/jwt.js';
 import * as authService from '../services/auth.service.js';
 import {
   registerSchema,
@@ -44,6 +46,35 @@ export const login = async (req, res, next) => {
     if (error.message === 'Email or password is wrong.') {
       return res.status(401).json({ success: false, message: error.message });
     }
+    next(error);
+  }
+};
+
+export const refresh = async (req, res, next) => {
+  try {
+    const { refreshToken } = req.body || {};
+    if (!refreshToken) {
+      return res.status(401).json({ success: false, message: 'Refresh token is required' });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(refreshToken, jwtConfig.JWT_REFRESH_SECRET);
+    } catch (err) {
+      return res.status(401).json({ success: false, message: 'Refresh token expired, please log in again' });
+    }
+
+    const accessToken = jwt.sign(
+      { user_id: decoded.user_id, role: decoded.role },
+      jwtConfig.JWT_SECRET,
+      { expiresIn: jwtConfig.ACCESS_TOKEN_EXPIRY }
+    );
+
+    res.status(200).json({
+      success: true,
+      data: { token: accessToken }
+    });
+  } catch (error) {
     next(error);
   }
 };

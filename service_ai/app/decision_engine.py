@@ -3,11 +3,12 @@ import time
 import logging
 from datetime import datetime
 from dotenv import load_dotenv
+import threading
 
 try:
     from app.zona_loader import get_db_connection
 except ImportError:
-    from zona_loader import get_db_connection
+    from app.zona_loader import get_db_connection
 
 try:
     from app.mqtt_commands import mqtt_commander
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 class DecisionEngine:
     def __init__(self):
+        self._lock = threading.Lock()
         # State tracking per zone:
         # zone_id -> {
         #     "zone_id": int,
@@ -30,7 +32,6 @@ class DecisionEngine:
         #     "pending_off": bool
         # }
         self.zone_states = {}
-
         # State tracking per room AC:
         # room_id -> {
         #     "room_id": int,
@@ -121,118 +122,118 @@ class DecisionEngine:
         except Exception as e:
             logger.error(f"❌ DB Error during state initialization for Camera {camera_id}: {e}")
         finally:
-            if conn and not conn.closed:
-                conn.close()
+            if conn:
+                from app.zona_loader import release_connection
+                release_connection(conn)
 
     def process_inference(self, camera_id: str, occupancy_counts: dict):
-        """
-        Processes an inference cycle.
-        occupancy_counts is a dictionary mapping zone_name -> count
-        """
-        # Ensure states are initialized
-        self._initialize_camera_states(camera_id)
+        with self._lock:
+            """
+            Processes an inference cycle.
+            occupancy_counts is a dictionary mapping zone_name -> count
+            """
+            # Ensure states are initialized
+            self._initialize_camera_states(camera_id)
 
-        room_id = self._camera_room_cache.get(camera_id)
-        if not room_id:
-            return
+            room_id = self._camera_room_cache.get(camera_id)
+            if not room_id:
+                return
 
-        # Filter zone states belonging to the current camera's room
-        conn = None
-        try:
-            conn = get_db_connection()
-            with conn.cursor() as cur:
-                # Filter zone states for this room
-                active_room_zones = [z for z in self.zone_states.values() if z["room_id"] == room_id]
-                now = time.time()
+            # Filter zone states belonging to the current camera's room
+            conn = None
+            try:
+                conn = get_db_connection()
+                with conn.cursor() as cur:
+                    # Filter zone states for this room
+                    active_room_zones = [z for z in self.zone_states.values() if z["room_id"] == room_id]
+                    now = time.time()
 
-                # Process each zone
-                for zone in active_room_zones:
-                    z_id = zone["zone_id"]
-                    z_name = zone["zone_name"]
-                    count = occupancy_counts.get(z_name, 0)
+                    # Process each zone
+                    for zone in active_room_zones:
+                        z_id = zone["zone_id"]
+                        z_name = zone["zone_name"]
+                        count = occupancy_counts.get(z_name, 0)
 
-                    if count > 0:
-                        # Clear empty tracker and pending off
-                        zone["empty_since"] = None
-                        zone["pending_off"] = False
+                        if count > 0:
+                            zone["empty_since"] = None
+                            zone["pending_off"] = False
 
-                        if zone["current_status"] == "OFF":
-                            if zone["occupied_since"] is None:
-                                zone["occupied_since"] = now
-                                zone["pending_on"] = True
-                                logger.info(f"⏳ Zone '{z_name}' (ID {z_id}) occupancy detected. Pending ON in {self.delay_on_light} secs.")
-                            
-                            if (now - zone["occupied_since"]) >= self.delay_on_light:
-                                # Fetch relay channel
-                                cur.execute("""
-                                    SELECT relay_channel FROM light_controls
-                                    WHERE zone_id = %s LIMIT 1
-                                """, (z_id,))
-                                relay_row = cur.fetchone()
-                                relay_channel = relay_row[0] if relay_row else 1
+                            if zone["current_status"] == "OFF":
+                                if zone["occupied_since"] is None:
+                                    zone["occupied_since"] = now
+                                    zone["pending_on"] = True
 
-                                # Emit TURN ON
-                                mqtt_commander.send_light_command(
-                                    room_id=room_id,
-                                    relay_channel=relay_channel,
-                                    command="ON",
-                                    zone_id=z_id,
-                                    zone_name=z_name,
-                                    source="ai_decision"
-                                )
-                                zone["current_status"] = "ON"
-                                zone["occupied_since"] = None
-                                zone["pending_on"] = False
+                                if (now - zone["occupied_since"]) >= self.delay_on_light:
+                                    # Fetch relay channel
+                                    cur.execute("""
+                                        SELECT relay_channel FROM light_controls
+                                        WHERE zone_id = %s LIMIT 1
+                                    """, (z_id,))
+                                    relay_row = cur.fetchone()
+                                    relay_channel = relay_row[0] if relay_row else 1
 
-                                # Update DB status
-                                cur.execute("""
-                                    UPDATE light_controls
-                                    SET light_status = 'ON', updated_at = NOW()
-                                    WHERE zone_id = %s
-                                """, (z_id,))
-                                conn.commit()
-                                logger.info(f"🟢 Command TURN_ON sent & DB updated for Zone '{z_name}' (ID {z_id})")
-                    else:
-                        # Clear occupied tracker and pending on
-                        zone["occupied_since"] = None
-                        zone["pending_on"] = False
+                                    # Emit TURN ON
+                                    mqtt_commander.send_light_command(
+                                        room_id=room_id,
+                                        relay_channel=relay_channel,
+                                        command="ON",
+                                        zone_id=z_id,
+                                        zone_name=z_name,
+                                        source="ai_decision"
+                                    )
+                                    zone["current_status"] = "ON"
+                                    zone["occupied_since"] = None
+                                    zone["pending_on"] = False
 
-                        if zone["current_status"] == "ON":
-                            if zone["empty_since"] is None:
-                                zone["empty_since"] = now
-                                zone["pending_off"] = True
-                                logger.info(f"⏳ Zone '{z_name}' (ID {z_id}) became empty. Pending OFF in {self.delay_off/60} mins.")
+                                    # Update DB status
+                                    cur.execute("""
+                                        UPDATE light_controls
+                                        SET light_status = 'ON', updated_at = NOW()
+                                        WHERE zone_id = %s
+                                    """, (z_id,))
+                                    conn.commit()
+                                    logger.info(f"🟢 Command TURN_ON sent & DB updated for Zone '{z_name}' (ID {z_id})")
+                        else:
+                            # Clear occupied tracker and pending on
+                            zone["occupied_since"] = None
+                            zone["pending_on"] = False
 
-                            if (now - zone["empty_since"]) >= self.delay_off:
-                                # Fetch relay channel
-                                cur.execute("""
-                                    SELECT relay_channel FROM light_controls
-                                    WHERE zone_id = %s LIMIT 1
-                                """, (z_id,))
-                                relay_row = cur.fetchone()
-                                relay_channel = relay_row[0] if relay_row else 1
+                            if zone["current_status"] == "ON":
+                                if zone["empty_since"] is None:
+                                    zone["empty_since"] = now
+                                    zone["pending_off"] = True
 
-                                # Emit TURN OFF
-                                mqtt_commander.send_light_command(
-                                    room_id=room_id,
-                                    relay_channel=relay_channel,
-                                    command="OFF",
-                                    zone_id=z_id,
-                                    zone_name=z_name,
-                                    source="ai_decision"
-                                )
-                                zone["current_status"] = "OFF"
-                                zone["empty_since"] = None
-                                zone["pending_off"] = False
+                                # Check if delay has passed
+                                if (now - zone["empty_since"]) >= self.delay_off:
+                                    # Fetch relay channel
+                                    cur.execute("""
+                                        SELECT relay_channel FROM light_controls
+                                        WHERE zone_id = %s LIMIT 1
+                                    """, (z_id,))
+                                    relay_row = cur.fetchone()
+                                    relay_channel = relay_row[0] if relay_row else 1
 
-                                # Update DB status
-                                cur.execute("""
-                                    UPDATE light_controls
-                                    SET light_status = 'OFF', updated_at = NOW()
-                                    WHERE zone_id = %s
-                                """, (z_id,))
-                                conn.commit()
-                                logger.info(f"🔴 Command TURN_OFF sent & DB updated for Zone '{z_name}' (ID {z_id})")
+                                    # Emit TURN OFF
+                                    mqtt_commander.send_light_command(
+                                        room_id=room_id,
+                                        relay_channel=relay_channel,
+                                        command="OFF",
+                                        zone_id=z_id,
+                                        zone_name=z_name,
+                                        source="ai_decision"
+                                    )
+                                    zone["current_status"] = "OFF"
+                                    zone["empty_since"] = None
+                                    zone["pending_off"] = False
+
+                                    # Update DB status
+                                    cur.execute("""
+                                        UPDATE light_controls
+                                        SET light_status = 'OFF', updated_at = NOW()
+                                        WHERE zone_id = %s
+                                    """, (z_id,))
+                                    conn.commit()
+                                    logger.info(f"🔴 Command TURN_OFF sent & DB updated for Zone '{z_name}' (ID {z_id})")
 
                 # Process Room AC
                 # AC turns ON if ANY zone in the room is occupied (has occupancy > 0)
@@ -319,13 +320,14 @@ class DecisionEngine:
                                 conn.commit()
                                 logger.info(f"🔴 AC turned OFF for Room {room_id}")
 
-        except Exception as e:
-            logger.error(f"❌ DB Error during process_inference decision flow: {e}")
-            if conn:
-                conn.rollback()
-        finally:
-            if conn and not conn.closed:
-                conn.close()
+            except Exception as e:
+                logger.error(f"❌ DB Error during process_inference decision flow: {e}")
+                if conn:
+                    conn.rollback()
+            finally:
+                if conn:
+                    from app.zona_loader import release_connection
+                    release_connection(conn)
 
 # Create a singleton instance of DecisionEngine
 decision_engine = DecisionEngine()
