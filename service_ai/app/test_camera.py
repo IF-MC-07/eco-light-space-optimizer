@@ -19,7 +19,7 @@ client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
 client.connect(MQTT_BROKER, MQTT_PORT)
 client.loop_start()
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 print("✅ Kamera aktif! Tekan 'q' untuk keluar")
 
 prev_data = {}

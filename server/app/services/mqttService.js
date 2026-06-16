@@ -13,13 +13,10 @@ class MqttService {
     this.client = null;
     this.brokerUrl = process.env.MQTT_BROKER_URL || `mqtt://${process.env.MQTT_BROKER || 'localhost'}:${process.env.MQTT_PORT || 1883}`;
     this.options = {
-      username: process.env.MQTT_USER || process.env.MQTT_USERNAME,
-      password: process.env.MQTT_PASSWORD,
-      clientId: `server_backend_${Math.random().toString(16).slice(2, 10)}`,
-      clean: true,
-      reconnectPeriod: 5000,
-    };
-    
+    clientId: `server_backend_${Math.random().toString(16).slice(2, 10)}`,
+    clean: true,
+    reconnectPeriod: 5000,
+  };    
     // Topics from env
     this.topics = {
       result: process.env.MQTT_TOPIC_RESULT || 'ai/inference/result',

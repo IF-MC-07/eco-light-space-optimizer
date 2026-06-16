@@ -41,7 +41,7 @@ MQTT_PASSWORD       = os.getenv("MQTT_PASSWORD")
 MQTT_TOPIC_TRIGGER  = os.getenv("MQTT_TOPIC_TRIGGER", "camera/trigger")
 MQTT_TOPIC_CONTROL  = os.getenv("MQTT_TOPIC_CONTROL", "kelas/control")
 
-CAMERA_SOURCE       = os.getenv("CAMERA_SOURCE", "0")
+CAMERA_SOURCE       = os.getenv("CAMERA_SOURCE", "1")
 ID_KAMERA           = os.getenv("ID_KAMERA", "CAM-001")
 
 MQTT_TOPIC_RESULT   = os.getenv(
@@ -192,6 +192,9 @@ def run():
         cap = cv2.VideoCapture(camera_input, cv2.CAP_DSHOW)
     else:
         cap = cv2.VideoCapture(camera_input)
+
+    print("Camera source =", camera_input)
+    print("Opened =", cap.isOpened())
         
     if not cap.isOpened():
         log.error(f"❌ Kamera tidak bisa dibuka: {CAMERA_SOURCE}")
