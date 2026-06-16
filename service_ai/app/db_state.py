@@ -3,7 +3,7 @@ import logging
 try:
     from app.zona_loader import get_db_connection
 except ImportError:
-    from zona_loader import get_db_connection
+    from app.zona_loader import get_db_connection
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +24,7 @@ def ensure_device_states_exist():
                 FROM iot_devices d
                 JOIN zones z ON d.room_id = z.room_id
                 WHERE d.type = 'light'
-                  AND NOT EXISTS (
-                      SELECT 1 FROM light_controls lc WHERE lc.device_id = d.device_id
-                  );
+                ON CONFLICT (control_id) DO NOTHING;
             """)
             
             # For every iot_device of type 'ac'
@@ -36,9 +34,7 @@ def ensure_device_states_exist():
                 SELECT 'ACC' || substring(md5(d.device_id), 1, 15), d.room_id, d.device_id, 22.0, 'OFF', NOW()
                 FROM iot_devices d
                 WHERE d.type = 'ac'
-                  AND NOT EXISTS (
-                      SELECT 1 FROM ac_controls ac WHERE ac.device_id = d.device_id
-                  );
+                ON CONFLICT (ac_control_id) DO NOTHING;
             """)
             conn.commit()
             logger.info("✅ Device states successfully ensured in DB.")
@@ -47,5 +43,6 @@ def ensure_device_states_exist():
         if conn:
             conn.rollback()
     finally:
-        if conn and not conn.closed:
-            conn.close()
+        if conn:
+            from app.zona_loader import release_connection
+            release_connection(conn)

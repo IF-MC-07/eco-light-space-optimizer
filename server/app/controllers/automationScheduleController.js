@@ -1,10 +1,11 @@
+import responseFormatter from '../utils/response.js';
 import * as automationScheduleService from '../services/automationScheduleService.js';
 import db from '../models/index.js';
 
 export const getAll = async (req, res, next) => {
   try {
     const data = await automationScheduleService.getAll();
-    res.status(200).json({ success: true, data, message: 'Automation schedules retrieved successfully' });
+    return responseFormatter.success(res, data, 'Automation schedules retrieved successfully' );
   } catch (error) {
     next(error);
   }
@@ -14,9 +15,9 @@ export const getById = async (req, res, next) => {
   try {
     const data = await automationScheduleService.getById(req.params.id);
     if (!data) {
-      return res.status(404).json({ success: false, message: 'Automation schedule not found' });
+      return responseFormatter.error(res, 'Automation schedule not found' , 404);
     }
-    res.status(200).json({ success: true, data, message: 'Automation schedule retrieved successfully' });
+    return responseFormatter.success(res, data, 'Automation schedule retrieved successfully' );
   } catch (error) {
     next(error);
   }
@@ -24,11 +25,9 @@ export const getById = async (req, res, next) => {
 
 export const create = async (req, res, next) => {
   try {
-    console.log('Creating Automation Schedule with body:', req.body);
     const data = await automationScheduleService.create(req.body);
-    res.status(201).json({ success: true, data, message: 'Automation schedule created successfully' });
+    return responseFormatter.success(res, data, 'Automation schedule created successfully' , 201);
   } catch (error) {
-    console.error('FAILED TO CREATE AUTOMATION SCHEDULE:', error);
     next(error);
   }
 };
@@ -37,9 +36,9 @@ export const update = async (req, res, next) => {
   try {
     const data = await automationScheduleService.update(req.params.id, req.body);
     if (!data) {
-      return res.status(404).json({ success: false, message: 'Automation schedule not found' });
+      return responseFormatter.error(res, 'Automation schedule not found' , 404);
     }
-    res.status(200).json({ success: true, data, message: 'Automation schedule updated successfully' });
+    return responseFormatter.success(res, data, 'Automation schedule updated successfully' );
   } catch (error) {
     next(error);
   }
@@ -49,9 +48,9 @@ export const remove = async (req, res, next) => {
   try {
     const isDeleted = await automationScheduleService.remove(req.params.id);
     if (!isDeleted) {
-      return res.status(404).json({ success: false, message: 'Automation schedule not found' });
+      return responseFormatter.error(res, 'Automation schedule not found' , 404);
     }
-    res.status(200).json({ success: true, data: null, message: 'Automation schedule deleted successfully' });
+    return responseFormatter.success(res, null, 'Automation schedule deleted successfully' );
   } catch (error) {
     next(error);
   }

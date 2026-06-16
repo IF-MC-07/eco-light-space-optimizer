@@ -16,7 +16,11 @@ export default (sequelize, DataTypes) => {
       }
     },
     ip_address: {
-      type: DataTypes.STRING(50)
+      type: DataTypes.TEXT
+    },
+    camera_hash: {
+      type: DataTypes.STRING(64),
+      allowNull: true
     },
     resolution: {
       type: DataTypes.STRING(20)

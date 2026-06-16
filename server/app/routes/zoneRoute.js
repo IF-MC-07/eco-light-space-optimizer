@@ -1,15 +1,16 @@
 import { Router } from 'express';
 import * as zoneController from '../controllers/zoneController.js';
+import { authenticate } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
-router.get('/', zoneController.getAll);
-router.get('/camera/:cameraId', zoneController.getByCamera);
-router.get('/:id', zoneController.getById);
-router.get('/:id/detail', zoneController.getDetail);
-router.post('/simpan', zoneController.simpan);
-router.post('/', zoneController.create);
-router.put('/:id', zoneController.update);
-router.delete('/:id', zoneController.deleteZone);
+router.get('/', authenticate, zoneController.getAll);
+router.get('/camera/:cameraId', authenticate, zoneController.getByCamera);
+router.get('/:id', authenticate, zoneController.getById);
+router.get('/:id/detail', authenticate, zoneController.getDetail);
+router.post('/simpan', authenticate, zoneController.simpan);
+router.post('/', authenticate, zoneController.create);
+router.put('/:id', authenticate, zoneController.update);
+router.delete('/:id', authenticate, zoneController.deleteZone);
 
 export default router;

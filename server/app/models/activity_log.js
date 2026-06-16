@@ -23,9 +23,29 @@ export default (sequelize, DataTypes) => {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
+    ip_address: {
+      type: DataTypes.STRING(45),
+      allowNull: true,
+    },
+    status_code: {
+      type: DataTypes.SMALLINT,
+      allowNull: true,
+    },
+    resource_id: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    resource_type: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
   }, {
     tableName: 'activity_logs',
     timestamps: false,
+    indexes: [
+      { fields: ['user_id'] },
+      { fields: ['timestamp'] }
+    ]
   });
 
   ActivityLog.associate = (models) => {

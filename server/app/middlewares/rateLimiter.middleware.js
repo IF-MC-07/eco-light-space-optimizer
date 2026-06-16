@@ -1,39 +1,53 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 
 // Rate limiter khusus untuk endpoint autentikasi (login, register, forgot/reset password)
-// Sangat ketat untuk mencegah serangan brute force dan dictionary attack.
+// Key: kombinasi IP + email — mencegah satu user di jaringan bersama (NAT kampus)
+// memblokir user lain yang berbagi IP yang sama.
 export const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 menit
-  max: 10, // Maksimal 10 request per IP dalam windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  keyGenerator: (req, res) => {
+    const email = req.body?.email?.toLowerCase().trim() || 'unknown';
+    return `auth_${ipKeyGenerator(req, res)}_${email}`;
+  },
   message: {
     success: false,
-    message: 'Terlalu banyak percobaan autentikasi dari IP ini, silakan coba lagi setelah 15 menit.' // Pesan generik, tidak mengekspos detail sistem
+    message: 'Terlalu banyak percobaan autentikasi. Silakan coba lagi setelah 15 menit.',
   },
-  standardHeaders: true, // Mengembalikan info rate limit di header `RateLimit-*` (RFC 8948)
-  legacyHeaders: false, // Menonaktifkan header `X-RateLimit-*` yang sudah usang
+  standardHeaders: true,
+  legacyHeaders: false,
+  // PENTING: skip apiLimiter global tidak berlaku di sini karena
+  // authLimiter dipasang langsung di route, bukan via router.use()
+  // Pastikan di index.js route /auth TIDAK kena apiLimiter — lihat catatan di bawah
 });
 
-// Rate limiter untuk endpoint kontrol relay/device (seperti toggle AC dan lampu)
-// Sedikit lebih longgar dari auth, tapi cukup ketat untuk mencegah spamming command ke IoT hardware.
+// Rate limiter untuk endpoint kontrol relay/device
+// Key: berbasis user ID dari JWT (di-decode middleware auth sebelumnya)
+// Admin A yang spam tidak akan memblokir Admin B meski berada di jaringan yang sama.
 export const controlLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 menit
-  max: 30, // Maksimal 30 request per IP dalam 1 menit
+  windowMs: 1 * 60 * 1000,
+  max: 30,
+  keyGenerator: (req, res) => {
+    // req.user tersedia karena middleware authenticate() sudah jalan sebelum controlLimiter
+    return `control_${req.user?.id || ipKeyGenerator(req, res)}`;
+  },
   message: {
     success: false,
-    message: 'Terlalu banyak perintah kontrol perangkat dari IP ini, silakan coba lagi dalam beberapa saat.'
+    message: 'Terlalu banyak perintah kontrol perangkat. Silakan coba lagi dalam beberapa saat.',
   },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-// Rate limiter umum untuk endpoint API lainnya (non-sensitif)
-// Dibuat lebih longgar agar tidak mengganggu operasional normal aplikasi web.
+// Rate limiter umum untuk endpoint API non-sensitif
+// Key: IP saja — acceptable untuk endpoint yang tidak kritis
 export const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 menit
-  max: 200, // Maksimal 200 request per IP
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  keyGenerator: (req, res) => `api_${ipKeyGenerator(req, res)}`,
   message: {
     success: false,
-    message: 'Terlalu banyak request dari IP ini, silakan coba lagi nanti.'
+    message: 'Terlalu banyak request. Silakan coba lagi nanti.',
   },
   standardHeaders: true,
   legacyHeaders: false,

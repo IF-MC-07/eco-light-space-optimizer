@@ -1,6 +1,7 @@
-import db from '../models/index.js';
+import responseFormatter from "../utils/response.js";
+import db from "../models/index.js";
 
-export const getSummary = async (req, res) => {
+export const getSummary = async (req, res, next) => {
   try {
     const total_rooms = await db.Room.count();
     const total_zones = await db.Zone.count();
@@ -9,8 +10,8 @@ export const getSummary = async (req, res) => {
 
     const latest_sensors = await db.PowerSensor.findAll({
       limit: 10,
-      order: [['read_at', 'DESC']],
-      include: [{ model: db.Room }]
+      order: [["read_at", "DESC"]],
+      include: [{ model: db.Room }],
     });
 
     const today = new Date();
@@ -19,60 +20,71 @@ export const getSummary = async (req, res) => {
     const todays_energy_logs = await db.EnergyLog.findAll({
       where: {
         date: {
-          [db.Sequelize.Op.gte]: today
-        }
+          [db.Sequelize.Op.gte]: today,
+        },
       },
-      order: [['log_id', 'ASC']],
-      include: [{ model: db.Room }]
+      order: [["log_id", "ASC"]],
+      include: [{ model: db.Room }],
     });
 
-    res.status(200).json({
-      success: true,
-      data: {
+    return responseFormatter.success(
+      res,
+      {
         total_rooms,
         total_zones,
         total_devices,
         total_cameras,
         latest_sensors,
-        todays_energy_logs
-      }
-    });
+        todays_energy_logs,
+      },
+      "Success",
+    );
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const getStats = async (req, res) => {
+export const getStats = async (req, res, next) => {
   try {
     const lights_active = await db.LightControl.count({
       where: {
-        light_status: ['on', 'active', 'ON', 'ACTIVE']
-      }
+        light_status: ["on", "active", "ON", "ACTIVE"],
+      },
     });
 
     const lights_total = await db.LightControl.count();
 
     const ac_units_running = await db.AcControl.count({
       where: {
-        ac_status: ['on', 'active', 'ON', 'ACTIVE']
-      }
+        ac_status: ["on", "active", "ON", "ACTIVE"],
+      },
     });
 
-    const avg_temp_val = await db.AcControl.avg('temperature_setting');
-    const avg_temperature = avg_temp_val ? parseFloat(Number(avg_temp_val).toFixed(1)) : 24.0;
+    const result = await db.AcControl.findOne({
+      attributes: [
+        [
+          db.Sequelize.fn("AVG", db.Sequelize.col("temperature_setting")),
+          "avg_temp",
+        ],
+      ],
+      raw: true,
+    });
+    const avg_temperature = result?.avg_temp
+      ? parseFloat(Number(result.avg_temp).toFixed(1))
+      : 24.0;
 
-    res.status(200).json({
-      success: true,
-      data: {
+    return responseFormatter.success(
+      res,
+      {
         lights_active,
         lights_total,
         ac_units_running,
         avg_temperature,
-        energy_mode: "ECO"
-      }
-    });
+        energy_mode: "ECO",
+      },
+      "Success",
+    );
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
-

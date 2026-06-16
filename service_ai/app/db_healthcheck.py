@@ -4,7 +4,7 @@ import logging
 try:
     from app.zona_loader import get_db_connection
 except ImportError:
-    from zona_loader import get_db_connection
+    from app.zona_loader import get_db_connection
 
 log = logging.getLogger(__name__)
 

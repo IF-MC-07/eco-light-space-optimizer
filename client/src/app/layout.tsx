@@ -1,6 +1,7 @@
 import './globals.css';
 import Providers from './providers';
 import { Layout } from '@/components/layout/Layout';
+import { Toaster } from 'sonner';
 
 export const metadata = {
   title: 'Eco-light Space Optimizer',
@@ -19,6 +20,7 @@ export default function RootLayout({
           <Layout>
             {children}
           </Layout>
+          <Toaster richColors position="top-right" />
         </Providers>
       </body>
     </html>

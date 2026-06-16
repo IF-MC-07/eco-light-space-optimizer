@@ -1,6 +1,7 @@
+import responseFormatter from '../utils/response.js';
 import db from '../models/index.js';
 
-export const getEnergi = async (req, res) => {
+export const getEnergi = async (req, res, next) => {
   try {
     const { room_id, date } = req.query;
     let whereClause = {};
@@ -17,13 +18,13 @@ export const getEnergi = async (req, res) => {
       include: [{ model: db.Room }]
     });
 
-    res.status(200).json({ success: true, data });
+    return responseFormatter.success(res, data, 'Success');
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const getSensor = async (req, res) => {
+export const getSensor = async (req, res, next) => {
   try {
     const { room_id } = req.query;
     
@@ -39,13 +40,13 @@ export const getSensor = async (req, res) => {
       include: [{ model: db.Room }]
     });
 
-    res.status(200).json({ success: true, data });
+    return responseFormatter.success(res, data, 'Success');
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const getStats = async (req, res) => {
+export const getStats = async (req, res, next) => {
   try {
     const lights_active = await db.LightControl.count({
       where: {
@@ -61,25 +62,29 @@ export const getStats = async (req, res) => {
       }
     });
 
-    const avg_temp_val = await db.AcControl.avg('temperature_setting');
-    const avg_temperature = avg_temp_val ? parseFloat(Number(avg_temp_val).toFixed(1)) : 24.0;
+    const result = await db.AcControl.findOne({
+      attributes: [
+        [db.Sequelize.fn('AVG', db.Sequelize.col('temperature_setting')), 'avg_val']
+      ],
+      raw: true
+    });
+    const avg_temperature = result?.avg_val
+      ? parseFloat(Number(result.avg_val).toFixed(1))
+      : 24.0;
 
-    res.status(200).json({
-      success: true,
-      data: {
+    return responseFormatter.success(res, {
         lights_active,
         lights_total,
         ac_units_running,
         avg_temperature,
         energy_mode: "ECO"
-      }
-    });
+      }, 'Success');
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const getDevices = async (req, res) => {
+export const getDevices = async (req, res, next) => {
   try {
     const devices = await db.IotDevice.findAll({
       include: [
@@ -106,13 +111,13 @@ export const getDevices = async (req, res) => {
       };
     });
 
-    res.status(200).json({ success: true, data: formatted });
+    return responseFormatter.success(res, formatted , 'Success');
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const updateDevice = async (req, res) => {
+export const updateDevice = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { device_status, light_status, ac_status, temperature } = req.body;
@@ -120,7 +125,7 @@ export const updateDevice = async (req, res) => {
     const device = await db.IotDevice.findByPk(id);
 
     if (!device) {
-      return res.status(404).json({ success: false, message: 'Device not found' });
+      return responseFormatter.error(res, 'Device not found' , 404);
     }
 
     if (device_status !== undefined) {
@@ -146,50 +151,54 @@ export const updateDevice = async (req, res) => {
       );
     }
 
-    res.status(200).json({ success: true, message: 'Device updated successfully' });
+    return responseFormatter.success(res, null, 'Device updated successfully' );
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const postMasterControl = async (req, res) => {
+export const postMasterControl = async (req, res, next) => {
   try {
     const { action } = req.body;
 
     if (action === 'kill_all') {
       await db.LightControl.update({ light_status: 'off' }, { where: {} });
       await db.AcControl.update({ ac_status: 'off' }, { where: {} });
-      return res.status(200).json({ success: true, message: 'All devices powered off' });
+      return responseFormatter.success(res, null, 'All devices powered off' );
     } else if (action === 'eco_pulse') {
       await db.AcControl.update({ temperature_setting: 25.0, ac_status: 'on' }, { where: {} });
-      return res.status(200).json({ success: true, message: 'Eco Mode Pulse activated (AC set to 25°C)' });
+      return responseFormatter.success(res, null, 'Eco Mode Pulse activated (AC set to 25°C)' );
     }
 
-    res.status(400).json({ success: false, message: 'Invalid master control action' });
+    return responseFormatter.error(res, 'Invalid master control action' , 400);
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const getClimate = async (req, res) => {
+export const getClimate = async (req, res, next) => {
   try {
-    const avg_temp_val = await db.AcControl.avg('temperature_setting');
-    const avg_temperature = avg_temp_val ? parseFloat(Number(avg_temp_val).toFixed(1)) : 24.0;
+    const result = await db.AcControl.findOne({
+      attributes: [
+        [db.Sequelize.fn('AVG', db.Sequelize.col('temperature_setting')), 'avg_val']
+      ],
+      raw: true
+    });
+    const avg_temperature = result?.avg_val
+      ? parseFloat(Number(result.avg_val).toFixed(1))
+      : 24.0;
 
-    res.status(200).json({
-      success: true,
-      data: {
+    return responseFormatter.success(res, {
         target_temperature: avg_temperature,
         humidity: 45,
         air_purity: 'OPTIMAL'
-      }
-    });
+      }, 'Success');
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const updateClimate = async (req, res) => {
+export const updateClimate = async (req, res, next) => {
   try {
     const { target_temperature } = req.body;
     if (target_temperature !== undefined) {
@@ -198,9 +207,9 @@ export const updateClimate = async (req, res) => {
         { where: {} }
       );
     }
-    res.status(200).json({ success: true, message: 'Climate settings applied successfully' });
+    return responseFormatter.success(res, null, 'Climate settings applied successfully' );
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 

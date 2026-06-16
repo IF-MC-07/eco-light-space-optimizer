@@ -31,6 +31,10 @@ export default (sequelize, DataTypes) => {
   }, {
     tableName: 'power_sensors',
     timestamps: false,
+    indexes: [
+      { fields: ['room_id'] },
+      { fields: ['read_at'] }
+    ]
   });
 
   PowerSensor.associate = (models) => {

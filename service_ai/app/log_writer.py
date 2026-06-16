@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 try:
     from app.zona_loader import get_db_connection
 except ImportError:
-    from zona_loader import get_db_connection
+    from app.zona_loader import get_db_connection
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -81,5 +81,6 @@ def write_detection_logs(camera_id: str, occupancy_counts: dict):
         if conn:
             conn.rollback()
     finally:
-        if conn and not conn.closed:
-            conn.close()
+        if conn:
+            from app.zona_loader import release_connection
+            release_connection(conn)

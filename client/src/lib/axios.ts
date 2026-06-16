@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { handleTokenRefresh } from './refreshToken';
+import { removeAuthCookie } from '../features/auth/actions';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
@@ -19,18 +21,23 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor: Handle unauthorized response
+// Response interceptor: Handle unauthorized response and refresh flow
 api.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
-    if (error.response && error.response.status === 401) {
-      if (typeof window !== 'undefined') {
-        // Redirect to login if unauthorized, but clearing the cookie 
-        // must be done via a server action or by the backend.
-        if (window.location.pathname !== '/login') {
-          window.location.href = '/login';
+  async (error) => {
+    const originalRequest = error.config;
+    
+    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+      if (error.response.data?.error === 'TOKEN_EXPIRED') {
+        return handleTokenRefresh(api, error);
+      } else {
+        await removeAuthCookie();
+        if (typeof window !== 'undefined') {
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
         }
       }
     }

@@ -1,3 +1,19 @@
+# ============================================================================
+# FINAL MQTT TOPICS FOR FIRMWARE SYNCHRONIZATION REFERENCE
+# ----------------------------------------------------------------------------
+# Command (Backend -> ESP32):
+# - Light : devices/{room_id}/light/{relay_channel}
+# - AC    : devices/{room_id}/ac
+# - Status: devices/{room_id}/status/request
+#
+# Event/Response (ESP32 -> Backend):
+# - Online: devices/{room_id}/status/online
+# - Status: devices/{room_id}/status/response
+#
+# NOTE: The firmware (ESP32) MUST subscribe to and publish on these exact
+# prefixes (`devices/`). Ensure {room_id} and {relay_channel} types match!
+# ============================================================================
+
 import paho.mqtt.client as mqtt
 import os
 import json
@@ -18,7 +34,7 @@ class MQTTSubscriber:
         self.topic_trigger = os.getenv("MQTT_TOPIC_TRIGGER", "camera/trigger")
         self.topic_request = os.getenv("MQTT_TOPIC_REQUEST", "ai/inference/request")
         self.topic_zone_reload = "ai/zone/reload"
-        self.topic_esp32_online = "esp32/+/status/online"
+        self.topic_esp32_online = "devices/+/status/online"
         
         self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         self.client.on_connect = self._on_connect
@@ -35,9 +51,9 @@ class MQTTSubscriber:
             client.subscribe(self.topic_trigger)
             client.subscribe(self.topic_request)
             client.subscribe(self.topic_zone_reload)
-            client.subscribe("esp32/+/status/response")
-            client.subscribe("esp32/+/light/+")
-            client.subscribe("esp32/+/ac")
+            client.subscribe("devices/+/status/response")
+            client.subscribe("devices/+/light/+")
+            client.subscribe("devices/+/ac")
             client.subscribe(self.topic_esp32_online)
         else:
             logger.error(f"❌ Failed to connect, reason: {reason_code}")
@@ -63,11 +79,11 @@ class MQTTSubscriber:
             self._handle_inference_request(payload)
         elif topic == self.topic_zone_reload:
             self._handle_zone_reload()
-        elif topic.startswith("esp32/") and topic.endswith("/status/response"):
+        elif topic.startswith("devices/") and topic.endswith("/status/response"):
             self._handle_status_response(payload)
-        elif topic.startswith("esp32/") and topic.endswith("/status/online"):
+        elif topic.startswith("devices/") and topic.endswith("/status/online"):
             self._handle_esp32_online(topic, payload)
-        elif topic.startswith("esp32/") and ("light" in topic or "ac" in topic):
+        elif topic.startswith("devices/") and ("light" in topic or "ac" in topic):
             self._handle_device_command(topic, payload)
 
     def _handle_device_command(self, topic: str, payload):

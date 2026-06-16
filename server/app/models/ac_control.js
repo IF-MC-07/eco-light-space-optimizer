@@ -9,7 +9,7 @@ export default (sequelize, DataTypes) => {
     },
     room_id: {
       type: DataTypes.STRING(30),
-      allowNull: true,
+      allowNull: false,
       references: {
         model: 'rooms',
         key: 'room_id'
@@ -17,7 +17,7 @@ export default (sequelize, DataTypes) => {
     },
     device_id: {
       type: DataTypes.STRING(30),
-      allowNull: true,
+      allowNull: false,
       references: {
         model: 'iot_devices',
         key: 'device_id'

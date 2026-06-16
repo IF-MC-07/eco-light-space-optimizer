@@ -1,59 +1,60 @@
+import responseFormatter from '../utils/response.js';
 import * as acControlService from '../services/acControlService.js';
 
-export const getAll = async (req, res) => {
+export const getAll = async (req, res, next) => {
   try {
     const data = await acControlService.getAll();
-    res.status(200).json({ success: true, data });
+    return responseFormatter.success(res, data, 'Success');
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const getById = async (req, res) => {
+export const getById = async (req, res, next) => {
   try {
     const data = await acControlService.getById(req.params.id);
-    if (!data) return res.status(404).json({ success: false, message: 'AC Control not found' });
-    res.status(200).json({ success: true, data });
+    if (!data) return responseFormatter.error(res, 'AC Control not found' , 404);
+    return responseFormatter.success(res, data, 'Success');
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const create = async (req, res) => {
+export const create = async (req, res, next) => {
   try {
     const data = await acControlService.create(req.body);
-    res.status(201).json({ success: true, data });
+    return responseFormatter.success(res, data, 'Created', 201);
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const update = async (req, res) => {
+export const update = async (req, res, next) => {
   try {
     const data = await acControlService.update(req.params.id, req.body);
-    if (!data) return res.status(404).json({ success: false, message: 'AC Control not found' });
-    res.status(200).json({ success: true, data });
+    if (!data) return responseFormatter.error(res, 'AC Control not found' , 404);
+    return responseFormatter.success(res, data, 'Success');
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const remove = async (req, res) => {
+export const remove = async (req, res, next) => {
   try {
     const isDeleted = await acControlService.remove(req.params.id);
-    if (!isDeleted) return res.status(404).json({ success: false, message: 'AC Control not found' });
-    res.status(200).json({ success: true, message: 'AC Control deleted successfully' });
+    if (!isDeleted) return responseFormatter.error(res, 'AC Control not found' , 404);
+    return responseFormatter.success(res, null, 'AC Control deleted successfully' );
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const toggle = async (req, res) => {
+export const toggle = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { temperature_setting } = req.body;
     const item = await acControlService.getById(id);
-    if (!item) return res.status(404).json({ success: false, message: 'AC Control not found' });
+    if (!item) return responseFormatter.error(res, 'AC Control not found' , 404);
     
     const newStatus = item.ac_status === 'on' ? 'off' : 'on';
     
@@ -62,8 +63,8 @@ export const toggle = async (req, res) => {
 
     const data = await acControlService.update(id, payload);
     
-    res.status(200).json({ success: true, message: `AC turned ${newStatus}`, data });
+    return responseFormatter.success(res, data, `AC turned ${newStatus}`);
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };

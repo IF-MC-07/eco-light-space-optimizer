@@ -1,4 +1,5 @@
 export const errorHandler = (err, req, res, next) => {
+  console.error('FULL ERROR OBJ:', err);
   console.error(err.stack);
   
   const statusCode = err.statusCode || 500;

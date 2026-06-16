@@ -1,47 +1,76 @@
-import { Router } from 'express';
+import { Router } from "express";
 
-import roomRoute from './roomRoute.js';
-import userRoute from './userRoute.js';
-import zoneRoute from './zoneRoute.js';
-import cameraRoute from './cameraRoute.js';
-import iotDeviceRoute from './iotDeviceRoute.js';
-import powerSensorRoute from './powerSensorRoute.js';
-import energyLogRoute from './energyLogRoute.js';
-import automationScheduleRoute from './automationScheduleRoute.js';
-import detectionLogRoute from './detectionLogRoute.js';
-import lightControlRoute from './lightControlRoute.js';
-import acControlRoute from './acControlRoute.js';
-import authRoute from './auth.route.js';
-import dashboardRoute from './dashboard.route.js';
-import monitoringRoute from './monitoring.route.js';
-import energyRoute from './energy.route.js';
-import savingsRoute from './savings.route.js';
-import exportRoute from './exportRoute.js';
-import { authenticate } from '../middlewares/auth.middleware.js';
-import { requireRole } from '../middlewares/role.middleware.js';
-import { apiLimiter, controlLimiter } from '../middlewares/rateLimiter.middleware.js';
+import roomRoute from "./roomRoute.js";
+import userRoute from "./userRoute.js";
+import zoneRoute from "./zoneRoute.js";
+import cameraRoute from "./cameraRoute.js";
+import iotDeviceRoute from "./iotDeviceRoute.js";
+import powerSensorRoute from "./powerSensorRoute.js";
+import energyLogRoute from "./energyLogRoute.js";
+import automationScheduleRoute from "./automationScheduleRoute.js";
+import detectionLogRoute from "./detectionLogRoute.js";
+import lightControlRoute from "./lightControlRoute.js";
+import acControlRoute from "./acControlRoute.js";
+import authRoute from "./auth.route.js";
+import dashboardRoute from "./dashboard.route.js";
+import monitoringRoute from "./monitoring.route.js";
+import energyRoute from "./energy.route.js";
+import savingsRoute from "./savings.route.js";
+import exportRoute from "./exportRoute.js";
+import { authenticate } from "../middlewares/auth.middleware.js";
+import { requireRole } from "../middlewares/role.middleware.js";
+import {
+  apiLimiter,
+  controlLimiter,
+} from "../middlewares/rateLimiter.middleware.js";
 
 const router = Router();
 
-// Aplikasikan general API rate limiter ke semua endpoints
+router.use("/auth", authRoute);
 router.use(apiLimiter);
 
-router.use('/auth', authRoute);
-router.use('/dashboard', authenticate, dashboardRoute);
-router.use('/monitoring', authenticate, monitoringRoute);
-router.use('/energy', authenticate, requireRole(['admin']), energyRoute);
-router.use('/savings', authenticate, requireRole(['admin']), savingsRoute);
-router.use('/rooms', authenticate, roomRoute);
-router.use('/users', authenticate, requireRole(['admin']), userRoute);
-router.use('/zones', authenticate, zoneRoute);
-router.use('/cameras', authenticate, cameraRoute);
-router.use('/iot-devices', authenticate, iotDeviceRoute);
-router.use('/power-sensors', authenticate, requireRole(['admin']), powerSensorRoute);
-router.use('/energy-logs', authenticate, requireRole(['admin']), energyLogRoute);
-router.use('/automation-schedules', authenticate, requireRole(['admin']), automationScheduleRoute);
-router.use('/detection-logs', authenticate, detectionLogRoute);
-router.use('/light-controls', authenticate, requireRole(['admin']), controlLimiter, lightControlRoute);
-router.use('/ac-controls', authenticate, requireRole(['admin']), controlLimiter, acControlRoute);
-router.use('/export', authenticate, requireRole(['admin']), exportRoute);
+router.use("/dashboard", authenticate, dashboardRoute);
+router.use("/monitoring", authenticate, monitoringRoute);
+router.use("/energy", authenticate, requireRole(["admin"]), energyRoute);
+router.use("/savings", authenticate, requireRole(["admin"]), savingsRoute);
+router.use("/rooms", authenticate, roomRoute);
+router.use("/users", authenticate, requireRole(["admin"]), userRoute);
+router.use("/zones", authenticate, zoneRoute);
+router.use("/cameras", authenticate, cameraRoute);
+router.use("/iot-devices", authenticate, iotDeviceRoute);
+router.use(
+  "/power-sensors",
+  authenticate,
+  requireRole(["admin"]),
+  powerSensorRoute,
+);
+router.use(
+  "/energy-logs",
+  authenticate,
+  requireRole(["admin"]),
+  energyLogRoute,
+);
+router.use(
+  "/automation-schedules",
+  authenticate,
+  requireRole(["admin"]),
+  automationScheduleRoute,
+);
+router.use("/detection-logs", authenticate, detectionLogRoute);
+router.use(
+  "/light-controls",
+  authenticate,
+  requireRole(["admin"]),
+  controlLimiter,
+  lightControlRoute,
+);
+router.use(
+  "/ac-controls",
+  authenticate,
+  requireRole(["admin"]),
+  controlLimiter,
+  acControlRoute,
+);
+router.use("/export", authenticate, requireRole(["admin"]), exportRoute);
 
 export default router;

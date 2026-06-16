@@ -1,49 +1,50 @@
+import responseFormatter from '../utils/response.js';
 import * as energyLogService from '../services/energyLogService.js';
 
-export const getAll = async (req, res) => {
+export const getAll = async (req, res, next) => {
   try {
     const data = await energyLogService.getAll();
-    res.status(200).json({ success: true, data });
+    return responseFormatter.success(res, data, 'Success');
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const getById = async (req, res) => {
+export const getById = async (req, res, next) => {
   try {
     const data = await energyLogService.getById(req.params.id);
-    if (!data) return res.status(404).json({ success: false, message: 'Log Energi not found' });
-    res.status(200).json({ success: true, data });
+    if (!data) return responseFormatter.error(res, 'Log Energi not found' , 404);
+    return responseFormatter.success(res, data, 'Success');
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const create = async (req, res) => {
+export const create = async (req, res, next) => {
   try {
     const data = await energyLogService.create(req.body);
-    res.status(201).json({ success: true, data });
+    return responseFormatter.success(res, data, 'Created', 201);
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const update = async (req, res) => {
+export const update = async (req, res, next) => {
   try {
     const data = await energyLogService.update(req.params.id, req.body);
-    if (!data) return res.status(404).json({ success: false, message: 'Log Energi not found' });
-    res.status(200).json({ success: true, data });
+    if (!data) return responseFormatter.error(res, 'Log Energi not found' , 404);
+    return responseFormatter.success(res, data, 'Success');
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const remove = async (req, res) => {
+export const remove = async (req, res, next) => {
   try {
     const isDeleted = await energyLogService.remove(req.params.id);
-    if (!isDeleted) return res.status(404).json({ success: false, message: 'Log Energi not found' });
-    res.status(200).json({ success: true, message: 'Log Energi deleted successfully' });
+    if (!isDeleted) return responseFormatter.error(res, 'Log Energi not found' , 404);
+    return responseFormatter.success(res, null, 'Log Energi deleted successfully' );
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };

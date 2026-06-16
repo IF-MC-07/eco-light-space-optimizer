@@ -25,8 +25,9 @@ def get_kamera_ip(camera_id: str) -> str:
     except Exception as e:
         print(f"DB Error: {e}")
     finally:
-        if 'conn' in locals() and conn and not conn.closed:
-            conn.close()
+        if conn:
+            from app.zona_loader import release_connection
+            release_connection(conn)
     return None
 
 def process_frame(frame, id_kamera, zones):

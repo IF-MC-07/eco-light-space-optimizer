@@ -5,7 +5,7 @@ import logging
 try:
     from app.zona_loader import get_db_connection
 except ImportError:
-    from zona_loader import get_db_connection
+    from app.zona_loader import get_db_connection
 
 try:
     from app.mqtt_commands import MQTTCommander
@@ -67,8 +67,9 @@ class BootRecoveryManager:
             log.error(f"❌ Error fetching rooms: {e}")
             return []
         finally:
-            if conn and not conn.closed:
-                conn.close()
+            if conn:
+                from app.zona_loader import release_connection
+                release_connection(conn)
 
     def _check_active_schedule(self, room_id: str) -> bool:
         """
@@ -91,8 +92,9 @@ class BootRecoveryManager:
             log.error(f"❌ Error checking active schedule for Room {room_id}: {e}")
             return False
         finally:
-            if conn and not conn.closed:
-                conn.close()
+            if conn:
+                from app.zona_loader import release_connection
+                release_connection(conn)
 
     def _restore_from_schedule(self, room_id: str):
         """
@@ -164,8 +166,9 @@ class BootRecoveryManager:
             if conn:
                 conn.rollback()
         finally:
-            if conn and not conn.closed:
-                conn.close()
+            if conn:
+                from app.zona_loader import release_connection
+                release_connection(conn)
 
     def _restore_from_db(self, room_id: str):
         """
@@ -222,5 +225,6 @@ class BootRecoveryManager:
         except Exception as e:
             log.error(f"❌ Error restoring from DB state for Room {room_id}: {e}")
         finally:
-            if conn and not conn.closed:
-                conn.close()
+            if conn:
+                from app.zona_loader import release_connection
+                release_connection(conn)
