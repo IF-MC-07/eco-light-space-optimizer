@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 try:
     from app.zona_loader import get_db_connection
 except ImportError:
-    from app.zona_loader import get_db_connection
+    from zona_loader import get_db_connection
 
 try:
     from app.mqtt_commands import mqtt_commander

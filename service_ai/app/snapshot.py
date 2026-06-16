@@ -14,20 +14,28 @@ app = FastAPI()
 MODEL_PATH = os.getenv('MODEL_PATH', 'yolov8n.pt')
 model = YOLO(MODEL_PATH)
 
+import requests
+
+API_URL = os.getenv("API_URL", "http://localhost:5000/api")
+CAMERA_SECRET_KEY = os.getenv("CAMERA_SECRET_KEY")
+
 def get_kamera_ip(camera_id: str) -> str:
+    if not CAMERA_SECRET_KEY:
+        print("❌ CAMERA_SECRET_KEY tidak diatur!")
+        return None
+        
     try:
-        conn = get_db_connection()
-        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
-            cur.execute("SELECT ip_address FROM cameras WHERE camera_id = %s", (camera_id,))
-            row = cur.fetchone()
-            if row:
-                return row['ip_address']
+        headers = {"x-ai-secret": CAMERA_SECRET_KEY}
+        response = requests.get(f"{API_URL}/cameras/ai/stream-urls", headers=headers, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("success"):
+                cameras = data.get("data", [])
+                for cam in cameras:
+                    if cam["camera_id"] == camera_id:
+                        return cam["ip_address"]
     except Exception as e:
-        print(f"DB Error: {e}")
-    finally:
-        if conn:
-            from app.zona_loader import release_connection
-            release_connection(conn)
+        print(f"API Error fetching camera IP: {e}")
     return None
 
 def process_frame(frame, id_kamera, zones):
@@ -76,12 +84,10 @@ def process_frame(frame, id_kamera, zones):
 
 async def frame_generator(id_kamera: str):
     ip_address = get_kamera_ip(id_kamera)
-    cam_source = 0
-    if ip_address:
-        if ip_address.isdigit():
-            cam_source = int(ip_address)
-        else:
-            cam_source = ip_address
+    if not ip_address:
+        raise HTTPException(status_code=404, detail="Camera IP not found")
+        
+    cam_source = int(ip_address) if ip_address.isdigit() else ip_address
             
     if isinstance(cam_source, int) and os.name == 'nt':
         cap = cv2.VideoCapture(cam_source, cv2.CAP_DSHOW)
@@ -131,9 +137,10 @@ async def get_stream(id_kamera: str):
 @app.get("/kamera/{id_kamera}/snapshot")
 def get_snapshot(id_kamera: str):
     ip_address = get_kamera_ip(id_kamera)
-    cam_source = 0
-    if ip_address:
-        cam_source = int(ip_address) if ip_address.isdigit() else ip_address
+    if not ip_address:
+        raise HTTPException(status_code=404, detail="Camera IP not found")
+        
+    cam_source = int(ip_address) if ip_address.isdigit() else ip_address
         
     if isinstance(cam_source, int) and os.name == 'nt':
         cap = cv2.VideoCapture(cam_source, cv2.CAP_DSHOW)
