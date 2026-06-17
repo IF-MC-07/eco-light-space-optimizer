@@ -8,7 +8,7 @@ import threading
 try:
     from app.zona_loader import get_db_connection
 except ImportError:
-    from app.zona_loader import get_db_connection
+    from zona_loader import get_db_connection
 
 try:
     from app.mqtt_commands import mqtt_commander
@@ -44,6 +44,7 @@ class DecisionEngine:
 
         self._camera_room_cache = {}
         self._initialized_cameras = set()
+        self._unknown_camera_last_check = {}  # camera_id -> timestamp terakhir kali di-cek
 
         # Load delay configurations
         self.delay_on_light = float(os.getenv("DELAY_ON_LIGHT_SECONDS", 5))
@@ -60,6 +61,10 @@ class DecisionEngine:
         if camera_id in self._initialized_cameras:
             return
 
+        last_check = self._unknown_camera_last_check.get(camera_id)
+        if last_check is not None and (time.time() - last_check) < 60:
+            return
+
         conn = None
         try:
             conn = get_db_connection()
@@ -69,6 +74,7 @@ class DecisionEngine:
                 room_row = cur.fetchone()
                 if not room_row:
                     logger.error(f"❌ Camera ID {camera_id} not found in DB")
+                    self._unknown_camera_last_check[camera_id] = time.time()
                     return
                 room_id = room_row[0]
                 self._camera_room_cache[camera_id] = room_id
@@ -127,11 +133,11 @@ class DecisionEngine:
                 release_connection(conn)
 
     def process_inference(self, camera_id: str, occupancy_counts: dict):
+        """
+        Processes an inference cycle.
+        occupancy_counts is a dictionary mapping zone_name -> count
+        """
         with self._lock:
-            """
-            Processes an inference cycle.
-            occupancy_counts is a dictionary mapping zone_name -> count
-            """
             # Ensure states are initialized
             self._initialize_camera_states(camera_id)
 
@@ -255,7 +261,6 @@ class DecisionEngine:
                                 if last_off is not None and (now - last_off) < self.compressor_protection_seconds:
                                     remaining = self.compressor_protection_seconds - (now - last_off)
                                     logger.info(f"⏸️ AC Room {room_id}: compressor protection active, {remaining:.0f}s remaining.")
-                                    pass
                                 else:
                                     # Fetch AC settings
                                     cur.execute("""

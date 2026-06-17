@@ -2,9 +2,9 @@ import time
 import logging
 
 try:
-    from app.zona_loader import get_db_connection
+    from app.zona_loader import get_db_connection, release_connection
 except ImportError:
-    from app.zona_loader import get_db_connection
+    from zona_loader import get_db_connection, release_connection
 
 log = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ def wait_for_db(max_retries=20, interval=3):
     for attempt in range(1, max_retries + 1):
         try:
             conn = get_db_connection()
-            conn.close()
+            release_connection(conn)
             log.info(f"✅ PostgreSQL ready (attempt {attempt})")
             return True
         except Exception as e:

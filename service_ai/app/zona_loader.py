@@ -26,7 +26,20 @@ def get_pool():
     return _pool
 
 def get_db_connection():
-    return get_pool().getconn()
+    pool = get_pool()
+    for _ in range(3):
+        conn = pool.getconn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+            return conn
+        except Exception as e:
+            try:
+                pool.putconn(conn, close=True)
+            except:
+                pass
+            logger.warning(f"⚠️ Dead connection detected from pool, retrying...")
+    return pool.getconn()
 
 def release_connection(conn, close=False):
     if conn:

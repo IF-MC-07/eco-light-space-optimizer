@@ -3,7 +3,7 @@ import logging
 try:
     from app.zona_loader import get_db_connection
 except ImportError:
-    from app.zona_loader import get_db_connection
+    from zona_loader import get_db_connection
 
 logger = logging.getLogger(__name__)
 

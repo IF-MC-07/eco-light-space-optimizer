@@ -28,7 +28,7 @@ import {
   useDevices,
   useRemoveDevice,
 } from "../../../features/iot-device/hooks";
-import { useCameraList } from "../../../features/camera/hooks";
+import { useCameraList, useDeleteCamera } from "../../../features/camera/hooks";
 
 interface RoomManagementProps {
   roomId: string;
@@ -44,6 +44,7 @@ export default function RoomManagement({ roomId }: RoomManagementProps) {
   });
   const { mutate: removeRoom } = useRemoveRoom();
   const { mutate: removeDevice } = useRemoveDevice();
+  const { mutate: removeCamera } = useDeleteCamera();
 
   const [isAddDeviceOpen, setIsAddDeviceOpen] = useState(false);
   const [isEditRoomOpen, setIsEditRoomOpen] = useState(false);
@@ -95,9 +96,15 @@ export default function RoomManagement({ roomId }: RoomManagementProps) {
 
   const handleDeleteDevice = () => {
     if (deviceToRemove) {
-      removeDevice(deviceToRemove.device_id, {
-        onSuccess: () => setDeviceToRemove(null),
-      });
+      if (deviceToRemove.device_type?.toUpperCase() === "CAMERA") {
+        removeCamera(deviceToRemove.device_id, {
+          onSuccess: () => setDeviceToRemove(null),
+        });
+      } else {
+        removeDevice(deviceToRemove.device_id, {
+          onSuccess: () => setDeviceToRemove(null),
+        });
+      }
     }
   };
 

@@ -36,7 +36,7 @@ router.use("/savings", authenticate, requireRole(["admin"]), savingsRoute);
 router.use("/rooms", authenticate, roomRoute);
 router.use("/users", authenticate, requireRole(["admin"]), userRoute);
 router.use("/zones", authenticate, zoneRoute);
-router.use("/cameras", authenticate, cameraRoute);
+router.use("/cameras", cameraRoute);
 router.use("/iot-devices", authenticate, iotDeviceRoute);
 router.use(
   "/power-sensors",

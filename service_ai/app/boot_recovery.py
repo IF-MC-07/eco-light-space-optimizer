@@ -5,7 +5,7 @@ import logging
 try:
     from app.zona_loader import get_db_connection
 except ImportError:
-    from app.zona_loader import get_db_connection
+    from zona_loader import get_db_connection
 
 try:
     from app.mqtt_commands import MQTTCommander
@@ -60,7 +60,7 @@ class BootRecoveryManager:
         try:
             conn = get_db_connection()
             with conn.cursor() as cur:
-                cur.execute("SELECT room_id, room_name FROM rooms WHERE LOWER(status) = 'active'")
+                cur.execute("SELECT room_id, room_name FROM rooms WHERE LOWER(status) = 'aktif'")
                 rows = cur.fetchall()
                 return [{"room_id": row[0], "room_name": row[1]} for row in rows]
         except Exception as e:
