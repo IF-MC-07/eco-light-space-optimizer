@@ -12,6 +12,13 @@ import logging
 import uvicorn
 from dotenv import load_dotenv
 
+# Load environment variables early
+load_dotenv()
+
+# Prevent OpenCV FFmpeg deadlocks when repeatedly opening network streams
+os.environ["OPENCV_FFMPEG_THREADS"] = "1"
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "timeout;5000000"
+
 try:
     from app.inference_realtime import run as run_inference
 except ImportError:
@@ -41,8 +48,6 @@ try:
     from app.mqtt_commands import MQTTCommander
 except ImportError:
     from mqtt_commands import MQTTCommander
-
-load_dotenv()
 
 # Setup logging
 logging.basicConfig(
