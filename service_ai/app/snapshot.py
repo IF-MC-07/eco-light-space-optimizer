@@ -1,14 +1,13 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 import cv2
-import psycopg2
-import psycopg2.extras
 import os
 import io
 import asyncio
 import time
 from ultralytics import YOLO
-from app.zona_loader import ambil_zona_dari_db, titik_di_zona, get_db_connection
+from app.zona_loader import ambil_zona_dari_db, titik_di_zona
+from app.camera_loader import get_camera_stream_source
 
 app = FastAPI()
 MODEL_PATH = os.getenv('MODEL_PATH', 'yolov8n.pt')
@@ -20,10 +19,14 @@ API_URL = os.getenv("API_URL", "http://localhost:5000/api")
 CAMERA_SECRET_KEY = os.getenv("CAMERA_SECRET_KEY")
 
 def get_kamera_ip(camera_id: str) -> str:
+    source = get_camera_stream_source(camera_id)
+    if source:
+        return source
+
     if not CAMERA_SECRET_KEY:
         print("❌ CAMERA_SECRET_KEY tidak diatur!")
         return None
-        
+
     try:
         headers = {"x-ai-secret": CAMERA_SECRET_KEY}
         response = requests.get(f"{API_URL}/cameras/ai/stream-urls", headers=headers, timeout=5)
@@ -37,6 +40,28 @@ def get_kamera_ip(camera_id: str) -> str:
     except Exception as e:
         print(f"API Error fetching camera IP: {e}")
     return None
+
+def open_capture(cam_source, timeout_ms=5000):
+    if isinstance(cam_source, int) and os.name == 'nt':
+        cap = cv2.VideoCapture(cam_source, cv2.CAP_DSHOW)
+    else:
+        cap = cv2.VideoCapture(cam_source, cv2.CAP_FFMPEG)
+        try:
+            cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, timeout_ms)
+            cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, timeout_ms)
+            cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+            cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'H264'))
+        except Exception:
+            pass
+    return cap
+
+
+async def read_frame_async(cap, timeout_secs=5.0):
+    try:
+        return await asyncio.wait_for(asyncio.to_thread(cap.read), timeout=timeout_secs)
+    except asyncio.TimeoutError:
+        return False, None
+
 
 def process_frame(frame, id_kamera, zones):
     height, width = frame.shape[:2]
@@ -88,14 +113,7 @@ async def frame_generator(id_kamera: str):
         raise HTTPException(status_code=404, detail="Camera IP not found")
         
     cam_source = int(ip_address) if ip_address.isdigit() else ip_address
-            
-    if isinstance(cam_source, int) and os.name == 'nt':
-        cap = cv2.VideoCapture(cam_source, cv2.CAP_DSHOW)
-    else:
-        cap = cv2.VideoCapture(cam_source)
-        
-    if not cap.isOpened():
-        raise HTTPException(status_code=503, detail="Kamera tidak dapat diakses")
+    cap = open_capture(cam_source)
 
     zones = []
     last_zone_fetch = 0
@@ -108,9 +126,18 @@ async def frame_generator(id_kamera: str):
                 zones = ambil_zona_dari_db(id_kamera)
                 last_zone_fetch = current_time
 
-            ret, frame = cap.read()
-            if not ret:
-                await asyncio.sleep(0.1)
+            if not cap.isOpened():
+                print(f"⚠️ [{id_kamera}] Kamera tidak bisa dibuka, retry dalam 3.0s")
+                await asyncio.sleep(3.0)
+                cap = open_capture(cam_source)
+                continue
+
+            ret, frame = await read_frame_async(cap, timeout_secs=5.0)
+            if not ret or frame is None:
+                cap.release()
+                print(f"⚠️ [{id_kamera}] Gagal baca frame, reconnect dalam 3.0s")
+                await asyncio.sleep(3.0)
+                cap = open_capture(cam_source)
                 continue
 
             # Process frame
@@ -123,15 +150,80 @@ async def frame_generator(id_kamera: str):
 
             frame_bytes = encoded_image.tobytes()
             yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+                    b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
             
             await asyncio.sleep(0.03) # yield control to event loop (~30fps max)
     finally:
-        cap.release()
+        try:
+            cap.release()
+        except Exception:
+            pass
 
 @app.get("/kamera/{id_kamera}/stream")
 async def get_stream(id_kamera: str):
-    return StreamingResponse(frame_generator(id_kamera), media_type="multipart/x-mixed-replace; boundary=frame")
+    # Use a lightweight preview stream for browser live preview to avoid heavy YOLO
+    async def preview_generator(camera_id: str):
+        ip_address = get_kamera_ip(camera_id)
+        if not ip_address:
+            raise HTTPException(status_code=404, detail="Camera IP not found")
+        cam_source = int(ip_address) if ip_address.isdigit() else ip_address
+        cap = open_capture(cam_source)
+
+        zones = []
+        last_zone_fetch = 0
+        ZONE_FETCH_INTERVAL = 60
+
+        try:
+            while True:
+                current_time = time.time()
+                if current_time - last_zone_fetch > ZONE_FETCH_INTERVAL or not zones:
+                    zones = ambil_zona_dari_db(camera_id)
+                    last_zone_fetch = current_time
+
+                if not cap.isOpened():
+                    print(f"⚠️ [{camera_id}] Kamera tidak bisa dibuka, retry dalam 3.0s")
+                    await asyncio.sleep(3.0)
+                    cap = open_capture(cam_source)
+                    continue
+
+                ret, frame = await read_frame_async(cap, timeout_secs=5.0)
+                if not ret or frame is None:
+                    cap.release()
+                    print(f"⚠️ [{camera_id}] Gagal baca frame, reconnect dalam 3.0s")
+                    await asyncio.sleep(3.0)
+                    cap = open_capture(cam_source)
+                    continue
+
+                # Draw lightweight zone rectangles (no YOLO inference)
+                height, width = frame.shape[:2]
+                annotated = frame.copy()
+                for z in zones:
+                    zx1, zy1 = int(z['x1_pct'] * width), int(z['y1_pct'] * height)
+                    zx2, zy2 = int(z['x2_pct'] * width), int(z['y2_pct'] * height)
+                    hex_color = z['color'].lstrip('#')
+                    try:
+                        r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+                        color = (b, g, r)
+                    except:
+                        color = (0, 255, 0)
+                    cv2.rectangle(annotated, (zx1, zy1), (zx2, zy2), color, 2)
+
+                success, encoded_image = cv2.imencode('.jpg', annotated)
+                if not success:
+                    continue
+
+                frame_bytes = encoded_image.tobytes()
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+
+                await asyncio.sleep(0.03)
+        finally:
+            try:
+                cap.release()
+            except Exception:
+                pass
+
+    return StreamingResponse(preview_generator(id_kamera), media_type="multipart/x-mixed-replace; boundary=frame")
 
 
 @app.get("/kamera/{id_kamera}/snapshot")
@@ -141,11 +233,7 @@ def get_snapshot(id_kamera: str):
         raise HTTPException(status_code=404, detail="Camera IP not found")
         
     cam_source = int(ip_address) if ip_address.isdigit() else ip_address
-        
-    if isinstance(cam_source, int) and os.name == 'nt':
-        cap = cv2.VideoCapture(cam_source, cv2.CAP_DSHOW)
-    else:
-        cap = cv2.VideoCapture(cam_source)
+    cap = open_capture(cam_source)
         
     if not cap.isOpened():
         raise HTTPException(status_code=503, detail="Kamera tidak dapat diakses")

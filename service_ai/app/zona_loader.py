@@ -39,7 +39,7 @@ def get_db_connection():
             except:
                 pass
             logger.warning(f"⚠️ Dead connection detected from pool, retrying...")
-    return pool.getconn()
+    raise Exception("❌ Failed to get a valid DB connection after 3 retries.")
 
 def release_connection(conn, close=False):
     if conn:

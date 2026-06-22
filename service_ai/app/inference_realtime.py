@@ -11,9 +11,11 @@ from dotenv import load_dotenv
 from ultralytics import YOLO
 
 try:
-    from app.zona_loader import ambil_zona_dari_db, titik_di_zona, get_db_connection, release_connection
+    from app.zona_loader import ambil_zona_dari_db, titik_di_zona
+    from app.camera_loader import get_camera_stream_source, get_active_camera_sources
 except ImportError:
-    from zona_loader import ambil_zona_dari_db, titik_di_zona, get_db_connection, release_connection
+    from zona_loader import ambil_zona_dari_db, titik_di_zona
+    from camera_loader import get_camera_stream_source, get_active_camera_sources
 
 load_dotenv()
 
@@ -36,6 +38,7 @@ IOU_THRESHOLD      = float(os.getenv("IOU_THRESHOLD", 0.45))
 MODEL_PATH         = os.getenv("MODEL_PATH", "yolov8n.pt")
 API_URL            = os.getenv("API_URL", "http://localhost:5000/api")
 CAMERA_SECRET_KEY  = os.getenv("CAMERA_SECRET_KEY")
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|fflags;nobuffer|flags;low_delay|thread_queue_size;512"
 
 # ─── Shared Model + Lock ─────────────────────────────────────────────────────
 _model = None
@@ -54,8 +57,7 @@ class MQTTHandler:
     def __init__(self):
         self.connected = False
         self.client = mqtt.Client(
-            callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
-            client_id="service_ai_multicam",
+            callback_api_version=mqtt.CallbackAPIVersion.VERSION2
         )
         if MQTT_USER and MQTT_PASSWORD:
             self.client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
@@ -91,6 +93,10 @@ class MQTTHandler:
 
 # ─── Fetch semua kamera aktif dari DB/API ─────────────────────────────────────
 def get_active_cameras() -> list:
+    cameras = get_active_camera_sources()
+    if cameras:
+        return cameras
+
     if not CAMERA_SECRET_KEY:
         log.error("❌ CAMERA_SECRET_KEY tidak diatur dalam environment variables!")
         return []
@@ -137,13 +143,18 @@ def hitung_per_zona(boxes, zones: list, width: int, height: int) -> dict:
 
     return count
 
-def open_capture(cam_source):
+def open_capture(cam_source, timeout_ms=5000):
     if isinstance(cam_source, int) and os.name == 'nt':
         cap = cv2.VideoCapture(cam_source, cv2.CAP_DSHOW)
     else:
-        cap = cv2.VideoCapture(cam_source)
-        cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 5000)   # 5 detik timeout koneksi
-        cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, 5000)   # 5 detik timeout baca frame
+        cap = cv2.VideoCapture(cam_source, cv2.CAP_FFMPEG)
+        try:
+            cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, timeout_ms)
+            cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, timeout_ms)
+            cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+            cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'H264'))
+        except Exception:
+            pass
     return cap
 
 # ─── Worker per kamera ────────────────────────────────────────────────────────
@@ -174,6 +185,9 @@ def camera_worker(camera_id: str, ip_address: str, mqtt_handler: MQTTHandler, st
                 log.warning(f"⚠️ [{camera_id}] Kamera tidak bisa dibuka, retry dalam {SNAPSHOT_INTERVAL}s")
                 time.sleep(SNAPSHOT_INTERVAL)
                 continue
+
+            for _ in range(5):
+                cap.read()
 
             ret, frame = cap.read()
             cap.release()

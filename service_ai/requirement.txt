@@ -15,11 +15,12 @@ werkzeug>=3.0.0
 paho-mqtt
 ultralytics
 pymysql
-psycopg2-binary 
+psycopg2-binary
 python-dotenv
 fastapi
 uvicorn
 locust
+cryptography>=41.0.0
 pytest>=7.0.0
 pytest-mock>=3.10.0
 httpx>=0.24.0
