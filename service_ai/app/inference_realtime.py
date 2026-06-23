@@ -253,31 +253,9 @@ def run():
     mqtt_handler = MQTTHandler()
     mqtt_handler.connect()
 
-<<<<<<< HEAD
-    # Init zona manager
-    zone_mgr = ZoneManager(ID_KAMERA, ZONE_FETCH_INTERVAL)
-
-    # Init model
-    log.info(f"🔃 Loading YOLOv8 model from {MODEL_PATH}...")
-    model = YOLO(MODEL_PATH)
-    log.info("✅ Model loaded.")
-
-    # Init kamera
-    if isinstance(camera_input, int) and os.name == 'nt':
-        cap = cv2.VideoCapture(camera_input, cv2.CAP_DSHOW)
-    else:
-        cap = cv2.VideoCapture(camera_input)
-
-    print("Camera source =", camera_input)
-    print("Opened =", cap.isOpened())
-        
-    if not cap.isOpened():
-        log.error(f"❌ Kamera tidak bisa dibuka: {CAMERA_SOURCE}")
-=======
     cameras = get_active_cameras()
     if not cameras:
         log.error("❌ Tidak ada kamera aktif di DB. Service berhenti.")
->>>>>>> d4f53454148a5c44fe6bd85d396c4df0bbf4b123
         mqtt_handler.stop()
         return
 

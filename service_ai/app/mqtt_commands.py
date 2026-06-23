@@ -23,8 +23,10 @@ from dotenv import load_dotenv
 ### Import dependencies
 try:
     from app.mqtt_subscriber import mqtt_client
+    from app.zona_loader import get_db_connection
 except ImportError:
     from mqtt_subscriber import mqtt_client
+    from zona_loader import get_db_connection
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -38,9 +40,11 @@ class MQTTCommander:
         """
         topic = f"devices/{room_id}/light/{relay_channel}"
         payload = {
-            f"relay{relay_channel}": relay_value,
-            "room_id": room_id,
+            "command": command,
+            "zone_id": zone_id,
             "zone_name": zone_name,
+            "relay_channel": relay_channel,
+            "source": source,
             "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
         }
 
@@ -50,10 +54,6 @@ class MQTTCommander:
         except Exception as e:
             logger.error(f"❌ Failed to publish light command: {e}")
 
-<<<<<<< HEAD
-# Pastikan baris ini di margin paling kiri (tidak menjorok)
-mqtt_commander = MQTTCommander()
-=======
     def send_ac_command(self, room_id: int, command: str, temperature: float, source: str = "ai_decision"):
         """
         Sends AC control command to ESP32 via MQTT.
@@ -68,7 +68,7 @@ mqtt_commander = MQTTCommander()
             "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
         }
         try:
-            mqtt_client.publish(topic, payload)
+            mqtt_client.publish(topic, json.dumps(payload))
             logger.info(f"❄️ AC command published to {topic}: {payload}")
         except Exception as e:
             logger.error(f"❌ Failed to publish AC command: {e}")
@@ -84,7 +84,7 @@ mqtt_commander = MQTTCommander()
             "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
         }
         try:
-            mqtt_client.publish(topic, payload)
+            mqtt_client.publish(topic, json.dumps(payload))
             logger.info(f"❓ Requested device status on topic {topic}")
         except Exception as e:
             logger.error(f"❌ Failed to publish status request: {e}")
@@ -163,4 +163,3 @@ mqtt_commander = MQTTCommander()
 
 # Create a singleton instance of MQTTCommander
 mqtt_commander = MQTTCommander()
->>>>>>> d4f53454148a5c44fe6bd85d396c4df0bbf4b123
