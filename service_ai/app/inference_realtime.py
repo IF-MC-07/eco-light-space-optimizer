@@ -253,39 +253,23 @@ def run():
     mqtt_handler = MQTTHandler()
     mqtt_handler.connect()
 
-<<<<<<< HEAD
-    # Init zona manager
-    zone_mgr = ZoneManager(ID_KAMERA, ZONE_FETCH_INTERVAL)
-
-    # Init model
-    log.info(f"🔃 Loading YOLOv8 model from {MODEL_PATH}...")
-    model = YOLO(MODEL_PATH)
-    log.info("✅ Model loaded.")
-
-    # Init kamera
-    if isinstance(camera_input, int) and os.name == 'nt':
-        cap = cv2.VideoCapture(camera_input, cv2.CAP_DSHOW)
-    else:
-        cap = cv2.VideoCapture(camera_input)
-
-    print("Camera source =", camera_input)
-    print("Opened =", cap.isOpened())
-        
-    if not cap.isOpened():
-        log.error(f"❌ Kamera tidak bisa dibuka: {CAMERA_SOURCE}")
-=======
+    # 1. Ambil semua kamera aktif terlebih dahulu
     cameras = get_active_cameras()
     if not cameras:
-        log.error("❌ Tidak ada kamera aktif di DB. Service berhenti.")
->>>>>>> d4f53454148a5c44fe6bd85d396c4df0bbf4b123
+        log.error("❌ Tidak ada kamera aktif di DB atau API. Service berhenti.")
         mqtt_handler.stop()
         return
 
     log.info(f"📷 {len(cameras)} kamera aktif ditemukan: {[c['camera_id'] for c in cameras]}")
 
+    # 2. Trigger pemuatan model pertama kali (Lazy loading via singleton)
+    # Ini memastikan model dimuat sekali di main thread sebelum worker berjalan.
+    get_model()
+
     stop_event = threading.Event()
     threads = []
 
+    # 3. Spawn worker untuk setiap kamera
     for cam in cameras:
         t = threading.Thread(
             target=camera_worker,
@@ -296,6 +280,7 @@ def run():
         t.start()
         threads.append(t)
 
+    # 4. Main loop keeplive
     try:
         while True:
             time.sleep(1)
@@ -303,11 +288,9 @@ def run():
         log.info("\n🛑 Dihentikan oleh user.")
         stop_event.set()
 
+    # 5. Cleanup
     for t in threads:
         t.join(timeout=5)
 
     mqtt_handler.stop()
     log.info("✅ Semua worker berhenti, service selesai.")
-
-if __name__ == "__main__":
-    run()

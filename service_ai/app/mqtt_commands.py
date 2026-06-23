@@ -50,10 +50,6 @@ class MQTTCommander:
         except Exception as e:
             logger.error(f"❌ Failed to publish light command: {e}")
 
-<<<<<<< HEAD
-# Pastikan baris ini di margin paling kiri (tidak menjorok)
-mqtt_commander = MQTTCommander()
-=======
     def send_ac_command(self, room_id: int, command: str, temperature: float, source: str = "ai_decision"):
         """
         Sends AC control command to ESP32 via MQTT.
@@ -163,4 +159,3 @@ mqtt_commander = MQTTCommander()
 
 # Create a singleton instance of MQTTCommander
 mqtt_commander = MQTTCommander()
->>>>>>> d4f53454148a5c44fe6bd85d396c4df0bbf4b123
