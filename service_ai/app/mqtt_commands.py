@@ -23,8 +23,10 @@ from dotenv import load_dotenv
 ### Import dependencies
 try:
     from app.mqtt_subscriber import mqtt_client
+    from app.zona_loader import get_db_connection
 except ImportError:
     from mqtt_subscriber import mqtt_client
+    from zona_loader import get_db_connection
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -38,9 +40,11 @@ class MQTTCommander:
         """
         topic = f"devices/{room_id}/light/{relay_channel}"
         payload = {
-            f"relay{relay_channel}": relay_value,
-            "room_id": room_id,
+            "command": command,
+            "zone_id": zone_id,
             "zone_name": zone_name,
+            "relay_channel": relay_channel,
+            "source": source,
             "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
         }
 
@@ -64,7 +68,7 @@ class MQTTCommander:
             "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
         }
         try:
-            mqtt_client.publish(topic, payload)
+            mqtt_client.publish(topic, json.dumps(payload))
             logger.info(f"❄️ AC command published to {topic}: {payload}")
         except Exception as e:
             logger.error(f"❌ Failed to publish AC command: {e}")
@@ -80,7 +84,7 @@ class MQTTCommander:
             "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
         }
         try:
-            mqtt_client.publish(topic, payload)
+            mqtt_client.publish(topic, json.dumps(payload))
             logger.info(f"❓ Requested device status on topic {topic}")
         except Exception as e:
             logger.error(f"❌ Failed to publish status request: {e}")

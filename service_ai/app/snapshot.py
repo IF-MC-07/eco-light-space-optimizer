@@ -214,7 +214,7 @@ async def get_stream(id_kamera: str):
 
                 frame_bytes = encoded_image.tobytes()
                 yield (b'--frame\r\n'
-                        b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+                       b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
 
                 await asyncio.sleep(0.03)
         finally:

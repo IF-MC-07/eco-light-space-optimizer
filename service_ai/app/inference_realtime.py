@@ -253,23 +253,17 @@ def run():
     mqtt_handler = MQTTHandler()
     mqtt_handler.connect()
 
-    # 1. Ambil semua kamera aktif terlebih dahulu
     cameras = get_active_cameras()
     if not cameras:
-        log.error("❌ Tidak ada kamera aktif di DB atau API. Service berhenti.")
+        log.error("❌ Tidak ada kamera aktif di DB. Service berhenti.")
         mqtt_handler.stop()
         return
 
     log.info(f"📷 {len(cameras)} kamera aktif ditemukan: {[c['camera_id'] for c in cameras]}")
 
-    # 2. Trigger pemuatan model pertama kali (Lazy loading via singleton)
-    # Ini memastikan model dimuat sekali di main thread sebelum worker berjalan.
-    get_model()
-
     stop_event = threading.Event()
     threads = []
 
-    # 3. Spawn worker untuk setiap kamera
     for cam in cameras:
         t = threading.Thread(
             target=camera_worker,
@@ -280,7 +274,6 @@ def run():
         t.start()
         threads.append(t)
 
-    # 4. Main loop keeplive
     try:
         while True:
             time.sleep(1)
@@ -288,9 +281,11 @@ def run():
         log.info("\n🛑 Dihentikan oleh user.")
         stop_event.set()
 
-    # 5. Cleanup
     for t in threads:
         t.join(timeout=5)
 
     mqtt_handler.stop()
     log.info("✅ Semua worker berhenti, service selesai.")
+
+if __name__ == "__main__":
+    run()
