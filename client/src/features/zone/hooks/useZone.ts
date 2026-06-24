@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Zone } from '@/types';
 import { getZoneByCamera, saveZone as apiSaveZone, deleteZone as apiDeleteZone } from '../api/zoneApi';
-import { MOCK_ZONES } from '@/mocks/zoneData';
 import { toast } from 'sonner';
 
 const handleError = (error: any) => {
@@ -21,12 +20,6 @@ export const useZone = (cameraId: string) => {
   const fetchZonas = useCallback(async () => {
     if (!cameraId) return;
     try {
-      // Try to get from mock data first
-      const mockData = MOCK_ZONES.filter(z => z.camera_id === cameraId);
-      if (mockData.length > 0) {
-        setZonas(mockData);
-        return;
-      }
 
       // If not in mock, try API
       const data = await getZoneByCamera(cameraId);
