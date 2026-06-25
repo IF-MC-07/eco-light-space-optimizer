@@ -52,8 +52,6 @@ class MQTTSubscriber:
             client.subscribe(self.topic_request)
             client.subscribe(self.topic_zone_reload)
             client.subscribe("devices/+/status/response")
-            client.subscribe("devices/+/light/+")
-            client.subscribe("devices/+/ac")
             client.subscribe(self.topic_esp32_online)
         else:
             logger.error(f"❌ Failed to connect, reason: {reason_code}")

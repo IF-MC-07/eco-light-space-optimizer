@@ -27,7 +27,8 @@ class MqttService {
       result: process.env.MQTT_TOPIC_RESULT || 'ai/inference/result/#',
       trigger: process.env.MQTT_TOPIC_TRIGGER || 'camera/trigger',
       control: process.env.MQTT_TOPIC_CONTROL || 'kelas/control',
-      deviceStatus: 'devices/+/status/+'
+      deviceStatus: 'devices/+/status/+',
+      energy: 'devices/+/energy'
     };
   }
 
@@ -39,7 +40,7 @@ class MqttService {
       console.log('[MQTT] Connected successfully');
       
       // Subscribe to relevant topics
-      const subscribeTopics = [this.topics.result, this.topics.deviceStatus];
+      const subscribeTopics = [this.topics.result, this.topics.deviceStatus, this.topics.energy];
       this.client.subscribe(subscribeTopics, (err) => {
         if (!err) {
           console.log(`[MQTT] Subscribed to topics: ${subscribeTopics.join(', ')}`);
@@ -65,6 +66,11 @@ class MqttService {
         const payload = JSON.parse(message.toString());
         console.log(`[MQTT] Received message on topic ${topic}`);
 
+        if (topicString.startsWith('devices/') && topicString.endsWith('/energy')) {
+          await this.handleEnergyData(topic, payload);
+          return;
+        }
+
         const baseResultTopic = this.topics.result.replace('/#', '');
         if (topic.startsWith(baseResultTopic)) {
           // Parse camera_id from topic (e.g. ai/inference/result/CAM-001 -> CAM-001)
@@ -87,6 +93,65 @@ class MqttService {
     this.client.on('close', () => {
       console.log('[MQTT] Connection closed');
     });
+  }
+
+  async handleEnergyData(topic, rawMessage) {
+    try {
+      let payload;
+      if (typeof rawMessage === 'string') {
+        payload = JSON.parse(rawMessage);
+      } else if (Buffer.isBuffer(rawMessage)) {
+        payload = JSON.parse(rawMessage.toString());
+      } else {
+        payload = rawMessage;
+      }
+
+      const topicString = topic.toString();
+      const parts = topicString.split('/');
+      const roomId = payload.room_id || parts[1];
+
+      const device = await db.IotDevice.findOne({ where: { room_id: roomId } });
+      if (!device) {
+        console.warn(`[MQTT] Device with room_id ${roomId} not found.`);
+      }
+
+      const recordedAt = payload.timestamp ? new Date(payload.timestamp) : new Date();
+
+      if (db.EnergyLog) {
+        await db.EnergyLog.create({
+          room_id: roomId,
+          voltage: payload.voltage,
+          current: payload.current,
+          power: payload.power,
+          energy: payload.energy,
+          frequency: payload.frequency,
+          pf: payload.pf,
+          recorded_at: recordedAt
+        });
+      } else {
+        const query = `
+          INSERT INTO energy_logs (room_id, voltage, current, power, energy, frequency, pf, recorded_at)
+          VALUES (:room_id, :voltage, :current, :power, :energy, :frequency, :pf, :recorded_at)
+        `;
+        await db.sequelize.query(query, {
+          replacements: {
+            room_id: roomId,
+            voltage: payload.voltage,
+            current: payload.current,
+            power: payload.power,
+            energy: payload.energy,
+            frequency: payload.frequency,
+            pf: payload.pf,
+            recorded_at: recordedAt
+          },
+          type: db.sequelize.QueryTypes.INSERT
+        });
+      }
+
+      console.log(`[MQTT] Energy data saved for room ${roomId}`);
+    } catch (error) {
+      console.error(`[MQTT] Error handling energy data:`, error.message);
+    }
   }
 
   publish(topic, payload) {
