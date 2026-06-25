@@ -67,7 +67,7 @@ class MqttService {
         console.log(`[MQTT] Received message on topic ${topic}`);
 
         if (topicString.startsWith('devices/') && topicString.endsWith('/energy')) {
-          await this.handleEnergyData(topic, payload);
+          await this.handleEnergyData(topicString, payload);
           return;
         }
 
@@ -95,60 +95,82 @@ class MqttService {
     });
   }
 
-  async handleEnergyData(topic, rawMessage) {
+  async handleEnergyData(topic, payload) {
     try {
-      let payload;
-      if (typeof rawMessage === 'string') {
-        payload = JSON.parse(rawMessage);
-      } else if (Buffer.isBuffer(rawMessage)) {
-        payload = JSON.parse(rawMessage.toString());
-      } else {
-        payload = rawMessage;
-      }
-
       const topicString = topic.toString();
       const parts = topicString.split('/');
       const roomId = payload.room_id || parts[1];
+      const sensorId = 'PWR-' + roomId;
+      const powerWatts = payload.power_watts ?? payload.power ?? 0;
+      const voltageV = payload.voltage_v ?? payload.voltage ?? 0;
+      const currentA = payload.current_a ?? payload.current ?? 0;
+      const recordedAt = payload.read_at
+        ? new Date(payload.read_at)
+        : payload.timestamp
+        ? new Date(payload.timestamp)
+        : new Date();
 
-      const device = await db.IotDevice.findOne({ where: { room_id: roomId } });
-      if (!device) {
-        console.warn(`[MQTT] Device with room_id ${roomId} not found.`);
-      }
-
-      const recordedAt = payload.timestamp ? new Date(payload.timestamp) : new Date();
-
-      if (db.EnergyLog) {
-        await db.EnergyLog.create({
+      const insertPowerSensorQuery = `
+        INSERT INTO power_sensors (sensor_id, room_id, voltage_v, current_a, power_watts, read_at)
+        VALUES (:sensor_id, :room_id, :voltage_v, :current_a, :power_watts, :read_at)
+      `;
+      await db.sequelize.query(insertPowerSensorQuery, {
+        replacements: {
+          sensor_id: sensorId,
           room_id: roomId,
-          voltage: payload.voltage,
-          current: payload.current,
-          power: payload.power,
-          energy: payload.energy,
-          frequency: payload.frequency,
-          pf: payload.pf,
-          recorded_at: recordedAt
-        });
-      } else {
-        const query = `
-          INSERT INTO energy_logs (room_id, voltage, current, power, energy, frequency, pf, recorded_at)
-          VALUES (:room_id, :voltage, :current, :power, :energy, :frequency, :pf, :recorded_at)
-        `;
-        await db.sequelize.query(query, {
-          replacements: {
-            room_id: roomId,
-            voltage: payload.voltage,
-            current: payload.current,
-            power: payload.power,
-            energy: payload.energy,
-            frequency: payload.frequency,
-            pf: payload.pf,
-            recorded_at: recordedAt
-          },
-          type: db.sequelize.QueryTypes.INSERT
-        });
-      }
+          voltage_v: voltageV,
+          current_a: currentA,
+          power_watts: powerWatts,
+          read_at: recordedAt
+        },
+        type: db.sequelize.QueryTypes.INSERT
+      });
 
-      console.log(`[MQTT] Energy data saved for room ${roomId}`);
+      const totalWattsQuery = `
+        SELECT SUM(power_watts) as total
+        FROM power_sensors
+        WHERE room_id = :room_id AND DATE(read_at) = CURRENT_DATE
+      `;
+      const [totalResult] = await db.sequelize.query(totalWattsQuery, {
+        replacements: { room_id: roomId },
+        type: db.sequelize.QueryTypes.SELECT
+      });
+      const totalWatts = totalResult ? parseFloat(totalResult.total) || 0 : 0;
+
+      const savedWattsQuery = `
+        SELECT COUNT(*) as relays_off
+        FROM light_controls
+        WHERE zone_id IN (
+          SELECT zone_id FROM zones WHERE room_id = :room_id
+        )
+        AND light_status = 'off'
+      `;
+      const [savedResult] = await db.sequelize.query(savedWattsQuery, {
+        replacements: { room_id: roomId },
+        type: db.sequelize.QueryTypes.SELECT
+      });
+      const relaysOff = savedResult ? parseInt(savedResult.relays_off) || 0 : 0;
+      const savedWatts = relaysOff * 5.0;
+
+      const upsertEnergyLogQuery = `
+        INSERT INTO energy_logs (log_id, room_id, total_watts, saved_watts, date)
+        VALUES (gen_random_uuid(), :room_id, :total_watts, :saved_watts, CURRENT_DATE)
+        ON CONFLICT (room_id, date)
+        DO UPDATE SET 
+          total_watts = EXCLUDED.total_watts,
+          saved_watts = EXCLUDED.saved_watts
+      `;
+      await db.sequelize.query(upsertEnergyLogQuery, {
+        replacements: {
+          room_id: roomId,
+          total_watts: totalWatts,
+          saved_watts: savedWatts
+        }
+      });
+
+      console.log(`[MQTT] Energy saved: room=${roomId} power=${powerWatts}W`);
+      console.log(`[MQTT] Energy log updated: total=${totalWatts}W saved=${savedWatts}W`);
+
     } catch (error) {
       console.error(`[MQTT] Error handling energy data:`, error.message);
     }

@@ -32,7 +32,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 class MQTTCommander:
-    def send_light_command(self, room_id: int, relay_channel: int, command: str, zone_id: int, zone_name: str, source: str = "ai_decision"):
+    def send_light_command(self, room_id: str, relay_channel: int, command: str, zone_id: int, zone_name: str, source: str = "ai_decision"):
         """
 
         Sends light control command to ESP32 via MQTT.
@@ -54,7 +54,7 @@ class MQTTCommander:
         except Exception as e:
             logger.error(f"❌ Failed to publish light command: {e}")
 
-    def send_ac_command(self, room_id: int, command: str, temperature: float, source: str = "ai_decision"):
+    def send_ac_command(self, room_id: str, command: str, temperature: float, source: str = "ai_decision"):
         """
         Sends AC control command to ESP32 via MQTT.
         Topic: devices/{room_id}/ac
@@ -73,7 +73,7 @@ class MQTTCommander:
         except Exception as e:
             logger.error(f"❌ Failed to publish AC command: {e}")
 
-    def request_status(self, room_id: int):
+    def request_status(self, room_id: str):
         """
         Sends a request to ESP32 to get current status.
         Topic: devices/{room_id}/status/request

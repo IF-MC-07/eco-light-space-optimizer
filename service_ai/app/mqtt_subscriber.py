@@ -81,30 +81,6 @@ class MQTTSubscriber:
             self._handle_status_response(payload)
         elif topic.startswith("devices/") and topic.endswith("/status/online"):
             self._handle_esp32_online(topic, payload)
-        elif topic.startswith("devices/") and ("light" in topic or "ac" in topic):
-            self._handle_device_command(topic, payload)
-
-    def _handle_device_command(self, topic: str, payload):
-        """Handle incoming command messages to track manual overrides"""
-        if not isinstance(payload, dict):
-            return
-        
-        source = payload.get("source")
-        if source == "manual":
-            parts = topic.split('/')
-            if len(parts) >= 2:
-                try:
-                    room_id = int(parts[1])
-                    try:
-                        from app.schedule_runner import last_manual_command_time
-                    except ImportError:
-                        from schedule_runner import last_manual_command_time
-                    
-                    import time
-                    last_manual_command_time[room_id] = time.time()
-                    logger.info(f"🚨 Recorded manual override command for Room {room_id}!")
-                except ValueError:
-                    pass
 
     def _handle_camera_trigger(self, payload):
         """Handle trigger untuk ambil snapshot"""
