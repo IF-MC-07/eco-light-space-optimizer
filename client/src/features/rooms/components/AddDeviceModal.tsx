@@ -97,7 +97,7 @@ export function AddDeviceModal({
         ipRegex.test(ipAddress) ||
         rtspRegex.test(ipAddress) ||
         httpRegex.test(ipAddress);
-      return !!ipAddress && isValid && !ipError;
+      return !!name && !!ipAddress && isValid && !ipError;
     }
 
     if (!name) return false;
@@ -115,6 +115,7 @@ export function AddDeviceModal({
       try {
         await serverAPI.post("/cameras", {
           room_id: roomId,
+          name: name,
           ip_address: ipAddress,
           resolution: resolution,
           status: "aktif",
@@ -225,20 +226,18 @@ export function AddDeviceModal({
             </div>
           )}
 
-          {type !== "CAMERA" && (
-            <div className="space-y-2">
-              <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">
-                Device Name
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Room Light 1"
-                className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-dark placeholder-secondary-light focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3.5"
-              />
-            </div>
-          )}
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">
+              Device Name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Room Light 1 or Camera 1"
+              className="w-full bg-[#E2E8F0] bg-opacity-50 border-none rounded-lg text-base text-secondary-dark placeholder-secondary-light focus:outline-none focus:ring-2 focus:ring-primary/50 px-4 py-3.5"
+            />
+          </div>
 
           <div className="space-y-2">
             <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">

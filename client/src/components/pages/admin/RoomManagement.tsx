@@ -58,7 +58,7 @@ export default function RoomManagement({ roomId }: RoomManagementProps) {
   const cameras = (camerasResponse?.data || camerasResponse || []).map(
     (cam: any) => ({
       device_id: cam.camera_id,
-      device_name: cam.camera_id,
+      device_name: cam.name || cam.camera_id,
       device_type: "CAMERA",
       status: cam.status === "aktif" ? "ACTIVE" : cam.status,
       room_id: cam.room_id,

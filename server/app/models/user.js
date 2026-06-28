@@ -28,7 +28,7 @@ export default (sequelize, DataTypes) => {
     role: {
       type: DataTypes.STRING(20),
       allowNull: false,
-      defaultValue: 'user'
+      defaultValue: 'mahasiswa'
     },
     avatar: {
       type: DataTypes.TEXT, // Base64 or URL

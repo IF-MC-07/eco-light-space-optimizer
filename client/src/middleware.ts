@@ -39,9 +39,7 @@ export function middleware(request: NextRequest) {
 
   // If we have a token and trying to access auth pages, redirect to appropriate page based on role
   if (token && isAuthPage) {
-    if (role === 'mahasiswa') {
-      return NextResponse.redirect(new URL('/lighting-ac', request.url));
-    }
+    // Both admin and mahasiswa land on /dashboard after login
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
@@ -56,8 +54,8 @@ export function middleware(request: NextRequest) {
     const isAllowed = allowedForMahasiswa.some(route => pathname === route || pathname.startsWith(route + '/'));
     
     if (!isAllowed) {
-      // Redirect mahasiswa away from admin-only pages
-      return NextResponse.redirect(new URL('/lighting-ac', request.url));
+      // Redirect mahasiswa away from admin-only pages to their default landing page
+      return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }
 

@@ -3,8 +3,8 @@ import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { Input } from "../../../components/ui/Input";
 import { Button } from "../../../components/ui/Button";
 import { Checkbox } from "../../../components/ui/Checkbox";
+import { AuthAlert } from "../../../components/ui/AuthAlert";
 import { FcGoogle } from "react-icons/fc";
-import { FaApple } from "react-icons/fa";
 import { useAuth } from "../../../hooks/useAuth";
 import { useRouter } from "next/navigation";
 
@@ -12,13 +12,27 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [localError, setLocalError] = useState<string | null>(null);
   const { login, loading, error } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return;
-    
+    setLocalError(null);
+
+    if (!email && !password) {
+      setLocalError("Please enter your email and password.");
+      return;
+    }
+    if (!email) {
+      setLocalError("Email address is required.");
+      return;
+    }
+    if (!password) {
+      setLocalError("Password is required.");
+      return;
+    }
+
     const res = await login(email, password);
     if (res.success) {
       router.push("/dashboard");
@@ -33,7 +47,11 @@ export function LoginForm() {
       </p>
 
       <form className="space-y-5" onSubmit={handleSubmit}>
-        {error && <div className="text-red-500 text-sm">{error}</div>}
+        <AuthAlert
+          variant="error"
+          message={localError || error}
+          onDismiss={() => setLocalError(null)}
+        />
         <Input
           label="Email Address"
           type="email"

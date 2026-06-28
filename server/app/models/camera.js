@@ -15,6 +15,10 @@ export default (sequelize, DataTypes) => {
         key: 'room_id'
       }
     },
+    name: {
+      type: DataTypes.STRING(255),
+      allowNull: true
+    },
     ip_address: {
       type: DataTypes.TEXT
     },

@@ -54,11 +54,11 @@ export const useAuth = () => {
     }
   };
 
-  const resetPassword = async (id: string, token: string, kata_sandi: string) => {
+  const resetPassword = async (id: string, token: string, password: string) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.post(`/auth/reset-password?id=${id}`, { token, kata_sandi });
+      const res = await api.post(`/auth/reset-password?id=${id}`, { token, password });
       return { success: true, message: res.data.message };
     } catch (err: any) {
       setError(err.response?.data?.message || 'Gagal reset password');

@@ -16,14 +16,6 @@ export default function ForgotPassword() {
            </svg>
         </div>
       </div>
-      
-      {/* Top Header */}
-      <div className="absolute top-0 left-0 w-full p-8 flex justify-between items-center z-20">
-        <span className="font-heading font-bold text-primary-dark">Sustained Pulse</span>
-        <button className="w-8 h-8 rounded-full border border-secondary-light/30 flex items-center justify-center text-secondary-light hover:text-secondary-dark transition-colors">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-        </button>
-      </div>
 
       <div className="relative z-10 w-full max-w-md bg-white p-10 md:p-12 rounded-2xl shadow-xl shadow-black/5 border border-white/50">
         <ForgotPasswordForm />

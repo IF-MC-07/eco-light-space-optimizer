@@ -35,7 +35,7 @@ export const register = async (data) => {
     username: data.username,
     email: data.email,
     password: hashedPassword,
-    role: 'user', // default role
+    role: 'mahasiswa', // default role
   });
 
   const { password, ...userWithoutPassword } = newUser.toJSON();
@@ -71,9 +71,13 @@ export const getProfile = async (user_id) => {
 };
 
 export const forgotPassword = async (email) => {
+  // Security: always return the same ambiguous message to prevent account enumeration.
+  // We silently do nothing if the email doesn't exist.
+  const AMBIGUOUS_MSG = { message: 'If that email is registered, you will receive reset instructions shortly.' };
+
   const user = await User.findOne({ where: { email } });
   if (!user) {
-    throw new Error('Email not found.');
+    return AMBIGUOUS_MSG; // silent fail — no error thrown
   }
 
   const resetToken = jwt.sign(
@@ -86,11 +90,33 @@ export const forgotPassword = async (email) => {
   const resetLink = `${clientUrl}/reset-password?token=${resetToken}&id=${user.user_id}`;
 
   const html = `
-    <h1>Reset Password</h1>
-    <p>Hello ${user.name},</p>
-    <p>Please click the link below to reset your password. This link is only valid for 15 minutes.</p>
-    <a href="${resetLink}">Reset Password</a>
-    <p>If you do not feel like requesting a password reset, ignore this email.</p>
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f7f6;">
+      <div style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+        <div style="background-color: #10b981; padding: 30px 20px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">Eco-Light Space Optimizer</h1>
+        </div>
+        <div style="padding: 40px 30px;">
+          <h2 style="color: #1f2937; font-size: 20px; margin-top: 0; margin-bottom: 20px;">Password Reset Request</h2>
+          <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+            Hello <strong>${user.name}</strong>,
+          </p>
+          <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
+            We received a request to reset the password for your Eco-Light Space Optimizer account. Click the button below to choose a new password. This link is valid for the next 15 minutes.
+          </p>
+          <div style="text-align: center; margin-bottom: 30px;">
+            <a href="${resetLink}" style="display: inline-block; background-color: #10b981; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 6px; font-size: 16px; font-weight: 600; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);">Reset Password</a>
+          </div>
+          <p style="color: #6b7280; font-size: 14px; line-height: 1.5; margin-bottom: 0;">
+            If you did not request a password reset, you can safely ignore this email. Your password will remain unchanged.
+          </p>
+        </div>
+        <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+          <p style="color: #94a3b8; font-size: 12px; margin: 0;">
+            &copy; ${new Date().getFullYear()} Eco-Light Space Optimizer. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </div>
   `;
 
   await sendEmail({
@@ -99,7 +125,7 @@ export const forgotPassword = async (email) => {
     html,
   });
 
-  return { message: 'Reset password instructions have been sent to your email.' };
+  return AMBIGUOUS_MSG;
 };
 
 export const resetPassword = async (user_id, token, new_password) => {

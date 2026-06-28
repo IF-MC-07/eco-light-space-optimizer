@@ -2,20 +2,33 @@ import React, { useState } from "react";
 import { Mail, ArrowLeft, RotateCcw } from "lucide-react";
 import { Input } from "../../../components/ui/Input";
 import { Button } from "../../../components/ui/Button";
+import { AuthAlert } from "../../../components/ui/AuthAlert";
 import { useAuth } from "../../../hooks/useAuth";
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
   const { forgotPassword, loading, error } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    setLocalError(null);
+    setSuccessMsg(null);
+
+    if (!email) {
+      setLocalError("Please enter your email address.");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setLocalError("Please enter a valid email address (e.g. name@company.com).");
+      return;
+    }
 
     const res = await forgotPassword(email);
     if (res.success) {
-      setSuccessMsg(res.message);
+      setSuccessMsg(res.message || "Reset instructions have been sent to your email. Please check your inbox.");
     }
   };
 
@@ -35,25 +48,53 @@ export function ForgotPasswordForm() {
         </p>
       </div>
 
-      <form className="space-y-6" onSubmit={handleSubmit}>
-        {error && <div className="text-red-500 text-sm">{error}</div>}
-        {successMsg && <div className="text-green-500 text-sm">{successMsg}</div>}
-        <Input
-          label="Email Address"
-          type="email"
-          placeholder="name@company.com"
-          leftIcon={<Mail className="w-4 h-4" />}
-          value={email}
-          onChange={(e: any) => setEmail(e.target.value)}
+      <form className="space-y-5" onSubmit={handleSubmit}>
+        <AuthAlert
+          variant="error"
+          message={localError || error}
+          onDismiss={() => setLocalError(null)}
+        />
+        <AuthAlert
+          variant="success"
+          message={successMsg}
+          autoDismiss={0}
         />
 
-        <Button 
-          type="submit"
-          disabled={loading}
-          className="w-full bg-primary hover:bg-primary-dark text-white py-6 text-sm font-semibold rounded-md shadow-sm transition-all"
-        >
-          {loading ? "Sending..." : "Send Verification Code"}
-        </Button>
+        {/* Hide input & button after success */}
+        {!successMsg && (
+          <>
+            <Input
+              label="Email Address"
+              type="email"
+              placeholder="name@company.com"
+              leftIcon={<Mail className="w-4 h-4" />}
+              value={email}
+              onChange={(e: any) => {
+                setEmail(e.target.value);
+                setLocalError(null);
+              }}
+            />
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-primary hover:bg-primary-dark text-white py-6 text-sm font-semibold rounded-md shadow-sm transition-all"
+            >
+              {loading ? "Sending..." : "Send Reset Instructions"}
+            </Button>
+          </>
+        )}
+
+        {/* After success: show resend option */}
+        {successMsg && (
+          <button
+            type="button"
+            onClick={() => { setSuccessMsg(null); setEmail(""); }}
+            className="w-full text-center text-sm font-bold text-primary hover:text-primary-dark transition-colors py-2"
+          >
+            Didn't receive it? Send again
+          </button>
+        )}
       </form>
 
       <div className="mt-8 text-center">

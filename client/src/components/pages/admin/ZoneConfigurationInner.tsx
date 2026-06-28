@@ -28,6 +28,7 @@ export default function ZoneConfiguration() {
   });
   const [cameras, setCameras] = useState<Array<{
     camera_id: string;
+    name?: string;
     room_id: string;
     ip_address: string;
     resolution: string;
@@ -450,7 +451,7 @@ export default function ZoneConfiguration() {
                  ) : (
                    cameras.map(cam => (
                      <option key={cam.camera_id} value={cam.camera_id}>
-                       {cam.camera_id} — {cam.ip_address}
+                       {cam.name || cam.camera_id} — {cam.ip_address}
                      </option>
                    ))
                  )}

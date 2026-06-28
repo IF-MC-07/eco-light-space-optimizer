@@ -55,7 +55,7 @@ async function runSeed() {
         username: 'testuser',
         email: userEmail,
         password: hashedUserPassword,
-        role: 'user',
+        role: 'mahasiswa',
       });
       console.log(`✅ Test User created successfully (${userEmail})`);
     } else {

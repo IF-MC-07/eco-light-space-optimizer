@@ -17,7 +17,7 @@ export default function RequiresAuth({ children }: { children: React.ReactNode }
         pathname === route || pathname?.startsWith(route + '/')
       );
       if (!isAllowed) {
-        router.push('/lighting-ac');
+        router.push('/dashboard');
       }
     }
   }, [role, pathname, isLoading, router]);

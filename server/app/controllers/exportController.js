@@ -6,6 +6,28 @@ import * as userService from '../services/userService.js';
 import * as iotDeviceService from '../services/iotDeviceService.js';
 import db from '../models/index.js';
 
+const BRAND_COLOR = '#10b981'; // emerald-500
+const TEXT_COLOR = '#1f2937';
+const LIGHT_TEXT = '#6b7280';
+
+// Helper for PDF styling
+const createPdfHeader = (doc, title) => {
+  doc.rect(0, 0, doc.page.width, 80).fill(BRAND_COLOR);
+  doc.fontSize(24).fillColor('#ffffff').text(title, 0, 30, { align: 'center' });
+  doc.moveDown(2);
+  doc.fillColor(TEXT_COLOR);
+};
+
+// Helper for Excel styling
+const styleExcelSheet = (worksheet) => {
+  worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10B981' } };
+  worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+  worksheet.columns.forEach(column => {
+    column.width = 20;
+  });
+};
+
 
 export const exportUsers = async (req, res, next) => {
   try {
@@ -13,26 +35,31 @@ export const exportUsers = async (req, res, next) => {
     const users = await userService.getAll();
     
     if (format === 'pdf') {
-      const doc = new PDFDocument();
+      const doc = new PDFDocument({ margin: 50 });
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', 'attachment; filename=users.pdf');
       doc.pipe(res);
-      doc.fontSize(20).text('Users Report', { align: 'center' });
-      doc.moveDown();
-      users.forEach(user => {
-        doc.fontSize(10).text(`ID: ${user.user_id} | Name: ${user.name} | Email: ${user.email} | Role: ${user.role}`);
-        doc.moveDown(0.5);
+      createPdfHeader(doc, 'Users Report');
+      
+      let y = 100;
+      users.forEach((user, index) => {
+        if (y > 700) { doc.addPage(); y = 50; }
+        doc.fontSize(12).fillColor(TEXT_COLOR).text(`User ID: ${user.user_id}`, 50, y);
+        doc.fontSize(10).fillColor(LIGHT_TEXT).text(`Name: ${user.name} | Email: ${user.email} | Role: ${user.role}`, 50, y + 15);
+        doc.moveTo(50, y + 35).lineTo(550, y + 35).lineWidth(0.5).strokeColor('#e2e8f0').stroke();
+        y += 45;
       });
       doc.end();
     } else if (format === 'xlsx' || format === 'csv') {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Users');
       worksheet.columns = [
-        { header: 'ID', key: 'user_id' },
-        { header: 'Name', key: 'name' },
-        { header: 'Email', key: 'email' },
-        { header: 'Role', key: 'role' }
+        { header: 'ID', key: 'user_id', width: 35 },
+        { header: 'Name', key: 'name', width: 25 },
+        { header: 'Email', key: 'email', width: 30 },
+        { header: 'Role', key: 'role', width: 15 }
       ];
+      styleExcelSheet(worksheet);
       users.forEach(user => worksheet.addRow(user.toJSON ? user.toJSON() : user));
       
       if (format === 'xlsx') {
@@ -62,27 +89,32 @@ export const exportEnergyLogs = async (req, res, next) => {
     });
     
     if (format === 'pdf') {
-      const doc = new PDFDocument();
+      const doc = new PDFDocument({ margin: 50 });
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', 'attachment; filename=energy_logs.pdf');
       doc.pipe(res);
-      doc.fontSize(20).text('Energy Logs Report', { align: 'center' });
-      doc.moveDown();
+      createPdfHeader(doc, 'Energy Logs Report');
+      
+      let y = 100;
       logs.forEach(log => {
-        doc.fontSize(10).text(`ID: ${log.log_id} | Room: ${log.Room?.room_name || 'N/A'} | Total Watts: ${log.total_watts} | Saved Watts: ${log.saved_watts} | Date: ${log.date}`);
-        doc.moveDown(0.5);
+        if (y > 700) { doc.addPage(); y = 50; }
+        doc.fontSize(12).fillColor(TEXT_COLOR).text(`Room: ${log.Room?.room_name || 'N/A'}`, 50, y);
+        doc.fontSize(10).fillColor(LIGHT_TEXT).text(`Total Watts: ${log.total_watts}W | Saved: ${log.saved_watts}W | Date: ${new Date(log.date).toLocaleDateString()}`, 50, y + 15);
+        doc.moveTo(50, y + 35).lineTo(550, y + 35).lineWidth(0.5).strokeColor('#e2e8f0').stroke();
+        y += 45;
       });
       doc.end();
     } else if (format === 'xlsx' || format === 'csv') {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Energy Logs');
       worksheet.columns = [
-        { header: 'ID', key: 'log_id' },
-        { header: 'Room Name', key: 'room_name' },
-        { header: 'Total Watts', key: 'total_watts' },
-        { header: 'Saved Watts', key: 'saved_watts' },
-        { header: 'Date', key: 'date' }
+        { header: 'Log ID', key: 'log_id', width: 15 },
+        { header: 'Room Name', key: 'room_name', width: 25 },
+        { header: 'Total Watts', key: 'total_watts', width: 20 },
+        { header: 'Saved Watts', key: 'saved_watts', width: 20 },
+        { header: 'Date', key: 'date', width: 25 }
       ];
+      styleExcelSheet(worksheet);
       logs.forEach(log => {
         const row = log.toJSON();
         row.room_name = log.Room?.room_name || 'N/A';
@@ -115,33 +147,37 @@ export const exportSavingsReport = async (req, res, next) => {
     });
     
     if (format === 'pdf') {
-      const doc = new PDFDocument();
+      const doc = new PDFDocument({ margin: 50 });
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', 'attachment; filename=savings_report.pdf');
       doc.pipe(res);
-      doc.fontSize(20).text('Savings & Efficiency Report', { align: 'center' });
-      doc.moveDown();
+      createPdfHeader(doc, 'Savings & Efficiency Report');
       
+      let y = 100;
       const totalSaved = logs.reduce((sum, log) => sum + (log.saved_watts || 0), 0);
-      doc.fontSize(14).text(`Total Energy Saved: ${totalSaved.toFixed(2)} Watts`, { align: 'left' });
-      doc.moveDown();
+      doc.fontSize(16).fillColor(BRAND_COLOR).text(`Total Energy Saved: ${totalSaved.toFixed(2)} Watts`, 50, y);
+      y += 30;
 
       logs.forEach(log => {
+        if (y > 700) { doc.addPage(); y = 50; }
         const efficiency = log.total_watts > 0 ? ((log.saved_watts / (log.total_watts + log.saved_watts)) * 100).toFixed(2) : 0;
-        doc.fontSize(10).text(`Room: ${log.Room?.room_name || 'N/A'} | Saved: ${log.saved_watts} W | Efficiency: ${efficiency}% | Date: ${log.date}`);
-        doc.moveDown(0.5);
+        doc.fontSize(12).fillColor(TEXT_COLOR).text(`Room: ${log.Room?.room_name || 'N/A'}`, 50, y);
+        doc.fontSize(10).fillColor(LIGHT_TEXT).text(`Saved: ${log.saved_watts} W | Efficiency: ${efficiency}% | Date: ${new Date(log.date).toLocaleDateString()}`, 50, y + 15);
+        doc.moveTo(50, y + 35).lineTo(550, y + 35).lineWidth(0.5).strokeColor('#e2e8f0').stroke();
+        y += 45;
       });
       doc.end();
     } else if (format === 'xlsx' || format === 'csv') {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Savings Report');
       worksheet.columns = [
-        { header: 'Room Name', key: 'room_name' },
-        { header: 'Saved Watts', key: 'saved_watts' },
-        { header: 'Total Watts (Active)', key: 'total_watts' },
-        { header: 'Efficiency (%)', key: 'efficiency' },
-        { header: 'Date', key: 'date' }
+        { header: 'Room Name', key: 'room_name', width: 25 },
+        { header: 'Saved Watts', key: 'saved_watts', width: 20 },
+        { header: 'Total Watts (Active)', key: 'total_watts', width: 25 },
+        { header: 'Efficiency (%)', key: 'efficiency', width: 20 },
+        { header: 'Date', key: 'date', width: 25 }
       ];
+      styleExcelSheet(worksheet);
       logs.forEach(log => {
         const efficiency = (log.total_watts + log.saved_watts) > 0 ? ((log.saved_watts / (log.total_watts + log.saved_watts)) * 100).toFixed(2) : 0;
         worksheet.addRow({
@@ -255,23 +291,36 @@ export const exportGeneric = async (req, res, next) => {
 
     const fmt = format.toLowerCase();
     if (fmt === 'pdf') {
-      const doc = new PDFDocument();
+      const doc = new PDFDocument({ margin: 50 });
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename=${resource}.pdf`);
       doc.pipe(res);
-      doc.fontSize(20).text(title, { align: 'center' });
-      doc.moveDown();
+      createPdfHeader(doc, title);
 
-      data.forEach(item => {
-        const text = columns.map(c => `${c.header}: ${item[c.key] || 'N/A'}`).join(' | ');
-        doc.fontSize(10).text(text);
-        doc.moveDown(0.5);
+      let y = 100;
+      data.forEach((item) => {
+        if (y > 700) { doc.addPage(); y = 50; }
+        
+        doc.fontSize(11).fillColor(TEXT_COLOR);
+        let xOffset = 50;
+        columns.forEach(c => {
+          doc.text(`${c.header}: ${item[c.key] || 'N/A'}`, xOffset, y, { width: 150 });
+          xOffset += 160;
+          if (xOffset > 450) {
+            xOffset = 50;
+            y += 15;
+          }
+        });
+        y += 25;
+        doc.moveTo(50, y).lineTo(550, y).lineWidth(0.5).strokeColor('#e2e8f0').stroke();
+        y += 15;
       });
       doc.end();
     } else if (fmt === 'xlsx' || fmt === 'csv') {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet(title);
-      worksheet.columns = columns;
+      worksheet.columns = columns.map(c => ({ ...c, width: 25 }));
+      styleExcelSheet(worksheet);
 
       data.forEach(item => {
         worksheet.addRow(item.toJSON ? item.toJSON() : item);

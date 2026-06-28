@@ -25,6 +25,10 @@ export const getById = async (req, res, next) => {
 
 export const create = async (req, res, next) => {
   try {
+    // Prevent foreign key constraint errors by converting empty strings to null
+    if (req.body.room_id === '') req.body.room_id = null;
+    if (req.body.user_id === '') req.body.user_id = null;
+
     const data = await automationScheduleService.create(req.body);
     return responseFormatter.success(res, data, 'Automation schedule created successfully' , 201);
   } catch (error) {
@@ -34,6 +38,10 @@ export const create = async (req, res, next) => {
 
 export const update = async (req, res, next) => {
   try {
+    // Prevent foreign key constraint errors by converting empty strings to null
+    if (req.body.room_id === '') req.body.room_id = null;
+    if (req.body.user_id === '') req.body.user_id = null;
+
     const data = await automationScheduleService.update(req.params.id, req.body);
     if (!data) {
       return responseFormatter.error(res, 'Automation schedule not found' , 404);
