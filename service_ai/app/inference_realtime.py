@@ -228,6 +228,12 @@ def camera_worker(camera_id: str, ip_address: str, mqtt_handler: MQTTHandler, st
         count = hitung_per_zona(results[0].boxes, zones, width, height)
         status = "ON" if count["total"] > 0 else "OFF"
 
+        try:
+            from app.decision_engine import decision_engine
+            decision_engine.process_inference(camera_id, count)
+        except Exception as e:
+            log.error(f"❌ [{camera_id}] Decision error: {e}")
+
         if count != prev_data:
             topic = f"ai/inference/result/{camera_id}"
             payload = {**count, "lampu": status, "camera_id": camera_id}
@@ -235,12 +241,10 @@ def camera_worker(camera_id: str, ip_address: str, mqtt_handler: MQTTHandler, st
                 log.info(f"📤 [{camera_id}] {payload}")
 
             try:
-                from app.decision_engine import decision_engine
                 from app.log_writer import write_detection_logs
-                decision_engine.process_inference(camera_id, count)
                 write_detection_logs(camera_id, count)
             except Exception as e:
-                log.error(f"❌ [{camera_id}] Decision/log error: {e}")
+                log.error(f"❌ [{camera_id}] Log error: {e}")
 
             prev_data = count.copy()
 

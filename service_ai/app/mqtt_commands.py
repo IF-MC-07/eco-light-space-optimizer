@@ -1,19 +1,3 @@
-# ============================================================================
-# FINAL MQTT TOPICS FOR FIRMWARE SYNCHRONIZATION REFERENCE
-# ----------------------------------------------------------------------------
-# Command (Backend -> ESP32):
-# - Light : devices/{room_id}/light/{relay_channel}
-# - AC    : devices/{room_id}/ac
-# - Status: devices/{room_id}/status/request
-#
-# Event/Response (ESP32 -> Backend):
-# - Online: devices/{room_id}/status/online
-# - Status: devices/{room_id}/status/response
-#
-# NOTE: The firmware (ESP32) MUST subscribe to and publish on these exact
-# prefixes (`devices/`). Ensure {room_id} and {relay_channel} types match!
-# ============================================================================
-
 import json
 import logging
 import os

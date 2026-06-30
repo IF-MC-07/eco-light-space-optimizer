@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 _CRYPTO_AVAILABLE = True
 try:
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    from cryptography.hazmat.primitives import padding
 except ImportError:
     _CRYPTO_AVAILABLE = False
     logger.warning("cryptography package not installed. Camera URL decryption from DB will be disabled.")
@@ -39,9 +40,13 @@ def decrypt_camera_url(text: str) -> str:
         base64_key = base64.b64encode(hashlib.sha256(str(secret).encode()).digest()).decode()
         key = base64_key[:32].encode()
 
+        cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
+        decryptor = cipher.decryptor()
         decrypted_padded = decryptor.update(encrypted_text) + decryptor.finalize()
+
         unpadder = padding.PKCS7(128).unpadder()
         decrypted = unpadder.update(decrypted_padded) + unpadder.finalize()
+
         return decrypted.decode('utf-8').strip()
     except Exception as e:
         logger.error(f"❌ Error decrypting camera URL: {e}")
