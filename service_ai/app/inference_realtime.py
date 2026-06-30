@@ -35,7 +35,7 @@ SNAPSHOT_INTERVAL  = float(os.getenv("SNAPSHOT_INTERVAL", 3))
 ZONE_FETCH_INTERVAL= float(os.getenv("ZONE_FETCH_INTERVAL", 60))
 CONF_THRESHOLD     = float(os.getenv("CONF_THRESHOLD", 0.25))
 IOU_THRESHOLD      = float(os.getenv("IOU_THRESHOLD", 0.45))
-MODEL_PATH         = os.getenv("MODEL_PATH", "yolov8n.pt")
+MODEL_PATH         = os.getenv("MODEL_PATH", "models/best.pt")
 API_URL            = os.getenv("API_URL", "http://localhost:5000/api")
 CAMERA_SECRET_KEY  = os.getenv("CAMERA_SECRET_KEY")
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|fflags;nobuffer|flags;low_delay|thread_queue_size;512"
@@ -44,6 +44,25 @@ os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|fflags;nobuffe
 # ─── Shared Model + Lock ─────────────────────────────────────────────────────
 _model = None
 _model_lock = threading.Lock()
+_frame_buffer = {}
+_frame_buffer_lock = threading.Lock()
+
+def get_latest_frame(camera_id: str):
+    """Dipanggil dari snapshot.py. Return dict {frame, annotated, zones, count, timestamp} atau None."""
+    with _frame_buffer_lock:
+        data = _frame_buffer.get(camera_id)
+        return data.copy() if data else None
+
+def _store_frame(camera_id: str, frame, annotated, zones, count):
+    with _frame_buffer_lock:
+        _frame_buffer[camera_id] = {
+            "frame": frame,
+            "annotated": annotated,
+            "zones": zones,
+            "count": count,
+            "timestamp": time.time(),
+        }
+        
 
 def get_model():
     global _model
@@ -229,29 +248,22 @@ def camera_worker(camera_id: str, ip_address: str, mqtt_handler: MQTTHandler, st
         status = "ON" if count["total"] > 0 else "OFF"
 
         try:
-            from app.decision_engine import decision_engine
-            decision_engine.process_inference(camera_id, count)
+            annotated = results[0].plot()
+            for z in zones:
+                zx1, zy1 = int(z['x1_pct'] * width), int(z['y1_pct'] * height)
+                zx2, zy2 = int(z['x2_pct'] * width), int(z['y2_pct'] * height)
+                hex_color = z['color'].lstrip('#')
+                try:
+                    r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+                    color = (b, g, r)
+                except Exception:
+                    color = (0, 255, 0)
+                cv2.rectangle(annotated, (zx1, zy1), (zx2, zy2), color, 2)
+                cv2.putText(annotated, f"{z['zone_name']} | Orang: {count.get(z['zone_name'], 0)}",
+                            (zx1, zy1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+            _store_frame(camera_id, frame, annotated, zones, count)
         except Exception as e:
-            log.error(f"❌ [{camera_id}] Decision error: {e}")
-
-        if count != prev_data:
-            topic = f"ai/inference/result/{camera_id}"
-            payload = {**count, "lampu": status, "camera_id": camera_id}
-            if mqtt_handler.publish(topic, payload):
-                log.info(f"📤 [{camera_id}] {payload}")
-
-            try:
-                from app.log_writer import write_detection_logs
-                write_detection_logs(camera_id, count)
-            except Exception as e:
-                log.error(f"❌ [{camera_id}] Log error: {e}")
-
-            prev_data = count.copy()
-
-        time.sleep(SNAPSHOT_INTERVAL)
-
-    log.info(f"🛑 [{camera_id}] Worker stopped.")
-
+            log.error(f"❌ [{camera_id}] Gagal simpan frame buffer: {e}")
 # ─── Entry point ──────────────────────────────────────────────────────────────
 def run():
     mqtt_handler = MQTTHandler()

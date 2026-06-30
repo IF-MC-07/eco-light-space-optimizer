@@ -240,10 +240,6 @@ class DecisionEngine:
                                     """, (z_id,))
                                     conn.commit()
                                     logger.info(f"🔴 Command TURN_OFF sent & DB updated for Zone '{z_name}' (ID {z_id})")
-
-                # Process Room AC
-                # AC turns ON if ANY zone in the room is occupied (has occupancy > 0)
-                # AC turns OFF only if ALL zones in the room are empty (occupancy = 0)
                 room_occupied = any(occupancy_counts.get(z["zone_name"], 0) > 0 for z in active_room_zones)
                 ac_state = self.ac_states.get(room_id)
 

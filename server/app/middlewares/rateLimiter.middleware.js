@@ -16,14 +16,8 @@ export const authLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  // PENTING: skip apiLimiter global tidak berlaku di sini karena
-  // authLimiter dipasang langsung di route, bukan via router.use()
-  // Pastikan di index.js route /auth TIDAK kena apiLimiter — lihat catatan di bawah
 });
 
-// Rate limiter untuk endpoint kontrol relay/device
-// Key: berbasis user ID dari JWT (di-decode middleware auth sebelumnya)
-// Admin A yang spam tidak akan memblokir Admin B meski berada di jaringan yang sama.
 export const controlLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 30,

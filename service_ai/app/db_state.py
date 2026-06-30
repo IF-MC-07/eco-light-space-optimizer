@@ -8,10 +8,6 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 def ensure_device_states_exist():
-    """
-    Ensure light_controls and ac_controls always have a row 
-    for every device. Prevents NULL state issues during recovery.
-    """
     conn = None
     try:
         conn = get_db_connection()
