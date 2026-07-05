@@ -133,12 +133,12 @@ def ambil_zona_dari_db(camera_id: str) -> list[dict]:
     return ZoneManager().get_zones(camera_id)
 
 def titik_di_zona(cx_rel: float, cy_rel: float, zona: dict) -> bool:
-    x1 = float(zona.get('x1_pct', 0))
-    y1 = float(zona.get('y1_pct', 0))
-    x2 = float(zona.get('x2_pct', 0))
-    y2 = float(zona.get('y2_pct', 0))
-    skew_x = float(zona.get('skew_x', 0))
-    skew_y = float(zona.get('skew_y', 0))
+    x1 = float(zona.get('x1_pct') or 0)
+    y1 = float(zona.get('y1_pct') or 0)
+    x2 = float(zona.get('x2_pct') or 0)
+    y2 = float(zona.get('y2_pct') or 0)
+    skew_x = float(zona.get('skew_x') or 0)
+    skew_y = float(zona.get('skew_y') or 0)
     
     min_x, max_x = min(x1, x2), max(x1, x2)
     min_y, max_y = min(y1, y2), max(y1, y2)

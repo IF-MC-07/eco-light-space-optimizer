@@ -70,8 +70,8 @@ def get_model():
     global _model_primary, _model_fallback
     
     if _model_primary is None and _model_fallback is None:
-        primary_path = os.getenv("MODEL_PATH", "app/models/best.pt")
-        fallback_path = "yolov8n.pt"
+        primary_path = os.getenv("MODEL_PATH", "yolov8n.pt")
+        fallback_path = "app/models/best.pt"
         
         # Load Primary Model
         try:
@@ -293,9 +293,9 @@ def camera_worker(camera_id: str, ip_address: str, mqtt_handler: MQTTHandler, st
         try:
             annotated = results[0].plot()
             for z in zones:
-                zx1, zy1 = int(z['x1_pct'] * width), int(z['y1_pct'] * height)
-                zx2, zy2 = int(z['x2_pct'] * width), int(z['y2_pct'] * height)
-                hex_color = z['color'].lstrip('#')
+                zx1, zy1 = int((z.get('x1_pct') or 0) * width), int((z.get('y1_pct') or 0) * height)
+                zx2, zy2 = int((z.get('x2_pct') or 0) * width), int((z.get('y2_pct') or 0) * height)
+                hex_color = (z.get('color') or '#00FF00').lstrip('#')
                 try:
                     r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
                     color = (b, g, r)
