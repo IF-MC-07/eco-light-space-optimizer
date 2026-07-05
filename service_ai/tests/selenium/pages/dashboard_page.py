@@ -1,11 +1,14 @@
 from selenium.webdriver.common.by import By
-from tests.pages.base_page import BasePage
+from tests.selenium.pages.base_page import BasePage
 
 class DashboardPage(BasePage):
-    LIGHT_TOGGLE_ON = (By.CSS_SELECTOR, "button[data-testid='light-toggle-on']")
-    LIGHT_TOGGLE_OFF = (By.CSS_SELECTOR, "button[data-testid='light-toggle-off']")
-    AC_TEMP_SLIDER = (By.CSS_SELECTOR, "input[data-testid='ac-temp-slider']")
-    TOAST_MESSAGE = (By.CSS_SELECTOR, "[data-testid='toast-message']")
+    LIGHT_TOGGLE_ON = (By.CSS_SELECTOR, "table tbody tr button.w-11")
+    LIGHT_TOGGLE_OFF = (By.CSS_SELECTOR, "table tbody tr button.w-11")
+    AC_TEMP_SLIDER = (By.CSS_SELECTOR, "button.w-8")
+    TOAST_MESSAGE = (By.CSS_SELECTOR, "ol[data-sonner-toaster] li")
+
+    def load(self):
+        self.open_url("/lighting-ac")
 
     def toggle_light_on(self):
         self.click_element(self.LIGHT_TOGGLE_ON)

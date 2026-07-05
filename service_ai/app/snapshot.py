@@ -31,11 +31,12 @@ async def _wait_first_frame(camera_id: str, timeout: float = WAIT_FOR_FIRST_FRAM
 # snapshot.py — tambahkan query param annotate
 @app.get("/kamera/{id_kamera}/stream")
 async def get_stream(id_kamera: str, annotate: bool = True):
+    first_frame = await _wait_first_frame(id_kamera)
+    if first_frame is None:
+        raise HTTPException(status_code=503, detail="Belum ada frame dari worker")
+
     async def preview_generator(camera_id: str):
         last_timestamp = None
-        first = await _wait_first_frame(camera_id)
-        if first is None:
-            raise HTTPException(status_code=503, detail="Belum ada frame dari worker")
 
         while True:
             data = get_latest_frame(camera_id)

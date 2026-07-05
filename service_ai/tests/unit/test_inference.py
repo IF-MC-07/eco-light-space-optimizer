@@ -1,53 +1,47 @@
 import pytest
-from unittest.mock import patch, MagicMock
-
 import sys
 import os
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 from app.inference_realtime import hitung_per_zona
+from unittest.mock import MagicMock
 
 class TestInferenceRealtime:
-    @patch('app.inference_realtime.cv2')
-    @patch('app.inference_realtime.model')
-    @patch('app.inference_realtime.os.getenv')
-    def test_hitung_per_zona_flags(self, mock_getenv, mock_model, mock_cv2):
-        # Create a dummy frame and setup model mock
-        frame = MagicMock()
-        mock_result = MagicMock()
-        mock_result.boxes = []
-        mock_model.predict.return_value = [mock_result]
+    def test_hitung_per_zona_with_detections(self):
+        # Create dummy bounding boxes
+        box1 = MagicMock()
+        # [x1, y1, x2, y2]
+        box1.xyxy = [[100, 100, 200, 200]]  # center 150, 150 (rel: 0.15, 0.15)
         
-        # Test default (DEBUG_MODE=False)
-        mock_getenv.return_value = "False"
+        box2 = MagicMock()
+        box2.xyxy = [[800, 800, 900, 900]]  # center 850, 850 (rel: 0.85, 0.85)
 
-        zones = []
-        hitung_per_zona("cam1", frame, zones)
-
-        # Ensure correct flags are passed to predict
-        mock_model.predict.assert_called_with(
-            frame, conf=0.20, classes=[0], save=False, save_txt=False, save_crop=False, verbose=False
-        )
-
-        # Ensure imshow is NOT called
-        mock_cv2.imshow.assert_not_called()
-
-    @patch('app.inference_realtime.cv2')
-    @patch('app.inference_realtime.model')
-    @patch('app.inference_realtime.os.getenv')
-    def test_hitung_per_zona_debug_true(self, mock_getenv, mock_model, mock_cv2):
-        frame = MagicMock()
-        mock_result = MagicMock()
-        mock_result.plot.return_value = frame
-        mock_result.boxes = []
-        mock_model.predict.return_value = [mock_result]
+        boxes = [box1, box2]
         
-        # Test DEBUG_MODE=True
-        mock_getenv.side_effect = lambda key, default=None: "True" if key == "DEBUG_MODE" else default
+        zones = [
+            {"zone_name": "Zone A", "x1_pct": 0.0, "y1_pct": 0.0, "x2_pct": 0.5, "y2_pct": 0.5, "color": "#FF0000"}
+        ]
+        
+        width = 1000
+        height = 1000
 
-        zones = []
-        hitung_per_zona("cam1", frame, zones)
+        result = hitung_per_zona(boxes, zones, width, height)
+        
+        assert result["Zone A"] == 1
+        assert result["luar_zona"] == 1
+        assert result["total"] == 2
 
-        # Ensure imshow IS called
-        mock_cv2.imshow.assert_called()
-        mock_cv2.waitKey.assert_called()
+    def test_hitung_per_zona_empty(self):
+        boxes = []
+        zones = [
+            {"zone_name": "Zone A", "x1_pct": 0.0, "y1_pct": 0.0, "x2_pct": 0.5, "y2_pct": 0.5, "color": "#FF0000"}
+        ]
+        width = 1000
+        height = 1000
+
+        result = hitung_per_zona(boxes, zones, width, height)
+        
+        assert result["Zone A"] == 0
+        assert result["luar_zona"] == 0
+        assert result["total"] == 0

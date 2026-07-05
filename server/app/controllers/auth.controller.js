@@ -123,7 +123,8 @@ export const resetPassword = async (req, res, next) => {
         return res.status(400).json({ success: false, message: 'User ID not found in query params.' });
     }
 
-    const result = await authService.resetPassword(id, value.token, value.password);
+    const password = value.password || value.newPassword;
+    const result = await authService.resetPassword(id, value.token, password);
     res.status(200).json({
       success: true,
       message: result.message,

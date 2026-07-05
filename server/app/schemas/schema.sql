@@ -4,18 +4,23 @@
 
 CREATE TABLE rooms (
     room_id         CHARACTER VARYING(30) PRIMARY KEY,
-    room_name       CHARACTER VARYING(100),
-    location        CHARACTER VARYING(255),
+    room_name       CHARACTER VARYING(100) NOT NULL,
+    location        CHARACTER VARYING(100),
     capacity        INTEGER,
-    status          CHARACTER VARYING(20) DEFAULT 'aktif'
+    status          CHARACTER VARYING(20) DEFAULT 'ACTIVE'
 );
 
 CREATE TABLE users (
     user_id         CHARACTER VARYING(30) PRIMARY KEY,
-    name            CHARACTER VARYING(100),
+    name            CHARACTER VARYING(100) NOT NULL,
+    username        CHARACTER VARYING(100) UNIQUE NOT NULL,
     email           CHARACTER VARYING(255) UNIQUE NOT NULL,
     password        CHARACTER VARYING(255) NOT NULL,
-    role            CHARACTER VARYING(20) NOT NULL DEFAULT 'mahasiswa'
+    role            CHARACTER VARYING(20) NOT NULL DEFAULT 'mahasiswa',
+    avatar          TEXT,
+    email_notifications BOOLEAN DEFAULT TRUE,
+    system_notifications BOOLEAN DEFAULT TRUE,
+    daily_digest    BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE iot_devices (
@@ -24,14 +29,15 @@ CREATE TABLE iot_devices (
     device_name     CHARACTER VARYING(100),
     type            CHARACTER VARYING(50),
     status          CHARACTER VARYING(20) DEFAULT 'aktif',
-    -- Added: MQTT LWT offline detection
     last_seen       TIMESTAMP WITH TIME ZONE NULL
 );
 
 CREATE TABLE cameras (
     camera_id       CHARACTER VARYING(30) PRIMARY KEY,
     room_id         CHARACTER VARYING(30) REFERENCES rooms(room_id) ON UPDATE CASCADE ON DELETE SET NULL,
-    ip_address      CHARACTER VARYING(100),
+    name            CHARACTER VARYING(255),
+    ip_address      TEXT,
+    camera_hash     CHARACTER VARYING(64),
     resolution      CHARACTER VARYING(20),
     status          CHARACTER VARYING(20) DEFAULT 'aktif'
 );
@@ -40,7 +46,7 @@ CREATE TABLE zones (
     zone_id         CHARACTER VARYING(30) PRIMARY KEY,
     room_id         CHARACTER VARYING(30) REFERENCES rooms(room_id) ON UPDATE CASCADE ON DELETE CASCADE,
     zone_name       CHARACTER VARYING(100),
-    sort_order      INTEGER DEFAULT 0,
+    sort_order      INTEGER DEFAULT 1,
     color           CHARACTER VARYING(20),
     zone_status     CHARACTER VARYING(20) DEFAULT 'aktif',
     x1_pct          DOUBLE PRECISION,
@@ -59,23 +65,19 @@ CREATE TABLE zones (
 
 CREATE TABLE ac_controls (
     ac_control_id   CHARACTER VARYING(30) PRIMARY KEY,
-    -- NOT NULL: AC without a room is invalid
     room_id         CHARACTER VARYING(30) NOT NULL REFERENCES rooms(room_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    -- NOT NULL: AC without a device is invalid
     device_id       CHARACTER VARYING(30) NOT NULL REFERENCES iot_devices(device_id) ON UPDATE CASCADE ON DELETE CASCADE,
     temperature_setting DOUBLE PRECISION DEFAULT 24.0,
-    ac_status       CHARACTER VARYING(10) DEFAULT 'OFF',
+    ac_status       CHARACTER VARYING(20) DEFAULT 'off',
     updated_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE light_controls (
     control_id      CHARACTER VARYING(30) PRIMARY KEY,
-    -- NOT NULL: Light without a zone is invalid
     zone_id         CHARACTER VARYING(30) NOT NULL REFERENCES zones(zone_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    -- NOT NULL: Light without a device is invalid
     device_id       CHARACTER VARYING(30) NOT NULL REFERENCES iot_devices(device_id) ON UPDATE CASCADE ON DELETE CASCADE,
     relay_channel   INTEGER,
-    light_status    CHARACTER VARYING(10) DEFAULT 'OFF',
+    light_status    CHARACTER VARYING(20) DEFAULT 'off',
     updated_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -131,10 +133,8 @@ CREATE TABLE activity_logs (
     user_id         CHARACTER VARYING(30) NULL,
     action          CHARACTER VARYING(255) NOT NULL,
     details         TEXT NULL,
-    -- Added: network metadata for security audit
     ip_address      CHARACTER VARYING(45) NULL,
     status_code     SMALLINT NULL,
-    -- Added: resource tracking for accountability
     resource_id     CHARACTER VARYING NULL,
     resource_type   CHARACTER VARYING NULL,
     timestamp       TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

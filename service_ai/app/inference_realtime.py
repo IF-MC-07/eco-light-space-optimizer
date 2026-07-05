@@ -35,14 +35,16 @@ SNAPSHOT_INTERVAL  = float(os.getenv("SNAPSHOT_INTERVAL", 3))
 ZONE_FETCH_INTERVAL= float(os.getenv("ZONE_FETCH_INTERVAL", 60))
 CONF_THRESHOLD     = float(os.getenv("CONF_THRESHOLD", 0.25))
 IOU_THRESHOLD      = float(os.getenv("IOU_THRESHOLD", 0.45))
-MODEL_PATH         = os.getenv("MODEL_PATH", "models/best.pt")
+MODEL_PATH         = os.getenv("MODEL_PATH", "yolov8n.pt")
 API_URL            = os.getenv("API_URL", "http://localhost:5000/api")
 CAMERA_SECRET_KEY  = os.getenv("CAMERA_SECRET_KEY")
-os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|fflags;nobuffer|flags;low_delay|thread_queue_size;512"
 
+# Fix untuk RTSP timeout (tambahkan stimeout agar tidak hang 30 detik)
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|stimeout;5000000|timeout;5000000"
 
 # ─── Shared Model + Lock ─────────────────────────────────────────────────────
-_model = None
+_model_primary = None
+_model_fallback = None
 _model_lock = threading.Lock()
 _frame_buffer = {}
 _frame_buffer_lock = threading.Lock()
@@ -65,12 +67,31 @@ def _store_frame(camera_id: str, frame, annotated, zones, count):
         
 
 def get_model():
-    global _model
-    if _model is None:
-        log.info(f"🔃 Loading YOLOv8 model from {MODEL_PATH}...")
-        _model = YOLO(MODEL_PATH)
-        log.info("✅ Model loaded.")
-    return _model
+    global _model_primary, _model_fallback
+    
+    if _model_primary is None and _model_fallback is None:
+        primary_path = os.getenv("MODEL_PATH", "app/models/best.pt")
+        fallback_path = "yolov8n.pt"
+        
+        # Load Primary Model
+        try:
+            log.info(f"🔃 Loading Primary YOLOv8 model from {primary_path}...")
+            _model_primary = YOLO(primary_path)
+            log.info("✅ Primary Model loaded.")
+        except Exception as e:
+            log.error(f"❌ Primary model load failed: {e}")
+            _model_primary = None
+
+        # Load Fallback Model
+        try:
+            log.info(f"🔃 Loading Fallback YOLOv8 model from {fallback_path}...")
+            _model_fallback = YOLO(fallback_path)
+            log.info("✅ Fallback Model loaded.")
+        except Exception as e:
+            log.error(f"❌ Fallback model load failed: {e}")
+            _model_fallback = None
+            
+    return _model_primary, _model_fallback
 
 # ─── MQTT Handler ─────────────────────────────────────────────────────────────
 class MQTTHandler:
@@ -228,16 +249,38 @@ def camera_worker(camera_id: str, ip_address: str, mqtt_handler: MQTTHandler, st
         # Inference dengan lock
         try:
             with _model_lock:
-                model = get_model()
-                results = model.predict(
-                    frame,
-                    conf=CONF_THRESHOLD,
-                    iou=IOU_THRESHOLD,
-                    classes=[0],
-                    verbose=False,
-                    save=False,
-                    save_txt=False,
-                )
+                primary_model, fallback_model = get_model()
+                
+                results = None
+                
+                # 1. Coba deteksi menggunakan model Primary (best.pt)
+                if primary_model is not None:
+                    results = primary_model.predict(
+                        frame,
+                        conf=CONF_THRESHOLD,
+                        iou=IOU_THRESHOLD,
+                        classes=[0],
+                        verbose=False,
+                        save=False,
+                        save_txt=False,
+                    )
+                
+                # 2. Jika Primary gagal mendeteksi orang (kosong), gunakan Fallback (yolov8n.pt)
+                if fallback_model is not None:
+                    if results is None or len(results[0].boxes) == 0:
+                        results = fallback_model.predict(
+                            frame,
+                            conf=CONF_THRESHOLD,
+                            iou=IOU_THRESHOLD,
+                            classes=[0],
+                            verbose=False,
+                            save=False,
+                            save_txt=False,
+                        )
+                        
+                if results is None:
+                    raise ValueError("Tidak ada model yang berhasil dimuat.")
+                    
         except Exception as e:
             log.error(f"❌ [{camera_id}] Inference error: {e}")
             time.sleep(SNAPSHOT_INTERVAL)
