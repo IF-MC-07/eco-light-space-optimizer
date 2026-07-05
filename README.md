@@ -1,4 +1,17 @@
-# Eco-Light & AC Space Optimizer
+<p align="center">
+    <img src="client/public/images/Logo Eco-Light.png" width="400" alt="Eco-Light Logo">
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-15.5.18-black?style=flat&logo=next.js" alt="Next.js">
+  <img src="https://img.shields.io/badge/React-19.0.0-61DAFB?style=flat&logo=react&logoColor=white" alt="React">
+  <img src="https://img.shields.io/badge/Express-5.1.0-90C53F?style=flat&logo=express&logoColor=white" alt="Express">
+  <img src="https://img.shields.io/badge/Sequelize-6.37.7-52B0E7?style=flat&logo=sequelize&logoColor=white" alt="Sequelize">
+  <img src="https://img.shields.io/badge/YOLOv8-Ultralytics-FFB31A?style=flat&logo=yolo&logoColor=white" alt="YOLOv8">
+  <img src="https://img.shields.io/badge/FastAPI-Python-009688?style=flat&logo=fastapi&logoColor=white" alt="FastAPI">
+</p>
+
+---
 
 A comprehensive system for real-time occupancy detection and automated control of lighting and climate systems in institutional spaces. The system integrates computer vision-based people detection with IoT device management and MQTT-based automation.
 
@@ -614,7 +627,6 @@ Project Manager : Yeni Rokhayati S.Si., M.Sc.
 AI & Web :  [![Github Pages](<https://img.shields.io/badge/Ridho%20Putrawan%20-%203312411050-100000?style=flat&logo=github&logoColor=white>)](https://github.com/sweeefff)
 
 IoT : [![Github Pages](<https://img.shields.io/badge/Ruth%20Yohana%20Manurung-%203312411032-100000?style=flat&logo=github&logoColor=white>)](https://github.com/ruthyoh)
-
 
 ## Contact Support
 
