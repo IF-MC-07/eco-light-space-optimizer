@@ -17,6 +17,7 @@ import monitoringRoute from "./monitoring.route.js";
 import energyRoute from "./energy.route.js";
 import savingsRoute from "./savings.route.js";
 import exportRoute from "./exportRoute.js";
+import activityLogRoute from "./activityLogRoute.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 import { requireRole } from "../middlewares/role.middleware.js";
 import {
@@ -72,5 +73,6 @@ router.use(
   acControlRoute,
 );
 router.use("/export", authenticate, requireRole(["admin"]), exportRoute);
+router.use("/activity-logs", authenticate, activityLogRoute);
 
 export default router;

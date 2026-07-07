@@ -94,3 +94,10 @@ export const useCreateKontrolAC = () => {
     },
   });
 };
+
+export const useActivityLogList = (params?: any) => {
+  return useQuery({
+    queryKey: [...dashboardKeys.all, 'activity-logs', params],
+    queryFn: () => api.getActivityLogs(params),
+  });
+};

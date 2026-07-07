@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { RoleGuard } from '../auth/RoleGuard';
 import { useProfile } from '../../features/profile/hooks';
+import { useActivityLogList } from '../../features/dashboard/hooks';
 
 interface NavbarProps {
   title?: string;
@@ -37,6 +38,24 @@ interface SearchItem {
   isQuickAction?: boolean;
 }
 
+function formatRelativeTime(dateString: string) {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffMs = now.getTime() - date.getTime();
+  
+  if (isNaN(diffMs) || diffMs < 0) return "Just now";
+  
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins} mins ago`;
+  
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+}
+
 export function Navbar({ 
   title = "Eco-Light & Space Optimizer", 
   searchPlaceholder = "Search features...",
@@ -49,6 +68,10 @@ export function Navbar({
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const notificationsRef = useRef<HTMLDivElement>(null);
+  const { data: activityLogs } = useActivityLogList();
 
   const searchItems: SearchItem[] = [
     // Quick Actions (Priority 3)
@@ -74,11 +97,14 @@ export function Navbar({
       )
     : searchItems.filter(item => item.isQuickAction).slice(0, 3);
 
-  // Close search results when clicking outside
+  // Close search results and notifications when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setIsSearchFocused(false);
+      }
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
+        setIsNotificationsOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -173,10 +199,78 @@ export function Navbar({
 
           {/* Action Icons */}
           <div className="flex items-center gap-4 text-secondary-light">
-            <button className="hover:text-secondary-dark transition-colors relative h-10 w-10 flex items-center justify-center rounded-xl hover:bg-neutral">
-              <Bell size={20} />
-              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-tertiary rounded-full border-2 border-white"></span>
-            </button>
+            <div className="relative" ref={notificationsRef}>
+              <button 
+                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                className="hover:text-secondary-dark transition-colors relative h-10 w-10 flex items-center justify-center rounded-xl hover:bg-neutral"
+              >
+                <Bell size={20} />
+                {activityLogs && activityLogs.length > 0 && (
+                  <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-tertiary rounded-full border-2 border-white animate-pulse"></span>
+                )}
+              </button>
+
+              {/* Notifications Dropdown */}
+              {isNotificationsOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-neutral-border overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-[100]">
+                  <div className="p-4 border-b border-neutral-border bg-neutral/30 flex justify-between items-center">
+                    <span className="text-xs font-bold text-secondary-dark uppercase tracking-wider">
+                      Notifications
+                    </span>
+                    {activityLogs && activityLogs.length > 0 && (
+                      <span className="text-[10px] font-bold text-primary-dark bg-primary/10 px-2 py-0.5 rounded-full">
+                        {activityLogs.length} New
+                      </span>
+                    )}
+                  </div>
+                  <div className="max-h-[300px] overflow-y-auto divide-y divide-neutral-border">
+                    {activityLogs && activityLogs.length > 0 ? (
+                      activityLogs.slice(0, 5).map((log: any) => {
+                        let title = 'System Activity';
+                        let desc = log.details || log.action;
+                        
+                        if (log.action === 'DEVICE_ONLINE') {
+                          title = 'Device Connected';
+                        } else if (log.action === 'DEVICE_OFFLINE') {
+                          title = 'Device Disconnected';
+                        } else if (log.action.startsWith('POST')) {
+                          const path = log.action.split(' ')[1] || '';
+                          const resource = path.split('/')[2] || 'item';
+                          title = `New ${resource.charAt(0).toUpperCase() + resource.slice(1)}`;
+                          desc = `${log.User?.name || 'System'} added a ${resource}.`;
+                        } else if (log.action.startsWith('PUT')) {
+                          const path = log.action.split(' ')[1] || '';
+                          const resource = path.split('/')[2] || 'item';
+                          title = `Updated ${resource.charAt(0).toUpperCase() + resource.slice(1)}`;
+                          desc = `${log.User?.name || 'System'} updated a ${resource}.`;
+                        } else if (log.action.startsWith('DELETE')) {
+                          const path = log.action.split(' ')[1] || '';
+                          const resource = path.split('/')[2] || 'item';
+                          title = `Deleted ${resource.charAt(0).toUpperCase() + resource.slice(1)}`;
+                          desc = `${log.User?.name || 'System'} deleted a ${resource}.`;
+                        }
+
+                        return (
+                          <div key={log.log_id} className="p-3.5 hover:bg-neutral/40 transition-colors">
+                            <div className="flex justify-between items-start gap-2">
+                              <span className="text-xs font-bold text-secondary-dark">{title}</span>
+                              <span className="text-[9px] text-secondary-light font-medium whitespace-nowrap">
+                                {formatRelativeTime(log.timestamp)}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-secondary mt-1 line-clamp-2">{desc}</p>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="p-6 text-center">
+                        <p className="text-xs text-secondary-light">No new notifications</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
             <RoleGuard allowedRoles={['admin']}>
               <Link href="/zone-configuration" className="hover:text-secondary-dark transition-colors h-10 w-10 flex items-center justify-center rounded-xl hover:bg-neutral">
                 <Settings size={20} />

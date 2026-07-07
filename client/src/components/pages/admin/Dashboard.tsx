@@ -3,7 +3,6 @@ import { DashboardStats } from "../../../features/dashboard/components/Dashboard
 import { EnergyTrendsChart } from "../../../features/dashboard/components/EnergyTrendsChart";
 import { SystemHealth } from "../../../features/dashboard/components/SystemHealth";
 import { EcoScore } from "../../../features/dashboard/components/EcoScore";
-import { QuickActions } from "../../../features/dashboard/components/QuickActions";
 import { ActivityFeed } from "../../../features/dashboard/components/ActivityFeed";
 import { RoleGuard } from "../../../components/auth/RoleGuard";
 
@@ -32,10 +31,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Row 3: Quick Actions */}
-      <RoleGuard allowedRoles={['admin']}>
-        <QuickActions />
-      </RoleGuard>
+
 
       {/* Row 4: Recent Alerts */}
       <div className="w-full">

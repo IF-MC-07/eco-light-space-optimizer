@@ -54,3 +54,25 @@ export const createACControl = async (data: any): Promise<ACControl> => {
   const response = await serverAPI.post('/ac-controls', data);
   return response.data.data || response.data;
 };
+
+// --- Activity Log Endpoints ---
+export interface ActivityLog {
+  log_id: string;
+  user_id: string | null;
+  action: string;
+  details: string | null;
+  timestamp: string;
+  ip_address: string | null;
+  status_code: number | null;
+  resource_id: string | null;
+  resource_type: string | null;
+  User?: {
+    name: string;
+    username: string;
+  };
+}
+
+export const getActivityLogs = async (params?: any): Promise<ActivityLog[]> => {
+  const response = await serverAPI.get('/activity-logs', { params });
+  return response.data.data || response.data;
+};

@@ -70,7 +70,7 @@ export const getBreakdown = async (req, res, next) => {
           [db.Sequelize.fn('SUM', db.Sequelize.col('saved_watts')), 'saved_watts'],
           [db.Sequelize.fn('SUM', db.Sequelize.col('total_watts')), 'total_watts']
         ],
-        group: ['room_id', 'Room.room_id'],
+        group: ['EnergyLog.room_id', 'Room.room_id'],
         include: [{ model: db.Room, attributes: ['room_name'] }],
         raw: true,
         nest: true
@@ -207,6 +207,95 @@ export const getYoY = async (req, res, next) => {
         this_year_watts: yoy.current_year_total_watts || 0.0,
         reduction_percentage: yoy.yoy_change_pct ? -yoy.yoy_change_pct : 0.0 // reduction is positive if consumption decreased
       }, 'Success');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /savings/power-stats
+ * Returns statistics computed from power_sensors table:
+ * - mean_watts, max_watts, min_watts, total_kwh (estimated)
+ * - per-room breakdown
+ * - efficiency_score (derived from how close avg is to min)
+ */
+export const getPowerStats = async (req, res, next) => {
+  try {
+    const { room_id } = req.query;
+    const whereClause = room_id ? { room_id } : {};
+
+    // Get all sensor readings
+    const sensors = await db.PowerSensor.findAll({
+      where: whereClause,
+      include: [{ model: db.Room, attributes: ['room_name'] }],
+      order: [['read_at', 'DESC']],
+      raw: true,
+      nest: true,
+    });
+
+    if (sensors.length === 0) {
+      return responseFormatter.success(res, {
+        mean_watts: 0, min_watts: 0, max_watts: 0, std_watts: 0,
+        total_kwh: 0, sample_count: 0,
+        latest_read_at: null,
+        efficiency_score: 88,
+        room_breakdown: [],
+      }, 'Success');
+    }
+
+    const watts = sensors.map(s => parseFloat(s.power_watts) || 0);
+    const mean = watts.reduce((a, b) => a + b, 0) / watts.length;
+    const min = Math.min(...watts);
+    const max = Math.max(...watts);
+    const variance = watts.reduce((acc, w) => acc + Math.pow(w - mean, 2), 0) / watts.length;
+    const std = Math.sqrt(variance);
+
+    // Estimate total kWh: assuming each reading covers ~5 min interval
+    const totalKwh = watts.reduce((a, b) => a + b, 0) * (5 / 60) / 1000;
+
+    // Efficiency score: how close mean is to min (lower = more efficient = higher score)
+    const range = max - min;
+    const efficiencyScore = range > 0
+      ? Math.max(0, Math.min(100, Math.round(100 - ((mean - min) / range) * 50)))
+      : 88;
+
+    // Per-room breakdown (latest reading per room)
+    const roomMap = {};
+    sensors.forEach(s => {
+      if (!s.room_id) return;
+      if (!roomMap[s.room_id]) {
+        roomMap[s.room_id] = {
+          room_id: s.room_id,
+          room_name: s.Room?.room_name || s.room_id,
+          readings: [],
+        };
+      }
+      roomMap[s.room_id].readings.push(parseFloat(s.power_watts) || 0);
+    });
+
+    const room_breakdown = Object.values(roomMap).map(r => {
+      const avg = r.readings.reduce((a, b) => a + b, 0) / r.readings.length;
+      const totalKwhRoom = r.readings.reduce((a, b) => a + b, 0) * (5 / 60) / 1000;
+      return {
+        room_id: r.room_id,
+        room_name: r.room_name,
+        avg_watts: parseFloat(avg.toFixed(2)),
+        total_kwh: parseFloat(totalKwhRoom.toFixed(3)),
+        reading_count: r.readings.length,
+      };
+    }).sort((a, b) => b.avg_watts - a.avg_watts);
+
+    return responseFormatter.success(res, {
+      mean_watts: parseFloat(mean.toFixed(2)),
+      min_watts: parseFloat(min.toFixed(2)),
+      max_watts: parseFloat(max.toFixed(2)),
+      std_watts: parseFloat(std.toFixed(2)),
+      total_kwh: parseFloat(totalKwh.toFixed(3)),
+      sample_count: sensors.length,
+      latest_read_at: sensors[0]?.read_at || null,
+      efficiency_score: efficiencyScore,
+      room_breakdown,
+    }, 'Success');
   } catch (error) {
     next(error);
   }

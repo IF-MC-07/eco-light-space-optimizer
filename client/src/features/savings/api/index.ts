@@ -1,5 +1,5 @@
 import { serverAPI } from '@/lib/api';
-import type { ApiResponse, SavingsSummary, SavingsBreakdown, SavingsTrend, YoYComparisonData } from '../types';
+import type { ApiResponse, SavingsSummary, SavingsBreakdown, SavingsTrend, YoYComparisonData, PowerStatsData } from '../types';
 
 export const savingsApi = {
   getSummary: async (): Promise<ApiResponse<SavingsSummary>> => {
@@ -19,6 +19,11 @@ export const savingsApi = {
 
   getYoY: async (): Promise<ApiResponse<YoYComparisonData>> => {
     const response = await serverAPI.get('/savings/yoy');
+    return response.data;
+  },
+
+  getPowerStats: async (): Promise<ApiResponse<PowerStatsData>> => {
+    const response = await serverAPI.get('/savings/power-stats');
     return response.data;
   }
 };

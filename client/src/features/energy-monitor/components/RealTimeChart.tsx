@@ -9,20 +9,21 @@ export function RealTimeChart() {
   const sensors = response?.data || [];
 
   // Group or show latest read times
-  const formatted = sensors.length > 0
-    ? sensors.map((s, idx) => ({
+  const latestSensors = sensors.length > 0 ? sensors.slice(0, 10).reverse() : [];
+  const formatted = latestSensors.length > 0
+    ? latestSensors.map((s) => ({
         time: new Date(s.read_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-        actual: parseFloat((s.power_watts / 1000).toFixed(2)),
-        baseline: parseFloat((s.power_watts * 0.9 / 1000).toFixed(2)) // Baseline estimation
-      })).slice(-10) // Show last 10 points
+        actual: parseFloat(((s.power_watts || 0) / 1000).toFixed(2)),
+        baseline: parseFloat((((s.power_watts || 0) * 0.9) / 1000).toFixed(2)) // Baseline estimation in kW
+      }))
     : [
-        { time: '08:00', actual: 4.0, baseline: 3.0 },
-        { time: '10:00', actual: 4.5, baseline: 4.0 },
-        { time: '12:00', actual: 4.0, baseline: 4.5 },
-        { time: '14:00', actual: 4.2, baseline: 5.0 },
-        { time: '16:00', actual: 8.0, baseline: 5.5 },
-        { time: '18:00', actual: 4.5, baseline: 5.0 },
-        { time: '20:00', actual: 8.5, baseline: 4.0 },
+        { time: '08:00', actual: 4.0, baseline: 3.6 },
+        { time: '10:00', actual: 4.5, baseline: 4.1 },
+        { time: '12:00', actual: 4.0, baseline: 3.6 },
+        { time: '14:00', actual: 4.2, baseline: 3.8 },
+        { time: '16:00', actual: 8.0, baseline: 7.2 },
+        { time: '18:00', actual: 4.5, baseline: 4.1 },
+        { time: '20:00', actual: 8.5, baseline: 7.7 },
       ];
 
   if (isLoading) {

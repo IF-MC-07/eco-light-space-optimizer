@@ -28,3 +28,10 @@ export const useSavingsYoY = () => {
     queryFn: () => savingsApi.getYoY(),
   });
 };
+
+export const usePowerStats = () => {
+  return useQuery({
+    queryKey: ['savings', 'power-stats'],
+    queryFn: () => savingsApi.getPowerStats(),
+  });
+};

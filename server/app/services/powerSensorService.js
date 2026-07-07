@@ -3,7 +3,11 @@ import db from '../models/index.js';
 const { PowerSensor } = db;
 
 export const getAll = async () => {
-  return await PowerSensor.findAll();
+  return await PowerSensor.findAll({
+    include: [{ model: db.Room, attributes: ['room_name'] }],
+    order: [['read_at', 'DESC']],
+    limit: 200,
+  });
 };
 
 export const getById = async (id) => {

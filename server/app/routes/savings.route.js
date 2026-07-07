@@ -9,5 +9,6 @@ router.get('/summary', authenticate, requireRole(['admin']), savingsController.g
 router.get('/breakdown', authenticate, requireRole(['admin']), savingsController.getBreakdown);
 router.get('/trend', authenticate, requireRole(['admin']), savingsController.getTrend);
 router.get('/yoy', authenticate, requireRole(['admin']), savingsController.getYoY);
+router.get('/power-stats', authenticate, requireRole(['admin']), savingsController.getPowerStats);
 
 export default router;

@@ -1,14 +1,37 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { Progress } from '../../../components/ui/Progress';
+import { usePowerSensors } from '../hooks';
 
 export function TopConsumers() {
-  const consumers = [
-    { name: 'HVAC Systems', value: 42 },
-    { name: 'Lighting', value: 18 },
-    { name: 'Lab Equipment', value: 25 },
-    { name: 'Computing', value: 15 },
-  ];
+  const { data: response } = usePowerSensors();
+  const sensors = response?.data || [];
+
+  // Group sensors by room_id, compute average power per room
+  const roomMap: Record<string, { room_id: string; power_watts: number[]; name: string }> = {};
+  sensors.forEach((s: any) => {
+    if (!s.room_id) return;
+    if (!roomMap[s.room_id]) {
+      roomMap[s.room_id] = { room_id: s.room_id, power_watts: [], name: s.Room?.room_name || s.room_id };
+    }
+    roomMap[s.room_id].power_watts.push(s.power_watts || 0);
+  });
+
+  const roomAverages = Object.values(roomMap).map(r => ({
+    name: r.name,
+    avg: r.power_watts.reduce((a, b) => a + b, 0) / r.power_watts.length,
+  })).sort((a, b) => b.avg - a.avg).slice(0, 5);
+
+  const maxAvg = roomAverages.length > 0 ? Math.max(...roomAverages.map(r => r.avg), 1) : 1;
+
+  const consumers = roomAverages.length > 0
+    ? roomAverages.map(r => ({ name: r.name, value: Math.round((r.avg / maxAvg) * 100) }))
+    : [
+        { name: 'HVAC Systems', value: 42 },
+        { name: 'Lighting', value: 18 },
+        { name: 'Lab Equipment', value: 25 },
+        { name: 'Computing', value: 15 },
+      ];
 
   return (
     <Card className="border-transparent shadow-sm mb-6">
@@ -33,3 +56,4 @@ export function TopConsumers() {
     </Card>
   );
 }
+
