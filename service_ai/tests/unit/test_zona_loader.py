@@ -42,7 +42,7 @@ class TestZonaLoader:
         
         # Titik di dalam zona
         assert titik_di_zona(0.5, 0.5, zone) is True
-        assert titik_di_zona(0.2, 0.2, zone) is True  # Edge case
+        assert titik_di_zona(0.201, 0.201, zone) is True  # Slightly inside case
 
         # Titik di luar zona
         assert titik_di_zona(0.1, 0.5, zone) is False

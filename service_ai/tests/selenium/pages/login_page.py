@@ -1,11 +1,11 @@
 from selenium.webdriver.common.by import By
-from tests.pages.base_page import BasePage
+from tests.selenium.pages.base_page import BasePage
 
 class LoginPage(BasePage):
-    EMAIL_INPUT = (By.CSS_SELECTOR, "input[data-testid='email-input']")
-    PASSWORD_INPUT = (By.CSS_SELECTOR, "input[data-testid='password-input']")
-    SUBMIT_BUTTON = (By.CSS_SELECTOR, "button[data-testid='login-button']")
-    ERROR_MESSAGE = (By.CSS_SELECTOR, "[data-testid='login-error']")
+    EMAIL_INPUT = (By.CSS_SELECTOR, "input[type='email']")
+    PASSWORD_INPUT = (By.CSS_SELECTOR, "input[type='password']")
+    SUBMIT_BUTTON = (By.CSS_SELECTOR, "button[type='submit']")
+    ERROR_MESSAGE = (By.CSS_SELECTOR, "[role='alert']")
 
     def load(self):
         self.open_url("/login")
@@ -16,4 +16,6 @@ class LoginPage(BasePage):
         self.click_element(self.SUBMIT_BUTTON)
 
     def get_error_message(self):
-        return self.get_text(self.ERROR_MESSAGE)
+        from selenium.webdriver.support import expected_conditions as EC
+        element = self.wait.until(EC.visibility_of_element_located(self.ERROR_MESSAGE))
+        return element.text

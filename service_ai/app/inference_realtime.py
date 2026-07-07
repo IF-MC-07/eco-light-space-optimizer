@@ -38,20 +38,60 @@ IOU_THRESHOLD      = float(os.getenv("IOU_THRESHOLD", 0.45))
 MODEL_PATH         = os.getenv("MODEL_PATH", "yolov8n.pt")
 API_URL            = os.getenv("API_URL", "http://localhost:5000/api")
 CAMERA_SECRET_KEY  = os.getenv("CAMERA_SECRET_KEY")
-os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|fflags;nobuffer|flags;low_delay|thread_queue_size;512"
 
+# Fix untuk RTSP timeout (tambahkan stimeout agar tidak hang 30 detik)
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|stimeout;5000000|timeout;5000000"
 
 # ─── Shared Model + Lock ─────────────────────────────────────────────────────
-_model = None
+_model_primary = None
+_model_fallback = None
 _model_lock = threading.Lock()
+_frame_buffer = {}
+_frame_buffer_lock = threading.Lock()
+
+def get_latest_frame(camera_id: str):
+    """Dipanggil dari snapshot.py. Return dict {frame, annotated, zones, count, timestamp} atau None."""
+    with _frame_buffer_lock:
+        data = _frame_buffer.get(camera_id)
+        return data.copy() if data else None
+
+def _store_frame(camera_id: str, frame, annotated, zones, count):
+    with _frame_buffer_lock:
+        _frame_buffer[camera_id] = {
+            "frame": frame,
+            "annotated": annotated,
+            "zones": zones,
+            "count": count,
+            "timestamp": time.time(),
+        }
+        
 
 def get_model():
-    global _model
-    if _model is None:
-        log.info(f"🔃 Loading YOLOv8 model from {MODEL_PATH}...")
-        _model = YOLO(MODEL_PATH)
-        log.info("✅ Model loaded.")
-    return _model
+    global _model_primary, _model_fallback
+    
+    if _model_primary is None and _model_fallback is None:
+        primary_path = os.getenv("MODEL_PATH", "yolov8n.pt")
+        fallback_path = "app/models/best.pt"
+        
+        # Load Primary Model
+        try:
+            log.info(f"🔃 Loading Primary YOLOv8 model from {primary_path}...")
+            _model_primary = YOLO(primary_path)
+            log.info("✅ Primary Model loaded.")
+        except Exception as e:
+            log.error(f"❌ Primary model load failed: {e}")
+            _model_primary = None
+
+        # Load Fallback Model
+        try:
+            log.info(f"🔃 Loading Fallback YOLOv8 model from {fallback_path}...")
+            _model_fallback = YOLO(fallback_path)
+            log.info("✅ Fallback Model loaded.")
+        except Exception as e:
+            log.error(f"❌ Fallback model load failed: {e}")
+            _model_fallback = None
+            
+    return _model_primary, _model_fallback
 
 # ─── MQTT Handler ─────────────────────────────────────────────────────────────
 class MQTTHandler:
@@ -209,16 +249,38 @@ def camera_worker(camera_id: str, ip_address: str, mqtt_handler: MQTTHandler, st
         # Inference dengan lock
         try:
             with _model_lock:
-                model = get_model()
-                results = model.predict(
-                    frame,
-                    conf=CONF_THRESHOLD,
-                    iou=IOU_THRESHOLD,
-                    classes=[0],
-                    verbose=False,
-                    save=False,
-                    save_txt=False,
-                )
+                primary_model, fallback_model = get_model()
+                
+                results = None
+                
+                # 1. Coba deteksi menggunakan model Primary (best.pt)
+                if primary_model is not None:
+                    results = primary_model.predict(
+                        frame,
+                        conf=CONF_THRESHOLD,
+                        iou=IOU_THRESHOLD,
+                        classes=[0],
+                        verbose=False,
+                        save=False,
+                        save_txt=False,
+                    )
+                
+                # 2. Jika Primary gagal mendeteksi orang (kosong), gunakan Fallback (yolov8n.pt)
+                if fallback_model is not None:
+                    if results is None or len(results[0].boxes) == 0:
+                        results = fallback_model.predict(
+                            frame,
+                            conf=CONF_THRESHOLD,
+                            iou=IOU_THRESHOLD,
+                            classes=[0],
+                            verbose=False,
+                            save=False,
+                            save_txt=False,
+                        )
+                        
+                if results is None:
+                    raise ValueError("Tidak ada model yang berhasil dimuat.")
+                    
         except Exception as e:
             log.error(f"❌ [{camera_id}] Inference error: {e}")
             time.sleep(SNAPSHOT_INTERVAL)
@@ -229,29 +291,22 @@ def camera_worker(camera_id: str, ip_address: str, mqtt_handler: MQTTHandler, st
         status = "ON" if count["total"] > 0 else "OFF"
 
         try:
-            from app.decision_engine import decision_engine
-            decision_engine.process_inference(camera_id, count)
+            annotated = results[0].plot()
+            for z in zones:
+                zx1, zy1 = int((z.get('x1_pct') or 0) * width), int((z.get('y1_pct') or 0) * height)
+                zx2, zy2 = int((z.get('x2_pct') or 0) * width), int((z.get('y2_pct') or 0) * height)
+                hex_color = (z.get('color') or '#00FF00').lstrip('#')
+                try:
+                    r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+                    color = (b, g, r)
+                except Exception:
+                    color = (0, 255, 0)
+                cv2.rectangle(annotated, (zx1, zy1), (zx2, zy2), color, 2)
+                cv2.putText(annotated, f"{z['zone_name']} | Orang: {count.get(z['zone_name'], 0)}",
+                            (zx1, zy1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+            _store_frame(camera_id, frame, annotated, zones, count)
         except Exception as e:
-            log.error(f"❌ [{camera_id}] Decision error: {e}")
-
-        if count != prev_data:
-            topic = f"ai/inference/result/{camera_id}"
-            payload = {**count, "lampu": status, "camera_id": camera_id}
-            if mqtt_handler.publish(topic, payload):
-                log.info(f"📤 [{camera_id}] {payload}")
-
-            try:
-                from app.log_writer import write_detection_logs
-                write_detection_logs(camera_id, count)
-            except Exception as e:
-                log.error(f"❌ [{camera_id}] Log error: {e}")
-
-            prev_data = count.copy()
-
-        time.sleep(SNAPSHOT_INTERVAL)
-
-    log.info(f"🛑 [{camera_id}] Worker stopped.")
-
+            log.error(f"❌ [{camera_id}] Gagal simpan frame buffer: {e}")
 # ─── Entry point ──────────────────────────────────────────────────────────────
 def run():
     mqtt_handler = MQTTHandler()

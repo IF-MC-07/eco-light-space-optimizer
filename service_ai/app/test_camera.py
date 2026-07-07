@@ -8,8 +8,15 @@ from ultralytics import YOLO
 
 load_dotenv()
 
-MODEL_PATH = os.getenv('yolov8n.pt')
-model = YOLO('yolov8n.pt')
+# Gunakan path Windows Anda sebagai default jika .env tidak diatur
+DEFAULT_PATH = r"C:\Users\User\OneDrive\Documents\3312411050\SEMESTER 4\IF-MC-07\Eco-light-Space-Optimizer\eco-light-space-optimizer\service_ai\app\models\best.pt"
+MODEL_PATH = os.path.expandvars(os.path.expanduser(os.getenv("MODEL_PATH", DEFAULT_PATH).strip()))
+
+if not os.path.isabs(MODEL_PATH):
+    MODEL_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", MODEL_PATH))
+
+print(f"🚀 MODEL_PATH: {MODEL_PATH}")
+model = YOLO(MODEL_PATH)
 
 MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
@@ -19,7 +26,7 @@ client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
 client.connect(MQTT_BROKER, MQTT_PORT)
 client.loop_start()
 
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 print("✅ Kamera aktif! Tekan 'q' untuk keluar")
 
 prev_data = {}
@@ -33,9 +40,9 @@ while True:
 
     height, width = frame.shape[:2]
 
-    # ── Bagi frame jadi 3 zona VERTIKAL ──────
-    zona1 = width // 3       # batas kiri-tengah
-    zona2 = 2 * width // 3   # batas tengah-kanan
+    # Bagi frame jadi 3 zona VERTIKAL
+    zona1 = width // 3       
+    zona2 = 2 * width // 3   
 
     results = model.predict(
         frame,
@@ -54,7 +61,7 @@ while True:
 
     for box in results[0].boxes:
         x1, y1, x2, y2 = map(int, box.xyxy[0])
-        cx = (x1 + x2) // 2  # SEKARANG PAKAI TITIK TENGAH HORIZONTAL (X)
+        cx = (x1 + x2) // 2  
 
         if cx < zona1:
             count['kiri'] += 1
@@ -65,50 +72,43 @@ while True:
 
         count['total'] += 1
 
-    # ── Gambar garis zona vertikal ────────────
+    # Gambar garis zona vertikal
     cv2.line(annotated, (zona1, 0), (zona1, height), (255, 255, 0), 2)
     cv2.line(annotated, (zona2, 0), (zona2, height), (255, 255, 0), 2)
 
-    # ── Label nama zona di garis ────────────────
-    cv2.putText(annotated, "ZONA KIRI",
-                (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
-    cv2.putText(annotated, "ZONA TENGAH",
-                (zona1 + 10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
-    cv2.putText(annotated, "ZONA KANAN",
-                (zona2 + 10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+    # Label nama zona
+    cv2.putText(annotated, "ZONA KIRI", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+    cv2.putText(annotated, "ZONA TENGAH", (zona1 + 10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+    cv2.putText(annotated, "ZONA KANAN", (zona2 + 10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
 
-    # ── Info jumlah orang (Overlay Statis) ──────
-    cv2.putText(annotated, f"Kiri   : {count['kiri']}",
-                (10, height - 100), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-    cv2.putText(annotated, f"Tengah : {count['tengah']}",
-                (10, height - 70), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-    cv2.putText(annotated, f"Kanan  : {count['kanan']}",
-                (10, height - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-    cv2.putText(annotated, f"Total  : {count['total']}",
-                (10, height - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+    # Overlay Info Statis
+    cv2.putText(annotated, f"Kiri   : {count['kiri']}", (10, height - 100), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+    cv2.putText(annotated, f"Tengah : {count['tengah']}", (10, height - 70), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+    cv2.putText(annotated, f"Kanan  : {count['kanan']}", (10, height - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+    cv2.putText(annotated, f"Total  : {count['total']}", (10, height - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
 
-    # Status lampu
     status = 'ON' if count['total'] > 0 else 'OFF'
     
-    # ── Kirim MQTT setiap 2 detik ───────────────
+    # Perbaikan Logika Pengiriman MQTT (Throttle berbasis waktu)
     current_time = time.time()
-    if count != prev_data and (current_time - last_send_time) > SEND_INTERVAL:
-        payload = json.dumps({
-            'zona_kiri': count['kiri'],
-            'zona_tengah': count['tengah'],
-            'zona_kanan': count['kanan'],
-            'total': count['total'],
-            'lampu': status
-        })
-        client.publish(MQTT_TOPIC_RESULT, payload)
-        print(f"📤 {payload}")
-        prev_data = count.copy()
+    if (current_time - last_send_time) > SEND_INTERVAL:
+        if count != prev_data:
+            payload = json.dumps({
+                'zona_kiri': count['kiri'],
+                'zona_tengah': count['tengah'],
+                'zona_kanan': count['kanan'],
+                'total': count['total'],
+                'lampu': status
+            })
+            client.publish(MQTT_TOPIC_RESULT, payload)
+            print(f"📤 {payload}")
+            prev_data = count.copy()
         last_send_time = current_time
 
     cv2.imshow('Eco-Light Detector', annotated)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+     break
 
 cap.release()
 cv2.destroyAllWindows()

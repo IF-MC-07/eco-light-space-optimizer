@@ -48,9 +48,14 @@ export const resetPasswordSchema = Joi.object({
     'string.empty': 'Token tidak boleh kosong',
     'any.required': 'Token wajib diisi'
   }),
-  password: Joi.string().min(6).required().messages({
+  password: Joi.string().min(6).messages({
     'string.empty': 'Kata sandi baru tidak boleh kosong',
-    'string.min': 'Kata sandi baru minimal 6 karakter',
-    'any.required': 'Kata sandi baru wajib diisi'
+    'string.min': 'Kata sandi baru minimal 6 karakter'
   }),
+  newPassword: Joi.string().min(6).messages({
+    'string.empty': 'Kata sandi baru tidak boleh kosong',
+    'string.min': 'Kata sandi baru minimal 6 karakter'
+  }),
+}).or('password', 'newPassword').messages({
+  'object.missing': 'Kata sandi baru wajib diisi'
 });

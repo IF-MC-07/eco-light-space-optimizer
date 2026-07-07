@@ -46,7 +46,7 @@ export function ActiveRulesList({ schedules, onEdit }: ActiveRulesListProps) {
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-1.5 text-xs font-bold text-secondary">
                         <Clock size={12} className="text-primary-dark/60" />
-                        <span>{rule.start_time.substring(0, 5)} — {rule.end_time.substring(0, 5)}</span>
+                        <span>{rule.start_time?.substring(0, 5) || "00:00"} — {rule.end_time?.substring(0, 5) || "00:00"}</span>
                       </div>
                       <div className="w-1 h-1 rounded-full bg-neutral-border"></div>
                       <div className="flex items-center gap-1.5 text-xs font-bold text-secondary">

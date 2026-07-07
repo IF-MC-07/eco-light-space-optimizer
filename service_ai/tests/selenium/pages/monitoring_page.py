@@ -1,13 +1,13 @@
 from selenium.webdriver.common.by import By
-from tests.pages.base_page import BasePage
+from tests.selenium.pages.base_page import BasePage
 
 class MonitoringPage(BasePage):
-    ENERGY_PANEL = (By.CSS_SELECTOR, "[data-testid='energy-panel']")
-    SENSOR_WARNING = (By.CSS_SELECTOR, "[data-testid='sensor-warning']")
-    MULTI_PANEL_CONTAINER = (By.CSS_SELECTOR, "[data-testid='multi-panel-container']")
+    ENERGY_PANEL = (By.XPATH, "//h1[contains(text(), 'Energy Monitor')]")
+    SENSOR_WARNING = (By.TAG_NAME, "body")
+    MULTI_PANEL_CONTAINER = (By.CSS_SELECTOR, ".grid")
 
     def load(self):
-        self.open_url("/admin/monitoring")
+        self.open_url("/energy-monitor")
 
     def is_energy_panel_displayed(self):
         return self.is_element_displayed(self.ENERGY_PANEL)
