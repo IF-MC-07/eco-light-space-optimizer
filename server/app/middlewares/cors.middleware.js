@@ -1,9 +1,9 @@
 import cors from 'cors';
 
 export const corsMiddleware = cors({
-  origin: [
-    process.env.NEXT_PUBLIC_CLIENT_URL || 'http://localhost:3000',
-    'http://127.0.0.1:3000'
-  ],
+  origin: true,                    // Izinkan semua origin (development)
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Set-Cookie']
 });
