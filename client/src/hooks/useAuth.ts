@@ -7,25 +7,25 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const login = async (email: string, password: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await api.post('/auth/login', { email, password });
-      const { token, user } = response.data.data;
-      
-      // Set HTTP-only cookie via Server Action
-      await setAuthCookie(token);
-      
-      return { success: true, user };
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Login gagal');
-      return { success: false, message: err.response?.data?.message };
-    } finally {
-      setLoading(false);
-    }
-  };
-
+const login = async (email: string, password: string) => {
+  setLoading(true);
+  setError(null);
+  try {
+    const response = await api.post('/auth/login', { email, password }, {
+      withCredentials: true   // ← Tambahkan ini
+    });
+    
+    const { token, user } = response.data.data;
+    await setAuthCookie(token);
+    
+    return { success: true, user };
+  } catch (err: any) {
+    setError(err.response?.data?.message || 'Login gagal');
+    return { success: false, message: err.response?.data?.message };
+  } finally {
+    setLoading(false);
+  }
+};
   const register = async (name: string, username: string, email: string, password: string) => {
     setLoading(true);
     setError(null);

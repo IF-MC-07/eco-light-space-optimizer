@@ -157,7 +157,7 @@ def get_top_consumers(limit=5) -> list:
         result = []
         for _, row in merged.iterrows():
             result.append({
-                "room_id": int(row['room_id']),
+                "room_id": str(row['room_id']),    # room_id is VARCHAR, not int
                 "room_name": str(row['room_name']),
                 "avg_watts": float(np.round(row['avg_watts'], 2)),
                 "latest_watts": float(np.round(row['latest_watts'], 2))
@@ -205,7 +205,7 @@ def detect_usage_alerts(threshold_watts=500) -> list:
             current_watts = float(row['power_watts'])
             exceeded_by = current_watts - float(threshold_watts)
             result.append({
-                "room_id": int(row['room_id']),
+                "room_id": str(row['room_id']),    # room_id is VARCHAR, not int
                 "room_name": str(row['room_name']),
                 "current_watts": float(np.round(current_watts, 2)),
                 "threshold": float(threshold_watts),
@@ -366,7 +366,7 @@ def get_savings_breakdown(room_id=None) -> list:
         for i, row in enumerate(breakdown.iterrows(), start=1):
             r_data = row[1]
             result.append({
-                "room_id": int(r_data['room_id']),
+                "room_id": str(r_data['room_id']),  # room_id is VARCHAR, not int
                 "room_name": str(r_data['room_name']),
                 "total_watts": float(np.round(r_data['total_watts'], 2)),
                 "saved_watts": float(np.round(r_data['saved_watts'], 2)),
