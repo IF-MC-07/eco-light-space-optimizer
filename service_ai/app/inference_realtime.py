@@ -205,12 +205,11 @@ def camera_worker(camera_id: str, ip_address: str, mqtt_handler: MQTTHandler, st
     cam_source = int(ip_address) if ip_address.isdigit() else ip_address
     zones = []
     last_zone_fetch = 0.0
-    prev_data = {}
+    cap = open_capture(cam_source)
 
     while not stop_event.is_set():
         now = time.time()
 
-        # Refresh zona dari DB
         if (now - last_zone_fetch) >= ZONE_FETCH_INTERVAL or last_zone_fetch == 0.0:
             try:
                 zones = ambil_zona_dari_db(camera_id)
@@ -219,22 +218,23 @@ def camera_worker(camera_id: str, ip_address: str, mqtt_handler: MQTTHandler, st
             except Exception as e:
                 log.error(f"❌ [{camera_id}] Gagal fetch zona: {e}")
 
-        # Ambil snapshot
         try:
-            cap = open_capture(cam_source)
-            if not cap.isOpened():
-                log.warning(f"⚠️ [{camera_id}] Kamera tidak bisa dibuka, retry dalam {SNAPSHOT_INTERVAL}s")
+            if cap is None or not cap.isOpened():
+                log.warning(f"⚠️ [{camera_id}] Kamera tidak terbuka, reopen dalam {SNAPSHOT_INTERVAL}s")
+                try:
+                    cap.release()
+                except Exception:
+                    pass
                 time.sleep(SNAPSHOT_INTERVAL)
+                cap = open_capture(cam_source)
                 continue
 
-            for _ in range(5):
-                cap.read()
-
             ret, frame = cap.read()
-            cap.release()
 
             if not ret:
-                log.warning(f"⚠️ [{camera_id}] Frame tidak terbaca, skip.")
+                log.warning(f"⚠️ [{camera_id}] Frame tidak terbaca, reconnect.")
+                cap.release()
+                cap = open_capture(cam_source)
                 time.sleep(SNAPSHOT_INTERVAL)
                 continue
 
@@ -242,10 +242,12 @@ def camera_worker(camera_id: str, ip_address: str, mqtt_handler: MQTTHandler, st
             log.error(f"❌ [{camera_id}] Error capture: {e}")
             try:
                 cap.release()
-            except:
+            except Exception:
                 pass
+            cap = open_capture(cam_source)
             time.sleep(SNAPSHOT_INTERVAL)
             continue
+
         # Inference dengan lock
         try:
             with _model_lock:
