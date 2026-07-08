@@ -200,21 +200,13 @@ class MQTTSubscriber:
                     VALUES (%s, %s, %s,
                             %s, %s, %s,
                             %s, %s, %s,
-                            %s, 0)
-                    ON CONFLICT (room_id, date)
-                    DO UPDATE SET
-                        voltage      = EXCLUDED.voltage,
-                        current      = EXCLUDED.current,
-                        power        = EXCLUDED.power,
-                        energy       = COALESCE(EXCLUDED.energy,      energy_logs.energy),
-                        frequency    = COALESCE(EXCLUDED.frequency,    energy_logs.frequency),
-                        power_factor = COALESCE(EXCLUDED.power_factor, energy_logs.power_factor),
-                        total_watts  = energy_logs.total_watts + EXCLUDED.power
+                            %s, %s)
                 """, (
                     log_id, room_id, today,
                     voltage, current, power,
                     energy, frequency, pf,
-                    power
+                    power,
+                    0
                 ))
 
             conn.commit()

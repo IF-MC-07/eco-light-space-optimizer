@@ -1,59 +1,129 @@
 import mqtt from "mqtt";
 import db from "../models/index.js";
 
-const broker = process.env.MQTT_BROKER || "mqtt://localhost";
+const brokerHost = process.env.MQTT_BROKER || "localhost";
+const brokerPort = process.env.MQTT_PORT || "1883";
+
+const broker = `mqtt://${brokerHost}:${brokerPort}`;
+
+console.log("====================================");
+console.log(" MQTT ENERGY SERVICE");
+console.log(" Broker :", broker);
+console.log("====================================");
 
 const client = mqtt.connect(broker);
 
 client.on("connect", () => {
 
-    console.log("====================================");
-    console.log("MQTT ENERGY SERVICE CONNECTED");
-    console.log("====================================");
+    console.log("MQTT ENERGY CONNECTED");
 
     client.subscribe("devices/+/energy");
 
 });
 
-client.on("message", async(topic,message)=>{
+client.on("message", async (topic, message) => {
 
-    try{
+    try {
 
         const payload = JSON.parse(message.toString());
 
-        console.log("ENERGY RECEIVED");
+        console.log("[MQTT] ENERGY RECEIVED");
 
         console.log(payload);
 
-        await db.EnergyLog.create({
+        const dateOnly = payload.timestamp.split("T")[0];
 
-            room_id: payload.room_id,
+        const existing = await db.sequelize.query(
+            `
+            SELECT *
+            FROM energy_logs
+            WHERE room_id = :room_id
+            AND DATE(date) = :date
+            LIMIT 1
+            `,
+            {
+                replacements:{
+                    room_id: payload.room_id,
+                    date: dateOnly
+                },
+                type: db.sequelize.QueryTypes.SELECT
+            });
+            const row = existing[0];
 
-            voltage: payload.voltage,
+        if(row){
 
-            current: payload.current,
+            await db.EnergyLog.update(
+            {
 
-            power: payload.power,
+                voltage: payload.voltage,
 
-            energy: payload.energy,
+                current: payload.current,
 
-            frequency: payload.frequency,
+                power: payload.power,
 
-            power_factor: payload.pf,
+                energy: payload.energy,
 
-            total_watts: payload.power,
+                frequency: payload.frequency,
 
-            saved_watts: 0,
+                power_factor: payload.pf,
 
-            date: new Date(payload.timestamp)
+                pf: payload.pf,
 
-        });
+                total_watts: payload.power,
 
-        console.log("SUCCESS SAVE ENERGY");
+                recorded_at: new Date(payload.timestamp)
+
+            },
+            {
+                where:{
+                    log_id: row.log_id
+                }
+            }
+            );
+
+            console.log("Energy Updated");
+
+        }
+
+        else{
+
+            await db.EnergyLog.create({
+
+                room_id: payload.room_id,
+
+                voltage: payload.voltage,
+
+                current: payload.current,
+
+                power: payload.power,
+
+                energy: payload.energy,
+
+                frequency: payload.frequency,
+
+                power_factor: payload.pf,
+
+                pf: payload.pf,
+
+                total_watts: payload.power,
+
+                saved_watts:0,
+
+                date: dateOnly,
+
+                recorded_at:new Date(payload.timestamp)
+
+            });
+
+            console.log("Energy Inserted");
+
+        }
 
     }
 
     catch(err){
+
+        console.log("[MQTT] Error");
 
         console.log(err);
 
