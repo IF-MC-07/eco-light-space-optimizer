@@ -42,7 +42,8 @@ service_ai/app/models/*.h5
 service_ai/app/models/*.onnx
 service_ai/data/
 service_ai/scripts/datasets/
-
+service_ai/tests/models/datasets/
+service_ai/tests/models/comparison/*_predictions/
 
 # ─── FIRMWARE (ESP32 / PlatformIO) ──────────────────────────
 firmware/.pio/
