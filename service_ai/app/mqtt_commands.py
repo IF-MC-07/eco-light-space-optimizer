@@ -33,8 +33,10 @@ class MQTTCommander:
         }
 
         try:
-            mqtt_client.publish(topic, json.dumps(payload))
-            logger.info(f"💡 Light command published to {topic}: {payload}")
+            if mqtt_client.publish(topic, payload):
+                logger.info(f"💡 Light command published to {topic}: {payload}")
+            else:
+                logger.error(f"❌ Light command publish failed for {topic}")
         except Exception as e:
             logger.error(f"❌ Failed to publish light command: {e}")
 
@@ -52,8 +54,10 @@ class MQTTCommander:
             "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
         }
         try:
-            mqtt_client.publish(topic, json.dumps(payload))
-            logger.info(f"❄️ AC command published to {topic}: {payload}")
+            if mqtt_client.publish(topic, payload):
+                logger.info(f"❄️ AC command published to {topic}: {payload}")
+            else:
+                logger.error(f"❌ AC command publish failed for {topic}")
         except Exception as e:
             logger.error(f"❌ Failed to publish AC command: {e}")
 
@@ -68,8 +72,10 @@ class MQTTCommander:
             "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
         }
         try:
-            mqtt_client.publish(topic, json.dumps(payload))
-            logger.info(f"❓ Requested device status on topic {topic}")
+            if mqtt_client.publish(topic, payload):
+                logger.info(f"❓ Requested device status on topic {topic}")
+            else:
+                logger.error(f"❌ Status request publish failed for {topic}")
         except Exception as e:
             logger.error(f"❌ Failed to publish status request: {e}")
 

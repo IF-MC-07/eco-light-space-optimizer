@@ -1,4 +1,3 @@
-import "./services/mqttEnergyService.js";
 import fs from "fs";
 import https from "https";
 import http from "http";

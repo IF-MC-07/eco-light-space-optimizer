@@ -154,7 +154,7 @@ class MqttService {
         WHERE zone_id IN (
           SELECT zone_id FROM zones WHERE room_id = :room_id
         )
-        AND light_status = 'off'
+        AND LOWER(COALESCE(light_status, 'off')) = 'off'
       `;
       const [savedResult] = await db.sequelize.query(savedWattsQuery, {
         replacements: { room_id: roomId },

@@ -38,6 +38,7 @@ logger = logging.getLogger(__name__)
 
 class MQTTSubscriber:
     def __init__(self):
+        self.started = False
         self.broker = os.getenv("MQTT_BROKER", "localhost")
         self.port = int(os.getenv("MQTT_PORT", 1883))
         self.username = os.getenv("MQTT_USER")
@@ -64,8 +65,7 @@ class MQTTSubscriber:
             client.subscribe(self.topic_zone_reload)
             client.subscribe("devices/+/status/response")
             client.subscribe(self.topic_esp32_online)
-            client.subscribe("devices/+/energy")
-            logger.info("📡 Subscribed to all topics including devices/+/energy")
+            logger.info("📡 Subscribed to control/status topics; energy handling is delegated to backend")
         else:
             logger.error(f"❌ Failed to connect, reason: {reason_code}")
 
@@ -94,8 +94,6 @@ class MQTTSubscriber:
             self._handle_status_response(payload)
         elif topic.startswith("devices/") and topic.endswith("/status/online"):
             self._handle_esp32_online(topic, payload)
-        elif topic.startswith("devices/") and topic.endswith("/energy"):
-            self._handle_energy(topic, payload)
         else:
             logger.debug(f"Unhandled topic: {topic}")
 
@@ -275,21 +273,41 @@ class MQTTSubscriber:
                 logger.error(f"❌ Error restoring state: {e}")
 
     def publish(self, topic: str, payload: dict):
-        self.client.publish(topic, json.dumps(payload))
+        if isinstance(payload, (dict, list)):
+            serialized_payload = json.dumps(payload)
+        else:
+            serialized_payload = payload
+
+        result = self.client.publish(topic, serialized_payload, qos=1)
+        rc = getattr(result, "rc", None)
+        if rc != mqtt.MQTT_ERR_SUCCESS:
+            logger.error(f"❌ Failed to publish to {topic} (rc={rc})")
+            return False
+
         logger.info(f"📤 Published to {topic}: {payload}")
+        return True
 
     def start(self):
+        if getattr(self, "started", False):
+            return True
+
         try:
             self.client.connect(self.broker, self.port, keepalive=60)
             self.client.loop_start()
+            self.started = True
             logger.info("🚀 MQTT Subscriber started")
+            return True
         except Exception as e:
             logger.error(f"❌ MQTT connection error: {e}")
             raise
 
     def stop(self):
+        if not getattr(self, "started", False):
+            return
+
         self.client.loop_stop()
         self.client.disconnect()
+        self.started = False
         logger.info("🛑 MQTT Subscriber stopped")
 
 

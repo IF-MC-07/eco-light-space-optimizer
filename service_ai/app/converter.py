@@ -1,95 +1,65 @@
-from pathlib import Path
+import os
 
-# Root = folder tempat script ini berada (service_ai)
-ROOT = Path(__file__).parent
+# Daftar file yang disesuaikan persis dengan gambar Anda
+daftar_file = [
+    "boot_recovery.py",
+    "camera_loader.py",
+    "db_healthcheck.py",
+    "db_state.py",
+    "db.py",
+    "decision_engine.py",
+    "inference_realtime.py",
+    "log_writer.py",
+    "mqtt_commands.py",
+    "mqtt_subscriber.py",
+    "results.py",
+    "schedule_runner.py",
+    "snapshot.py",
+    "statistics_engine.py",
+    "test_camera.py",
+    "test_picture.py",
+    "train.py",
+    "zona_loader.py",
+    
+]
 
-OUTPUT_FILE = ROOT / "service_ai_source.md"
+# Nama file hasil akhir .md
+file_output = "gabungan_kode_project.md"
 
-# Folder yang diabaikan
-IGNORE_DIRS = {
-    ".venv",
-    "__pycache__",
-    ".git",
-    "runs",
-    ".pytest_cache",
-    ".mypy_cache"
-}
+print("=== MEMULAI PENGGABUNGAN FILE KODE ===")
 
-# File yang diabaikan
-IGNORE_FILES = {
-    OUTPUT_FILE.name,
-    Path(__file__).name,
-    ".gitkeep"
-}
+try:
+    with open(file_output, "w", encoding="utf-8") as outfile:
+        # Menulis judul utama di Markdown
+        outfile.write("# Dokumentasi Source Code Project\n\n")
+        outfile.write("Dokumen ini berisi gabungan seluruh skrip Python dalam project.\n\n")
+        
+        file_sukses = 0
+        
+        for nama_file in daftar_file:
+            if os.path.exists(nama_file):
+                # Membuat judul berdasarkan nama file
+                outfile.write(f"## 📄 {nama_file}\n")
+                outfile.write(f"Source code untuk file `{nama_file}`:\n\n")
+                
+                # Membuka block code Python di Markdown
+                outfile.write("```python\n")
+                with open(nama_file, "r", encoding="utf-8", errors="ignore") as infile:
+                    outfile.write(infile.read())
+                outfile.write("\n```\n\n")
+                
+                # Pembatas horizontal antar file
+                outfile.write("---\n\n")
+                print(f"✓ Berhasil memasukkan: {nama_file}")
+                file_sukses += 1
+            else:
+                print(f"⚠️ File tidak ditemukan: {nama_file} (Dilewati)")
+                
+    print("\n=== PROSES SELESAI ===")
+    if file_sukses > 0:
+        print(f"Berhasil menggabungkan {file_sukses} file ke dalam: {os.path.abspath(file_output)}")
+    else:
+        print("❌ Tidak ada file yang berhasil digabungkan. Pastikan skrip ini dijalankan di folder yang sama dengan file-file di atas.")
 
-# Ekstensi yang ingin dimasukkan
-INCLUDE_EXT = {
-    ".py",
-    ".json",
-    ".txt",
-    ".yaml",
-    ".yml",
-    ".ini",
-    ".cfg",
-    ".toml",
-    ".env.example"
-}
-
-with open(OUTPUT_FILE, "w", encoding="utf-8") as out:
-
-    out.write("# SERVICE_AI SOURCE CODE\n")
-    out.write("Generated automatically.\n\n")
-
-    for file in sorted(ROOT.rglob("*")):
-
-        if file.is_dir():
-            continue
-
-        # Skip folder tertentu
-        if any(part in IGNORE_DIRS for part in file.parts):
-            continue
-
-        # Skip file tertentu
-        if file.name in IGNORE_FILES:
-            continue
-
-        # Skip model AI
-        if file.suffix.lower() in {
-            ".pt",
-            ".pth",
-            ".onnx",
-            ".jpg",
-            ".jpeg",
-            ".png",
-            ".gif",
-            ".webp",
-            ".csv",
-            ".db"
-        }:
-            continue
-
-        # Skip jika bukan file yang diinginkan
-        if file.suffix not in INCLUDE_EXT:
-            continue
-
-        relative = file.relative_to(ROOT)
-
-        out.write("\n")
-        out.write("=" * 100 + "\n")
-        out.write(f"FILE : {relative}\n")
-        out.write("=" * 100 + "\n\n")
-
-        ext = file.suffix.replace(".", "")
-        if ext == "":
-            ext = "text"
-
-        out.write(f"```{ext}\n")
-
-        try:
-            out.write(file.read_text(encoding="utf-8"))
-        except:
-            out.write(file.read_text(encoding="latin-1", errors="ignore"))
-
-        out.write("\n```\n\n")
-
-print(f"Selesai!\nOutput : {OUTPUT_FILE}")
+except Exception as e:
+    print(f"Terjadi kesalahan sistem: {e}")

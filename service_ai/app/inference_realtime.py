@@ -13,9 +13,13 @@ from ultralytics import YOLO
 try:
     from app.zona_loader import ambil_zona_dari_db, titik_di_zona
     from app.camera_loader import get_camera_stream_source, get_active_camera_sources
+    from app.mqtt_subscriber import mqtt_client
+    from app.decision_engine import decision_engine
 except ImportError:
     from zona_loader import ambil_zona_dari_db, titik_di_zona
     from camera_loader import get_camera_stream_source, get_active_camera_sources
+    from mqtt_subscriber import mqtt_client
+    from decision_engine import decision_engine
 
 load_dotenv()
 
@@ -97,40 +101,26 @@ def get_model():
 class MQTTHandler:
     def __init__(self):
         self.connected = False
-        self.client = mqtt.Client(
-            callback_api_version=mqtt.CallbackAPIVersion.VERSION2
-        )
-        if MQTT_USER and MQTT_PASSWORD:
-            self.client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
-        self.client.on_connect = self._on_connect
-        self.client.on_disconnect = self._on_disconnect
-        self.client.reconnect_delay_set(min_delay=1, max_delay=30)
-
-    def _on_connect(self, client, userdata, flags, reason_code, properties):
-        if reason_code == 0:
-            self.connected = True
-            log.info(f"✅ MQTT terhubung ke {MQTT_BROKER}:{MQTT_PORT}")
-        else:
-            self.connected = False
-            log.error(f"❌ MQTT gagal connect, kode: {reason_code}")
-
-    def _on_disconnect(self, client, userdata, flags, reason_code, properties):
-        self.connected = False
-        log.warning(f"⚠️ MQTT terputus (kode: {reason_code}), mencoba reconnect...")
+        self.client = mqtt_client
 
     def connect(self):
-        self.client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
-        self.client.loop_start()
+        try:
+            self.client.start()
+            self.connected = True
+        except Exception as e:
+            self.connected = False
+            log.error(f"❌ MQTT gagal connect via shared subscriber: {e}")
 
     def publish(self, topic: str, payload: dict) -> bool:
         if not self.connected:
-            return False
-        result = self.client.publish(topic, json.dumps(payload), qos=1)
-        return result.rc == mqtt.MQTT_ERR_SUCCESS
+            self.connect()
+        return self.client.publish(topic, payload)
 
     def stop(self):
-        self.client.loop_stop()
-        self.client.disconnect()
+        try:
+            self.client.stop()
+        finally:
+            self.connected = False
 
 # ─── Fetch semua kamera aktif dari DB/API ─────────────────────────────────────
 def get_active_cameras() -> list:
@@ -199,12 +189,25 @@ def open_capture(cam_source, timeout_ms=5000):
     return cap
 
 # ─── Worker per kamera ────────────────────────────────────────────────────────
+def _maybe_process_decision(camera_id: str, occupancy_counts: dict, engine, last_decision_call: float, now: float, throttle_seconds: float = 1.0):
+    if now - last_decision_call < throttle_seconds:
+        return last_decision_call
+
+    try:
+        engine.process_inference(camera_id, occupancy_counts)
+    except Exception as exc:
+        log.error(f"❌ [{camera_id}] Decision engine failed: {exc}")
+
+    return now
+
+
 def camera_worker(camera_id: str, ip_address: str, mqtt_handler: MQTTHandler, stop_event: threading.Event):
     log.info(f"🎥 Starting worker for {camera_id} ({ip_address})")
 
     cam_source = int(ip_address) if ip_address.isdigit() else ip_address
     zones = []
     last_zone_fetch = 0.0
+    last_decision_call = 0.0
     cap = open_capture(cam_source)
 
     while not stop_event.is_set():
@@ -292,6 +295,16 @@ def camera_worker(camera_id: str, ip_address: str, mqtt_handler: MQTTHandler, st
         count = hitung_per_zona(results[0].boxes, zones, width, height)
         status = "ON" if count["total"] > 0 else "OFF"
 
+        now2 = time.time()
+        last_decision_call = _maybe_process_decision(
+            camera_id,
+            count,
+            decision_engine,
+            last_decision_call,
+            now2,
+            throttle_seconds=1.0,
+        )
+
         try:
             annotated = results[0].plot()
             for z in zones:
@@ -312,7 +325,13 @@ def camera_worker(camera_id: str, ip_address: str, mqtt_handler: MQTTHandler, st
 # ─── Entry point ──────────────────────────────────────────────────────────────
 def run():
     mqtt_handler = MQTTHandler()
-    mqtt_handler.connect()
+    try:
+        mqtt_client.start()
+        mqtt_handler.connected = True
+    except Exception as e:
+        log.error(f"❌ Gagal memulai shared MQTT client: {e}")
+        mqtt_handler.stop()
+        return
 
     cameras = get_active_cameras()
     if not cameras:
