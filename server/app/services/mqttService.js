@@ -203,6 +203,38 @@ class MqttService {
     }
   }
 
+  async handleRelayStatus(payload) {
+    try {
+      const { room_id, channel, status } = payload;
+      if (!room_id || channel === undefined || !status) {
+        console.warn('[MQTT] Invalid relay status payload:', payload);
+        return;
+      }
+
+      const updateQuery = `
+        UPDATE light_controls
+        SET light_status = :status, updated_at = NOW()
+        WHERE relay_channel = :channel
+          AND device_id IN (
+            SELECT device_id FROM iot_devices WHERE room_id = :room_id
+          )
+      `;
+
+      await db.sequelize.query(updateQuery, {
+        replacements: {
+          status: status.toLowerCase(),
+          channel: channel,
+          room_id: room_id
+        },
+        type: db.sequelize.QueryTypes.UPDATE
+      });
+
+      console.log(`[MQTT] Updated relay status: room=${room_id} channel=${channel} status=${status}`);
+    } catch (error) {
+      console.error('[MQTT] Error in handleRelayStatus:', error);
+    }
+  }
+
   publish(topic, payload) {
 
     if (!this.client || !this.client.connected) {
