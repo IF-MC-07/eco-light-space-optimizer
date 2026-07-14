@@ -1,9 +1,25 @@
+export interface RealtimeSeriesPoint {
+  time: string;
+  date: string;
+  actual: number;
+  baseline: number;
+}
+
+export interface ChartSeriesPoint {
+  label: string;
+  usage: number;
+  savings: number;
+  efficiency: number;
+}
+
 export interface EnergySummary {
   current_consumption: number;
   today_usage: number;
   today_saved: number;
   monthly_usage: number;
   monthly_saved: number;
+  chart_series?: ChartSeriesPoint[];
+  realtime_series?: RealtimeSeriesPoint[];
 }
 
 export interface EnergyLogData {
