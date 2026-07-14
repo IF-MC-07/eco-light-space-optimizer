@@ -1,5 +1,6 @@
 import responseFormatter from '../utils/response.js';
 import db from '../models/index.js';
+import { buildEnergyRangeSeries, buildRealtimeHourlySeries } from '../utils/chartData.js';
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
 
@@ -29,13 +30,12 @@ export const getSummary = async (req, res, next) => {
       realtimeData = await realtimeRes.json();
     } catch (err) {
       console.warn('[fallback] AI service unavailable, using DB data');
-      // AI service fallback — calculates from DB directly
       const whereClause = room_id ? { room_id } : {};
       
       const recentSensors = await db.PowerSensor.findAll({
         where: whereClause,
         order: [['read_at', 'DESC']],
-        limit: 10,
+        limit: 24,
         raw: true
       });
       const currentConsumption = recentSensors.length > 0 
@@ -54,7 +54,7 @@ export const getSummary = async (req, res, next) => {
       const totalSaved = logs[0]?.total_saved_watts ? parseFloat(logs[0].total_saved_watts) : 0;
 
       summaryData = {
-        avg_daily_watts: totalConsumption / 30, // rough estimate
+        avg_daily_watts: totalConsumption / 30,
         total_consumption_watts: totalConsumption,
         total_saved_watts: totalSaved
       };
@@ -66,9 +66,26 @@ export const getSummary = async (req, res, next) => {
     return responseFormatter.success(res, {
         current_consumption: realtimeData.mean_watts || 0.0,
         today_usage: summaryData.avg_daily_watts || 0.0,
-        today_saved: (summaryData.total_saved_watts / 30) || 0.0, // daily average estimate
+        today_saved: (summaryData.total_saved_watts / 30) || 0.0,
         monthly_usage: summaryData.total_consumption_watts || 0.0,
-        monthly_saved: summaryData.total_saved_watts || 0.0
+        monthly_saved: summaryData.total_saved_watts || 0.0,
+        chart_series: buildEnergyRangeSeries(
+          (await db.EnergyLog.findAll({
+            where: room_id ? { room_id } : {},
+            attributes: ['date', 'total_watts', 'saved_watts'],
+            order: [['date', 'ASC']],
+            raw: true,
+          })) || [],
+          'month'
+        ),
+        realtime_series: buildRealtimeHourlySeries(
+          (await db.PowerSensor.findAll({
+            where: room_id ? { room_id } : {},
+            attributes: ['read_at', 'power_watts'],
+            order: [['read_at', 'ASC']],
+            raw: true,
+          })) || []
+        )
       }, 'Success');
   } catch (error) {
     next(error);
@@ -77,9 +94,9 @@ export const getSummary = async (req, res, next) => {
 
 export const getLogs = async (req, res, next) => {
   try {
-    const { room_id } = req.query;
+    const { room_id, range } = req.query;
+    const normalizedRange = ['day', 'week', 'month'].includes(range) ? range : 'month';
     
-    // Construct URL for daily savings trend
     const url = `${AI_SERVICE_URL}/energy/trend?days=30`;
     
     let trendData;
@@ -121,13 +138,16 @@ export const getLogs = async (req, res, next) => {
       });
     }
 
-    // Map logs to format expected by frontend or fallback to database if failed
-    return responseFormatter.success(res, trendData.map(t => ({
-      date: t.date,
-      total_watts: t.total_watts,
-      saved_watts: t.saved_watts,
-      savings_percentage: t.savings_pct
-    })), 'Success');
+    const directLogs = (await db.EnergyLog.findAll({
+      where: room_id ? { room_id } : {},
+      attributes: ['date', 'total_watts', 'saved_watts'],
+      order: [['date', 'ASC']],
+      raw: true,
+    })) || [];
+
+    const formattedTrend = buildEnergyRangeSeries(directLogs, normalizedRange);
+
+    return responseFormatter.success(res, formattedTrend, 'Success');
   } catch (error) {
     next(error);
   }

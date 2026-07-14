@@ -1,5 +1,6 @@
 import pytest
 import time
+import psycopg2
 from unittest.mock import patch, MagicMock
 
 # Import necessary module. Path should match the project setup.
@@ -22,16 +23,22 @@ class TestDecisionEngine:
             return DecisionEngine()
 
     @pytest.fixture
-    def mock_db_connection(self, mocker):
+    def mock_db_connection(self, monkeypatch):
+        import app.decision_engine as decision_engine_module
+
         mock_conn = MagicMock()
         mock_cur = MagicMock()
         mock_conn.cursor.return_value.__enter__.return_value = mock_cur
-        mocker.patch('app.decision_engine.get_db_connection', return_value=mock_conn)
+        monkeypatch.setattr(decision_engine_module, 'get_db_connection', lambda: mock_conn)
         return mock_cur
 
     @pytest.fixture
-    def mock_mqtt(self, mocker):
-        return mocker.patch('app.decision_engine.mqtt_commander')
+    def mock_mqtt(self, monkeypatch):
+        import app.decision_engine as decision_engine_module
+
+        mock_mqtt = MagicMock()
+        monkeypatch.setattr(decision_engine_module, 'mqtt_commander', mock_mqtt)
+        return mock_mqtt
 
     def test_initialize_camera_states(self, engine, mock_db_connection):
         # Setup mock return values for DB
@@ -156,3 +163,49 @@ class TestDecisionEngine:
             room_id=1, command="ON", temperature=24.0, source="ai_decision"
         )
         assert engine.ac_states[1]["current_status"] == "ON"
+
+    @patch('app.decision_engine.time.time')
+    def test_process_inference_recovers_from_closed_cursor(self, mock_time, engine, monkeypatch, mock_mqtt):
+        engine._camera_room_cache["cam_1"] = 1
+        engine.zone_states = {
+            10: {"zone_id": 10, "zone_name": "ZoneA", "room_id": 1, "current_status": "OFF", "occupied_since": None, "empty_since": None, "pending_on": False, "pending_off": False}
+        }
+        engine.ac_states = {
+            1: {"room_id": 1, "current_status": "OFF", "occupied_since": None, "empty_since": None, "last_turned_off": None}
+        }
+        engine._initialized_cameras.add("cam_1")
+
+        import app.decision_engine as decision_engine_module
+
+        init_conn = MagicMock()
+        init_cursor = MagicMock()
+        init_conn.cursor.return_value.__enter__.return_value = init_cursor
+        init_cursor.fetchone.return_value = (1,)
+        init_cursor.fetchall.return_value = []
+
+        first_conn = MagicMock()
+        second_conn = MagicMock()
+        first_cursor = MagicMock()
+        second_cursor = MagicMock()
+
+        first_conn.cursor.return_value.__enter__.return_value = first_cursor
+        second_conn.cursor.return_value.__enter__.return_value = second_cursor
+        second_cursor.fetchone.return_value = (1,)
+        second_cursor.fetchall.return_value = []
+
+        first_cursor.execute.side_effect = psycopg2.ProgrammingError("cursor already closed")
+
+        connection_sequence = [init_conn, first_conn, second_conn]
+        monkeypatch.setattr(decision_engine_module, 'get_db_connection', lambda: connection_sequence.pop(0))
+
+        mock_time.return_value = 105.0
+        engine.process_inference("cam_1", {"ZoneA": 2})
+
+        mock_mqtt.send_light_command.assert_not_called()
+
+        mock_time.return_value = 110.0
+        engine.process_inference("cam_1", {"ZoneA": 2})
+
+        mock_mqtt.send_light_command.assert_called_once_with(
+            room_id=1, relay_channel=1, command="ON", zone_id=10, zone_name="ZoneA", source="ai_decision"
+        )

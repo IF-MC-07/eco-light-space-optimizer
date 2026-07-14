@@ -7,6 +7,7 @@ const router = Router();
 
 router.get("/", authenticate, automationScheduleController.getAll);
 router.get("/stats", authenticate, automationScheduleController.getStats);
+router.delete("/", authenticate, requireRole(["admin"]), automationScheduleController.removeAll);
 router.get("/:id", authenticate, automationScheduleController.getById);
 router.post(
   "/",

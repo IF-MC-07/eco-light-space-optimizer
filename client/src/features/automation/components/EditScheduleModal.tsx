@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { X, Clock } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
-import { useUpdateSchedule, useCreateSchedule } from "../hooks";
+import { AlertDialog } from "../../../components/ui/AlertDialog";
+import { useUpdateSchedule, useCreateSchedule, useRemoveSchedule } from "../hooks";
 import type { AutomationSchedule } from "../types";
 import { useMe } from "../../auth/hooks";
 import { useRooms } from "../../rooms/hooks";
@@ -17,6 +18,7 @@ interface EditScheduleModalProps {
 export function EditScheduleModal({ isOpen, onClose, schedule, isAddingNew = false }: EditScheduleModalProps) {
   const { mutate: updateSchedule, isPending: isUpdating } = useUpdateSchedule();
   const { mutate: createSchedule, isPending: isCreating } = useCreateSchedule();
+  const { mutate: removeSchedule, isPending: isRemoving } = useRemoveSchedule();
   const { data: meResponse } = useMe();
   const me = meResponse?.user;
   const { data: roomsResponse } = useRooms();
@@ -26,6 +28,7 @@ export function EditScheduleModal({ isOpen, onClose, schedule, isAddingNew = fal
   const [startTime, setStartTime] = useState("08:00");
   const [endTime, setEndTime] = useState("17:00");
   const [roomId, setRoomId] = useState<string>("");
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
 
   useEffect(() => {
     if (schedule) {
@@ -65,6 +68,17 @@ export function EditScheduleModal({ isOpen, onClose, schedule, isAddingNew = fal
   };
 
   const isSaving = isUpdating || isCreating;
+
+  const handleDelete = () => {
+    if (!schedule?.schedule_id) return;
+
+    removeSchedule(schedule.schedule_id, {
+      onSuccess: () => {
+        setIsDeleteAlertOpen(false);
+        onClose();
+      },
+    });
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4">
@@ -159,6 +173,15 @@ export function EditScheduleModal({ isOpen, onClose, schedule, isAddingNew = fal
         </div>
 
         <div className="px-8 pb-8 bg-[#F8FAFC] flex flex-col items-center pt-8 border-t border-neutral-border/50">
+          {!isAddingNew && (
+            <button
+              onClick={() => setIsDeleteAlertOpen(true)}
+              disabled={isRemoving || !schedule?.schedule_id}
+              className="w-full bg-[#FEE2E2] text-[#B91C1C] hover:bg-[#FECACA] py-3 rounded-xl text-sm font-semibold transition-colors shadow-sm mb-4 disabled:opacity-60"
+            >
+              {isRemoving ? "Deleting..." : "Delete Schedule"}
+            </button>
+          )}
           <Button 
             onClick={handleSave}
             disabled={isSaving}
@@ -174,6 +197,20 @@ export function EditScheduleModal({ isOpen, onClose, schedule, isAddingNew = fal
           </button>
         </div>
       </div>
+
+      <AlertDialog
+        isOpen={isDeleteAlertOpen}
+        onClose={() => setIsDeleteAlertOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete this schedule"
+        description={
+          <>
+            This will permanently remove <span className="font-semibold text-secondary-dark">{name || "this automation schedule"}</span> from the system.
+          </>
+        }
+        cancelText="Cancel"
+        confirmText={isRemoving ? "Deleting..." : "Delete Schedule"}
+      />
     </div>
   );
 }

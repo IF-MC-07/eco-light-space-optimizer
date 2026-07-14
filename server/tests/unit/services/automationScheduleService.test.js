@@ -84,4 +84,15 @@ describe('automationScheduleService', () => {
       }
     });
   });
+
+  describe('removeAll()', () => {
+    it('menghapus semua schedule', async () => {
+      mockModel.destroy.mockResolvedValue(2);
+      if (service.removeAll) {
+        const result = await service.removeAll();
+        expect(result).toBe(2);
+        expect(mockModel.destroy).toHaveBeenCalledWith({ where: {} });
+      }
+    });
+  });
 });

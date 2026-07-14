@@ -1,11 +1,13 @@
 import responseFormatter from '../utils/response.js';
 import db from '../models/index.js';
+import { buildEnergyRangeSeries } from '../utils/chartData.js';
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
 
 export const getSummary = async (req, res, next) => {
   try {
     const { room_id } = req.query;
+    const whereClause = room_id ? { room_id } : {};
     
     const url = room_id 
       ? `${AI_SERVICE_URL}/energy/summary?room_id=${room_id}` 
@@ -35,11 +37,22 @@ export const getSummary = async (req, res, next) => {
       };
     }
 
+    const chartSeries = buildEnergyRangeSeries(
+      (await db.EnergyLog.findAll({
+        where: whereClause,
+        attributes: ['date', 'total_watts', 'saved_watts'],
+        order: [['date', 'ASC']],
+        raw: true,
+      })) || [],
+      'month'
+    );
+
     return responseFormatter.success(res, {
         total_saved_watts: summary.total_saved_watts || 0.0,
-        today_saved_watts: (summary.total_saved_watts / 30) || 0.0, // daily average estimate
+        today_saved_watts: (summary.total_saved_watts / 30) || 0.0,
         co2_saved_kg: summary.co2_kg_saved || 0.0,
-        cost_saved_idr: summary.cost_idr_saved || 0.0
+        cost_saved_idr: summary.cost_idr_saved || 0.0,
+        chart_series: chartSeries
       }, 'Success');
   } catch (error) {
     next(error);
@@ -140,12 +153,14 @@ export const getTrend = async (req, res, next) => {
       }));
     }
 
-    const formatted = trend.map(item => ({
+    const formatted = (trend || []).map(item => ({
       date: item.date,
-      saved_watts: item.saved_watts
+      saved_watts: item.saved_watts,
+      total_watts: item.total_watts ?? 0,
+      savings_percentage: item.savings_pct ?? item.savings_percentage ?? 0,
     }));
 
-    return responseFormatter.success(res, formatted , 'Success');
+    return responseFormatter.success(res, formatted, 'Success');
   } catch (error) {
     next(error);
   }

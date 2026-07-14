@@ -26,3 +26,7 @@ export const remove = async (id) => {
   await schedule.destroy();
   return true;
 };
+
+export const removeAll = async () => {
+  return await AutomationSchedule.destroy({ where: {} });
+};

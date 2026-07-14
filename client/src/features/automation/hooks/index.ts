@@ -48,6 +48,16 @@ export const useRemoveSchedule = () => {
   });
 };
 
+export const useRemoveAllSchedule = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => automationApi.removeAll(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['automation-schedules'] });
+    },
+  });
+};
+
 export const useAutomationStats = () => {
   return useQuery({
     queryKey: ['automation-schedules', 'stats'],

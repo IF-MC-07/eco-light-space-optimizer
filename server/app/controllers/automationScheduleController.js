@@ -64,6 +64,15 @@ export const remove = async (req, res, next) => {
   }
 };
 
+export const removeAll = async (req, res, next) => {
+  try {
+    const deletedCount = await automationScheduleService.removeAll();
+    return responseFormatter.success(res, { deletedCount }, 'All automation schedules deleted successfully' );
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getStats = async (req, res, next) => {
   try {
     const totalSchedules = await db.AutomationSchedule.count();

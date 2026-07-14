@@ -9,16 +9,19 @@ import { EfficiencyVitality } from '../../../features/automation/components/Effi
 import { EditScheduleModal } from '../../../features/automation/components/EditScheduleModal';
 import { FullCalendarModal } from '../../../features/automation/components/FullCalendarModal';
 import { Button } from '../../../components/ui/Button';
-import { Plus } from 'lucide-react';
-import { useSchedules } from '../../../features/automation/hooks';
+import { AlertDialog } from '../../../components/ui/AlertDialog';
+import { Plus, Trash2 } from 'lucide-react';
+import { useRemoveAllSchedule, useSchedules } from '../../../features/automation/hooks';
 import type { AutomationSchedule } from '../../../features/automation/types';
 
 export default function AutomationRules() {
   const [selectedRule, setSelectedRule] = useState<AutomationSchedule | null>(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [isDeleteAllAlertOpen, setIsDeleteAllAlertOpen] = useState(false);
 
   const { data: response, isLoading, isError } = useSchedules();
+  const { mutate: removeAllSchedules, isPending: isDeletingAll } = useRemoveAllSchedule();
   const schedules = response?.data || [];
 
   const handleAddNew = () => {
@@ -39,6 +42,14 @@ export default function AutomationRules() {
     setIsAddingNew(false);
   };
 
+  const handleDeleteAll = () => {
+    removeAllSchedules(undefined, {
+      onSuccess: () => {
+        setIsDeleteAllAlertOpen(false);
+      },
+    });
+  };
+
   if (isLoading) return <div className="text-center py-20">Loading automation data...</div>;
 
   return (
@@ -47,6 +58,15 @@ export default function AutomationRules() {
         <div>
           <h1 className="text-3xl font-heading font-extrabold text-black tracking-tight">Automation Schedules</h1>
           <p className="text-sm text-secondary font-medium mt-1">Manage and optimize smart room schedules.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsDeleteAllAlertOpen(true)}
+            className="flex items-center gap-2 rounded-2xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-sm font-semibold text-[#B91C1C] transition-colors hover:bg-[#FEE2E2]"
+          >
+            <Trash2 size={16} />
+            Delete All
+          </button>
         </div>
       </div>
 
@@ -104,6 +124,16 @@ export default function AutomationRules() {
       <FullCalendarModal 
         isOpen={isCalendarOpen} 
         onClose={() => setIsCalendarOpen(false)} 
+      />
+
+      <AlertDialog
+        isOpen={isDeleteAllAlertOpen}
+        onClose={() => setIsDeleteAllAlertOpen(false)}
+        onConfirm={handleDeleteAll}
+        title="Delete all automation schedules"
+        description="This will permanently remove all automation schedules from the system. This action cannot be undone."
+        cancelText="Cancel"
+        confirmText={isDeletingAll ? "Deleting..." : "Delete All"}
       />
     </div>
   );

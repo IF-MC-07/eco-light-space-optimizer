@@ -1,7 +1,7 @@
 "use client";
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
-import { BarChart, Bar, XAxis, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, Cell, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { useSavingsTrend } from '../hooks';
 
 export function SavingsTrendChart() {
@@ -9,19 +9,18 @@ export function SavingsTrendChart() {
   const trendData = response?.data || [];
 
   const formattedData = trendData.length > 0 
-    ? trendData.map(t => ({
-        date: new Date(t.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
-        current: parseFloat((t.saved_watts / 1000).toFixed(1)),
-        previous: parseFloat((t.saved_watts / 1000 * 0.85).toFixed(1)) // Mock comparison
+    ? trendData.map((item: any) => ({
+        date: new Date(item.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
+        delta: Number((item.savings_percentage ?? 0).toFixed(1)),
       }))
     : [
-        { date: 'Mon', current: 1.2, previous: 1.0 },
-        { date: 'Tue', current: 1.5, previous: 1.2 },
-        { date: 'Wed', current: 1.8, previous: 1.4 },
-        { date: 'Thu', current: 1.4, previous: 1.2 },
-        { date: 'Fri', current: 2.0, previous: 1.6 },
-        { date: 'Sat', current: 0.8, previous: 0.7 },
-        { date: 'Sun', current: 0.9, previous: 0.8 },
+        { date: 'Mon', delta: 12 },
+        { date: 'Tue', delta: 8 },
+        { date: 'Wed', delta: -3 },
+        { date: 'Thu', delta: 15 },
+        { date: 'Fri', delta: -2 },
+        { date: 'Sat', delta: 10 },
+        { date: 'Sun', delta: 6 },
       ];
 
   if (isLoading) {
@@ -38,11 +37,11 @@ export function SavingsTrendChart() {
         <div className="flex items-center space-x-4 text-sm font-medium text-secondary">
           <div className="flex items-center">
             <span className="w-2.5 h-2.5 rounded-full bg-primary-dark mr-2"></span>
-            Current
+            Saving
           </div>
           <div className="flex items-center">
-            <span className="w-2.5 h-2.5 rounded-full bg-slate-200 mr-2"></span>
-            Previous
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500 mr-2"></span>
+            Waste
           </div>
         </div>
       </CardHeader>
@@ -57,8 +56,13 @@ export function SavingsTrendChart() {
                 tick={{ fontSize: 11, fill: '#475569', fontWeight: 600 }} 
                 dy={10} 
               />
-              <Bar dataKey="previous" fill="#E2E8F0" radius={[2, 2, 0, 0]} barSize={24} />
-              <Bar dataKey="current" fill="#1B4D1E" radius={[2, 2, 0, 0]} barSize={24} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#475569' }} />
+              <Tooltip formatter={(value: number) => [`${value}%`, 'Savings delta']} />
+              <Bar dataKey="delta" radius={[2, 2, 0, 0]} barSize={24}>
+                {formattedData.map((entry, idx) => (
+                  <Cell key={`${entry.date}-${idx}`} fill={entry.delta >= 0 ? '#1B4D1E' : '#ef4444'} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>

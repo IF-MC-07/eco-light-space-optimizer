@@ -2,20 +2,12 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { AreaChart, Area, XAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { usePowerSensors } from '../hooks';
+import { useEnergySummary } from '../hooks';
 
 export function RealTimeChart() {
-  const { data: response, isLoading } = usePowerSensors();
-  const sensors = response?.data || [];
-
-  // Group or show latest read times
-  const latestSensors = sensors.length > 0 ? sensors.slice(0, 10).reverse() : [];
-  const formatted = latestSensors.length > 0
-    ? latestSensors.map((s) => ({
-        time: new Date(s.read_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-        actual: parseFloat(((s.power_watts || 0) / 1000).toFixed(2)),
-        baseline: parseFloat((((s.power_watts || 0) * 0.9) / 1000).toFixed(2)) // Baseline estimation in kW
-      }))
+  const { data: response, isLoading } = useEnergySummary();
+  const formatted = response?.data?.realtime_series?.length
+    ? response.data.realtime_series
     : [
         { time: '08:00', actual: 4.0, baseline: 3.6 },
         { time: '10:00', actual: 4.5, baseline: 4.1 },

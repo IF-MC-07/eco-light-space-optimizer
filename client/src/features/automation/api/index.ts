@@ -30,5 +30,10 @@ export const automationApi = {
   remove: async (id: string): Promise<ApiResponse<void>> => {
     const response = await serverAPI.delete(`/automation-schedules/${id}`);
     return response.data;
+  },
+
+  removeAll: async (): Promise<ApiResponse<{ deletedCount: number }>> => {
+    const response = await serverAPI.delete('/automation-schedules');
+    return response.data;
   }
 };

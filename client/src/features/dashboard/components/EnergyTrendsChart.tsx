@@ -2,59 +2,30 @@
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { AreaChart, Area, XAxis, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
-import { usePowerSensors } from '../../energy-monitor/hooks';
+import { useEnergyLogs } from '../../energy-monitor/hooks';
 
 export function EnergyTrendsChart() {
   const [activeTab, setActiveTab] = useState('Day');
-  const { data: response } = usePowerSensors();
-  const sensors = response?.data || [];
-
+  const { data: response } = useEnergyLogs({ range: activeTab.toLowerCase() });
   const chartData = useMemo(() => {
-    if (sensors.length === 0) {
-      // Fallback static data
-      return [
-        { time: '08:00 AM', value: 40 },
-        { time: '10:00 AM', value: 45 },
-        { time: '12:00 PM', value: 60 },
-        { time: '02:00 PM', value: 35 },
-        { time: '04:00 PM', value: 80 },
-        { time: '06:00 PM', value: 45 },
-      ];
+    const source = response?.data || [];
+
+    if (source.length > 0) {
+      return source.map((item: any) => ({
+        time: item.label || item.date || item.time || 'N/A',
+        value: Number(item.usage ?? item.total_watts ?? item.value ?? 0),
+      }));
     }
 
-    // Group sensor readings by time bucket
-    const buckets: Record<string, number[]> = {};
-
-    sensors.forEach((s: any) => {
-      const date = new Date(s.read_at);
-      if (isNaN(date.getTime())) return;
-
-      let key: string;
-      if (activeTab === 'Day') {
-        // Group by hour
-        const hour = date.getHours();
-        const ampm = hour >= 12 ? 'PM' : 'AM';
-        const displayHour = hour % 12 || 12;
-        key = `${String(displayHour).padStart(2, '0')}:00 ${ampm}`;
-      } else if (activeTab === 'Week') {
-        // Group by day of week
-        key = date.toLocaleDateString('en-US', { weekday: 'short' });
-      } else {
-        // Group by date
-        key = date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-      }
-
-      if (!buckets[key]) buckets[key] = [];
-      buckets[key].push(parseFloat(s.power_watts) || 0);
-    });
-
-    return Object.entries(buckets)
-      .map(([time, readings]) => ({
-        time,
-        value: parseFloat((readings.reduce((a, b) => a + b, 0) / readings.length).toFixed(1)),
-      }))
-      .slice(0, activeTab === 'Day' ? 12 : activeTab === 'Week' ? 7 : 30);
-  }, [sensors, activeTab]);
+    return [
+      { time: '08:00 AM', value: 40 },
+      { time: '10:00 AM', value: 45 },
+      { time: '12:00 PM', value: 60 },
+      { time: '02:00 PM', value: 35 },
+      { time: '04:00 PM', value: 80 },
+      { time: '06:00 PM', value: 45 },
+    ];
+  }, [response, activeTab]);
 
   return (
     <Card className="min-h-[400px] flex flex-col bg-[#F5F7F5] border-transparent">
