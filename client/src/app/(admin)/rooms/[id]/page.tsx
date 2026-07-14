@@ -17,7 +17,7 @@ export async function generateStaticParams() {
       id: room.room_id?.toString() || room.id?.toString(),
     }));
   } catch (error) {
-    console.warn("Could not fetch rooms for static generation. Fallback to empty.", error);
-    return [];
+    console.warn("Could not fetch rooms for static generation. Fallback to default.", error);
+    return [{ id: '1' }];
   }
 }
