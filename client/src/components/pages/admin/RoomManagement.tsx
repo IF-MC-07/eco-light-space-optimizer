@@ -55,7 +55,7 @@ export default function RoomManagement({ roomId }: RoomManagementProps) {
 
   const room = roomResponse?.data;
   const iotDevices = devicesResponse?.data || [];
-  const cameras = (camerasResponse?.data || camerasResponse || []).map(
+  const cameras = ((camerasResponse as any)?.data || camerasResponse || []).map(
     (cam: any) => ({
       device_id: cam.camera_id,
       device_name: cam.name || cam.camera_id,

@@ -11,10 +11,12 @@ export function TopConsumers() {
   const roomMap: Record<string, { room_id: string; power_watts: number[]; name: string }> = {};
   sensors.forEach((s: any) => {
     if (!s.room_id) return;
-    if (!roomMap[s.room_id]) {
-      roomMap[s.room_id] = { room_id: s.room_id, power_watts: [], name: s.Room?.room_name || s.room_id };
+    let room = roomMap[s.room_id];
+    if (!room) {
+      room = { room_id: s.room_id, power_watts: [], name: s.Room?.room_name || s.room_id };
+      roomMap[s.room_id] = room;
     }
-    roomMap[s.room_id].power_watts.push(s.power_watts || 0);
+    room.power_watts.push(s.power_watts || 0);
   });
 
   const roomAverages = Object.values(roomMap).map(r => ({

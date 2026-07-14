@@ -58,7 +58,7 @@ export function UserTable({ filters, onEdit, onRemove }: UserTableProps) {
                 <td colSpan={5} className="py-8 text-center text-secondary-light">No users found.</td>
               </tr>
             ) : (
-              users.map((user, idx) => (
+              users.map((user: any, idx: number) => (
                 <tr key={user.user_id || idx} className={cn("group transition-colors hover:bg-neutral-border/20", idx !== users.length - 1 && "border-b border-neutral-border/50")}>
                   <td className="py-4 px-4">
                     <div className="flex items-center space-x-3">
