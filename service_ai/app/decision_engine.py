@@ -198,6 +198,33 @@ class DecisionEngine:
                     active_room_zones = [z for z in self.zone_states.values() if z["room_id"] == room_id]
                     now = time.time()
 
+                    # Resync current_status of zones from DB
+                    if not active_room_zones:
+                        db_statuses = {}
+                    else:
+                        cur.execute("""
+                            SELECT zone_id, COALESCE(light_status, 'OFF')
+                            FROM light_controls
+                            WHERE zone_id IN %s
+                        """, (tuple(z["zone_id"] for z in active_room_zones),))
+                        db_statuses_raw = cur.fetchall()
+                        db_statuses = {}
+                        if isinstance(db_statuses_raw, (list, tuple)):
+                            try:
+                                for row in db_statuses_raw:
+                                    if isinstance(row, (list, tuple)) and len(row) >= 2:
+                                        db_statuses[row[0]] = row[1]
+                            except Exception as e:
+                                logger.warning(f"⚠️ Failed to parse zone statuses from DB: {e}")
+
+                    for zone in active_room_zones:
+                        db_status = db_statuses.get(zone["zone_id"])
+                        if isinstance(db_status, str):
+                            db_status_upper = db_status.upper()
+                            if db_status_upper != zone["current_status"]:
+                                logger.info(f"🔄 Sync cache Zone {zone['zone_name']}: {zone['current_status']} -> {db_status_upper}")
+                                zone["current_status"] = db_status_upper
+
                     # Process each zone
                     for zone in active_room_zones:
                         z_id = zone["zone_id"]
@@ -288,6 +315,22 @@ class DecisionEngine:
                     ac_state = self.ac_states.get(room_id)
 
                     if ac_state:
+                        # Resync AC status from DB
+                        cur.execute("""
+                            SELECT COALESCE(ac_status, 'OFF')
+                            FROM ac_controls
+                            WHERE room_id = %s
+                            LIMIT 1
+                        """, (room_id,))
+                        ac_row = cur.fetchone()
+                        if ac_row and isinstance(ac_row, (tuple, list)) and len(ac_row) >= 1:
+                            db_ac_status = ac_row[0]
+                            if isinstance(db_ac_status, str):
+                                db_ac_status_upper = db_ac_status.upper()
+                                if db_ac_status_upper != ac_state["current_status"]:
+                                    logger.info(f"🔄 Sync cache AC Room {room_id}: {ac_state['current_status']} -> {db_ac_status_upper}")
+                                    ac_state["current_status"] = db_ac_status_upper
+
                         if room_occupied:
                             ac_state["empty_since"] = None
 
