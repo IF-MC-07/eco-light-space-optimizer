@@ -1,5 +1,6 @@
 import responseFormatter from '../utils/response.js';
 import db from '../models/index.js';
+import mqttService from '../services/mqttService.js';
 
 export const getEnergi = async (req, res, next) => {
   try {
@@ -107,7 +108,17 @@ export const getDevices = async (req, res, next) => {
         ac_status: isAcActive ? 'Active' : 'Inactive',
         temperature: temp,
         light_status: lStatus,
-        device_status: dev.status || 'aktif'
+        device_status: dev.status || 'aktif',
+        light_controls: dev.LightControls ? dev.LightControls.map(l => ({
+          control_id: l.control_id,
+          relay_channel: l.relay_channel,
+          light_status: l.light_status
+        })).sort((a, b) => (a.relay_channel || 0) - (b.relay_channel || 0)) : [],
+        ac_controls: dev.AcControls ? dev.AcControls.map(a => ({
+          ac_control_id: a.ac_control_id,
+          ac_status: a.ac_status,
+          temperature_setting: a.temperature_setting
+        })) : []
       };
     });
 
@@ -131,13 +142,97 @@ export const updateDevice = async (req, res, next) => {
     if (device_status !== undefined) {
       device.status = device_status;
       await device.save();
+
+      // Master switch logic: turn on/off all lights and AC controls for this device
+      const isTurnOn = ['aktif', 'active', 'ACTIVE', 'AKTIF', 'on', 'ON'].includes(device_status.toLowerCase());
+      const targetLightStatus = isTurnOn ? 'on' : 'off';
+      const targetAcStatus = isTurnOn ? 'on' : 'off';
+
+      // 1. Update and publish all LightControls
+      const lightControls = await db.LightControl.findAll({
+        where: { device_id: id },
+        include: [{ model: db.Zone }]
+      });
+      for (const control of lightControls) {
+        await control.update({ light_status: targetLightStatus, updated_at: new Date() });
+        
+        // Publish general MQTT
+        const generalTopic = process.env.MQTT_TOPIC_CONTROL || 'kelas/control';
+        const generalPayload = {
+          device_id: control.device_id,
+          relay_channel: control.relay_channel,
+          action: targetLightStatus.toUpperCase()
+        };
+        mqttService.publish(generalTopic, generalPayload);
+
+        // Publish specific ESP32 MQTT
+        const roomId = device.room_id || (control.Zone ? control.Zone.room_id : null);
+        if (roomId) {
+          const espTopic = `devices/${roomId}/light/${control.relay_channel}`;
+          const espPayload = {
+            command: targetLightStatus.toUpperCase(),
+            zone_id: control.zone_id,
+            zone_name: control.Zone ? control.Zone.zone_name : `Zone ${control.zone_id}`,
+            relay_channel: control.relay_channel,
+            source: "admin_override",
+            timestamp: new Date().toISOString()
+          };
+          mqttService.publish(espTopic, espPayload);
+        }
+      }
+
+      // 2. Update and publish all AcControls
+      const acControls = await db.AcControl.findAll({
+        where: { device_id: id }
+      });
+      for (const control of acControls) {
+        await control.update({ ac_status: targetAcStatus, updated_at: new Date() });
+        
+        // Publish AC MQTT
+        const topic = `devices/${control.room_id}/ac`;
+        const payload = {
+          command: targetAcStatus.toUpperCase(),
+          room_id: control.room_id,
+          temperature: parseFloat(control.temperature_setting || 24.0),
+          source: "admin_override",
+          timestamp: new Date().toISOString()
+        };
+        mqttService.publish(topic, payload);
+      }
     }
 
     if (light_status !== undefined) {
-      await db.LightControl.update(
-        { light_status },
-        { where: { device_id: id } }
-      );
+      const lightControls = await db.LightControl.findAll({
+        where: { device_id: id },
+        include: [{ model: db.Zone }]
+      });
+      for (const control of lightControls) {
+        await control.update({ light_status, updated_at: new Date() });
+        
+        // Publish general MQTT
+        const generalTopic = process.env.MQTT_TOPIC_CONTROL || 'kelas/control';
+        const generalPayload = {
+          device_id: control.device_id,
+          relay_channel: control.relay_channel,
+          action: light_status.toUpperCase()
+        };
+        mqttService.publish(generalTopic, generalPayload);
+
+        // Publish specific ESP32 MQTT
+        const roomId = device.room_id || (control.Zone ? control.Zone.room_id : null);
+        if (roomId) {
+          const espTopic = `devices/${roomId}/light/${control.relay_channel}`;
+          const espPayload = {
+            command: light_status.toUpperCase(),
+            zone_id: control.zone_id,
+            zone_name: control.Zone ? control.Zone.zone_name : `Zone ${control.zone_id}`,
+            relay_channel: control.relay_channel,
+            source: "admin_override",
+            timestamp: new Date().toISOString()
+          };
+          mqttService.publish(espTopic, espPayload);
+        }
+      }
     }
 
     const acUpdates = {};
@@ -145,10 +240,25 @@ export const updateDevice = async (req, res, next) => {
     if (temperature !== undefined) acUpdates.temperature_setting = temperature;
 
     if (Object.keys(acUpdates).length > 0) {
-      await db.AcControl.update(
-        acUpdates,
-        { where: { device_id: id } }
-      );
+      const acControls = await db.AcControl.findAll({
+        where: { device_id: id }
+      });
+      for (const control of acControls) {
+        await control.update({ ...acUpdates, updated_at: new Date() });
+        
+        // Publish AC MQTT
+        if (acUpdates.ac_status !== undefined || acUpdates.temperature_setting !== undefined) {
+          const topic = `devices/${control.room_id}/ac`;
+          const payload = {
+            command: control.ac_status.toUpperCase(),
+            room_id: control.room_id,
+            temperature: parseFloat(control.temperature_setting || 24.0),
+            source: "admin_override",
+            timestamp: new Date().toISOString()
+          };
+          mqttService.publish(topic, payload);
+        }
+      }
     }
 
     return responseFormatter.success(res, null, 'Device updated successfully' );
