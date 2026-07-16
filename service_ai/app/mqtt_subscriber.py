@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 class MQTTSubscriber:
     def __init__(self):
         self.started = False
+        self._restored_rooms = set()
         self.broker = os.getenv("MQTT_BROKER", "localhost")
         self.port = int(os.getenv("MQTT_PORT", 1883))
         self.username = os.getenv("MQTT_USER")
@@ -264,11 +265,15 @@ class MQTTSubscriber:
         if len(parts) >= 2:
             try:
                 room_id = parts[1]
+                if room_id in self._restored_rooms:
+                    logger.info(f"📡 ESP32 in Room {room_id} reconnected, skip restore (already restored this session)")
+                    return
                 logger.info(f"📡 ESP32 in Room {room_id} is online! Triggering state restoration...")
                 from app.boot_recovery import BootRecoveryManager
                 from app.mqtt_commands import mqtt_commander
                 recovery = BootRecoveryManager(mqtt_commander)
                 recovery.restore_for_room(room_id)
+                self._restored_rooms.add(room_id)
             except Exception as e:
                 logger.error(f"❌ Error restoring state: {e}")
 
