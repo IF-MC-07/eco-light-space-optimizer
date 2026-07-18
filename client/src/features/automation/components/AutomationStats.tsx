@@ -15,7 +15,7 @@ export function AutomationStats({ schedules }: { schedules: AutomationSchedule[]
   const estSavings = totalSchedules * 1.5; 
 
   return (
-    <div className="grid grid-cols-3 gap-6 h-full">
+    <div className="grid grid-cols-2 gap-6 h-full">
       {/* Active Logic Card */}
       <Card className="bg-white border-none shadow-sm h-full min-h-[180px] rounded-[32px] overflow-hidden group relative">
         <div className="absolute top-0 right-0 p-6 opacity-20 group-hover:opacity-40 transition-opacity">
@@ -61,31 +61,6 @@ export function AutomationStats({ schedules }: { schedules: AutomationSchedule[]
               </div>
             </div>
             <span className="text-[10px] font-bold text-secondary-light ml-2 uppercase tracking-wider">Multi-device</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Est. Savings Card */}
-      <Card className="bg-white border-none shadow-sm h-full min-h-[180px] rounded-[32px] group overflow-hidden relative">
-        <div className="absolute top-0 right-0 p-6 opacity-20 group-hover:opacity-40 transition-opacity">
-          <TrendingUp size={80} className="text-primary-dark" />
-        </div>
-        <CardContent className="p-8 flex flex-col justify-between h-full relative z-10 mt-5">
-          <div>
-            <p className="text-[10px] font-bold text-secondary uppercase tracking-[0.2em] mb-2">Daily Est. Savings</p>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold text-primary-dark">$</span>
-              <h3 className="text-6xl font-heading font-black text-black tracking-tighter">{estSavings.toFixed(2)}</h3>
-            </div>
-          </div>
-          <div className="w-full space-y-2">
-            <div className="flex justify-between items-center text-[9px] font-bold text-secondary-light uppercase tracking-widest">
-              <span>Efficiency Goal</span>
-              <span>{efficiencyGoal}%</span>
-            </div>
-            <div className="w-full h-1.5 bg-[#F1F5F9] rounded-full overflow-hidden">
-              <div className="h-full bg-primary-dark rounded-full shadow-[0_0_8px_rgba(46,125,50,0.4)]" style={{ width: `${efficiencyGoal}%` }}></div>
-            </div>
           </div>
         </CardContent>
       </Card>

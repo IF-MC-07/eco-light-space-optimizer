@@ -6,8 +6,8 @@ import { useEnergySummary } from '../hooks';
 
 export function RealTimeChart() {
   const { data: response, isLoading } = useEnergySummary();
-  const formatted = response?.data?.realtime_series?.length
-    ? response.data.realtime_series
+  const formatted = response?.realtime_series?.length
+    ? response.realtime_series
     : [
         { time: '08:00', actual: 4.0, baseline: 3.6 },
         { time: '10:00', actual: 4.5, baseline: 4.1 },

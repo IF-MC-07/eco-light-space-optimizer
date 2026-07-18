@@ -8,7 +8,7 @@ export function EnergyTrendsChart() {
   const [activeTab, setActiveTab] = useState('Day');
   const { data: response } = useEnergyLogs({ range: activeTab.toLowerCase() });
   const chartData = useMemo(() => {
-    const source = response?.data || [];
+    const source = response || [];
 
     if (source.length > 0) {
       return source.map((item: any) => ({

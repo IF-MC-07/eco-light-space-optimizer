@@ -6,7 +6,7 @@ import { useEnergyBreakdown } from '../hooks';
 
 export function BuildingConsumption() {
   const { data: response, isLoading } = useEnergyBreakdown();
-  const breakdown = response?.data || [];
+  const breakdown = response || [];
 
   const maxVal = breakdown.length > 0 
     ? Math.max(...breakdown.map(b => b.total_watts), 1)

@@ -1,31 +1,31 @@
 import { useQuery } from '@tanstack/react-query';
 import { savingsApi } from '../api';
 
-export const useSavingsSummary = () => {
+export const useSavingsSummary = (filters?: any) => {
   return useQuery({
-    queryKey: ['savings', 'summary'],
-    queryFn: () => savingsApi.getSummary(),
+    queryKey: ['savings', 'summary', filters],
+    queryFn: () => savingsApi.getSummary(filters),
   });
 };
 
-export const useSavingsBreakdown = () => {
+export const useSavingsBreakdown = (filters?: any) => {
   return useQuery({
-    queryKey: ['savings', 'breakdown'],
-    queryFn: () => savingsApi.getBreakdown(),
+    queryKey: ['savings', 'breakdown', filters],
+    queryFn: () => savingsApi.getBreakdown(filters),
   });
 };
 
-export const useSavingsTrend = () => {
+export const useSavingsTrend = (filters?: any) => {
   return useQuery({
-    queryKey: ['savings', 'trend'],
-    queryFn: () => savingsApi.getTrend(),
+    queryKey: ['savings', 'trend', filters],
+    queryFn: () => savingsApi.getTrend(filters),
   });
 };
 
-export const useSavingsYoY = () => {
+export const useSavingsYoY = (filters?: any) => {
   return useQuery({
-    queryKey: ['savings', 'yoy'],
-    queryFn: () => savingsApi.getYoY(),
+    queryKey: ['savings', 'yoy', filters],
+    queryFn: () => savingsApi.getYoY(filters),
   });
 };
 

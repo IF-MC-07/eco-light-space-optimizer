@@ -1,69 +1,97 @@
 "use client";
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
-import { BarChart, Bar, Cell, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { useSavingsTrend } from '../hooks';
 
-export function SavingsTrendChart() {
-  const { data: response, isLoading } = useSavingsTrend();
-  const trendData = response?.data || [];
+interface SavingsTrendChartProps {
+  filters: {
+    range_type: string;
+    start_date: string;
+    end_date: string;
+  };
+}
 
-  const formattedData = trendData.length > 0 
-    ? trendData.map((item: any) => ({
-        date: new Date(item.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
-        delta: Number((item.savings_percentage ?? 0).toFixed(1)),
-      }))
-    : [
-        { date: 'Mon', delta: 12 },
-        { date: 'Tue', delta: 8 },
-        { date: 'Wed', delta: -3 },
-        { date: 'Thu', delta: 15 },
-        { date: 'Fri', delta: -2 },
-        { date: 'Sat', delta: 10 },
-        { date: 'Sun', delta: 6 },
-      ];
+export function SavingsTrendChart({ filters }: SavingsTrendChartProps) {
+  const { data: response, isLoading } = useSavingsTrend(filters);
+  const trendData = response || [];
+
+  const formattedData = useMemo(() => {
+    if (trendData.length > 0) {
+      return trendData.map((item: any) => ({
+        dateLabel: item.label || 'N/A',
+        kwh: Number(((item.total_watts || 0) / 1000).toFixed(3)),
+        savedKwh: Number(((item.saved_watts || 0) / 1000).toFixed(3))
+      }));
+    }
+    // Fallback static data
+    return [
+      { dateLabel: 'Mon', kwh: 1.2 },
+      { dateLabel: 'Tue', kwh: 0.8 },
+      { dateLabel: 'Wed', kwh: 1.5 },
+      { dateLabel: 'Thu', kwh: 0.9 },
+      { dateLabel: 'Fri', kwh: 1.1 },
+      { dateLabel: 'Sat', kwh: 0.7 },
+      { dateLabel: 'Sun', kwh: 0.6 }
+    ];
+  }, [trendData]);
 
   if (isLoading) {
-    return <div className="text-center py-4">Loading savings trend...</div>;
+    return <div className="text-center py-20 text-xs text-secondary">Loading savings chart...</div>;
   }
 
   return (
-    <Card className="h-[400px] flex flex-col">
-      <CardHeader className="pb-2 flex flex-row items-center justify-between">
+    <Card className="h-[400px] flex flex-col border-transparent bg-[#F5F7F5] shadow-sm">
+      <CardHeader className="pb-2 flex flex-row items-center justify-between px-6 pt-6">
         <div>
-          <CardTitle className="text-lg text-black">Savings Trend</CardTitle>
-          <p className="text-sm text-secondary mt-1">Daily cumulative efficiency comparison (kWh)</p>
+          <CardTitle className="text-lg text-black font-heading font-bold">Accumulated Energy Consumption</CardTitle>
+          <p className="text-xs text-secondary-light font-semibold mt-1">Total energy usage (kWh) across the selected period</p>
         </div>
-        <div className="flex items-center space-x-4 text-sm font-medium text-secondary">
+        <div className="flex items-center space-x-4 text-[10px] font-bold text-secondary uppercase tracking-widest">
           <div className="flex items-center">
-            <span className="w-2.5 h-2.5 rounded-full bg-primary-dark mr-2"></span>
-            Saving
-          </div>
-          <div className="flex items-center">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-500 mr-2"></span>
-            Waste
+            <span className="w-2 h-2 rounded-full bg-primary-dark mr-1.5"></span>
+            Usage
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 pb-6 min-h-0">
+      <CardContent className="flex-1 pb-6 pt-10 px-0 min-h-0">
         <div className="h-full w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={formattedData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }} barGap={4}>
+            <AreaChart data={formattedData} margin={{ top: 10, right: 30, left: 30, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorKwh" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#1B4D1E" stopOpacity={0.25}/>
+                  <stop offset="95%" stopColor="#1B4D1E" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
               <XAxis 
-                dataKey="date" 
+                dataKey="dateLabel" 
                 axisLine={false} 
                 tickLine={false} 
-                tick={{ fontSize: 11, fill: '#475569', fontWeight: 600 }} 
-                dy={10} 
+                tick={{ fontSize: 10, fill: '#475569', fontWeight: 700 }} 
+                dy={15} 
               />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#475569' }} />
-              <Tooltip formatter={(value: number) => [`${value}%`, 'Savings delta']} />
-              <Bar dataKey="delta" radius={[2, 2, 0, 0]} barSize={24}>
-                {formattedData.map((entry, idx) => (
-                  <Cell key={`${entry.date}-${idx}`} fill={entry.delta >= 0 ? '#1B4D1E' : '#ef4444'} />
-                ))}
-              </Bar>
-            </BarChart>
+              <YAxis 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fontSize: 10, fill: '#475569', fontWeight: 700 }} 
+                width={30}
+              />
+              <Tooltip 
+                cursor={{ stroke: '#475569', strokeWidth: 1, strokeDasharray: '4 4' }}
+                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                formatter={(value: number) => [`${value.toFixed(3)} kWh`, 'Energy Consumption']}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="kwh" 
+                stroke="#1B4D1E" 
+                strokeWidth={3}
+                fillOpacity={1} 
+                fill="url(#colorKwh)" 
+                activeDot={{ r: 6, fill: "#1B4D1E", stroke: "#fff", strokeWidth: 2 }}
+              />
+            </AreaChart>
           </ResponsiveContainer>
         </div>
       </CardContent>

@@ -18,7 +18,7 @@ function formatRelativeTime(dateString: string) {
 
 export function UsageAlerts() {
   const { data: response } = usePowerSensors();
-  const sensors = response?.data || [];
+  const sensors = response || [];
 
   // Get latest reading per room
   const latestByRoom: Record<string, any> = {};

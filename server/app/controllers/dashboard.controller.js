@@ -27,6 +27,36 @@ export const getSummary = async (req, res, next) => {
       include: [{ model: db.Room }],
     });
 
+    // Control statistics
+    const lights_active = await db.LightControl.count({
+      where: {
+        light_status: ["on", "active", "ON", "ACTIVE"],
+      },
+    });
+
+    const lights_total = await db.LightControl.count();
+
+    const ac_units_running = await db.AcControl.count({
+      where: {
+        ac_status: ["on", "active", "ON", "ACTIVE"],
+      },
+    });
+
+    const ac_total = await db.AcControl.count();
+
+    const result = await db.AcControl.findOne({
+      attributes: [
+        [
+          db.Sequelize.fn("AVG", db.Sequelize.col("temperature_setting")),
+          "avg_temp",
+        ],
+      ],
+      raw: true,
+    });
+    const avg_temperature = result?.avg_temp
+      ? parseFloat(Number(result.avg_temp).toFixed(1))
+      : 24.0;
+
     return responseFormatter.success(
       res,
       {
@@ -36,6 +66,11 @@ export const getSummary = async (req, res, next) => {
         total_cameras,
         latest_sensors,
         todays_energy_logs,
+        lights_active,
+        lights_total,
+        ac_units_running,
+        ac_total,
+        avg_temperature,
       },
       "Success",
     );

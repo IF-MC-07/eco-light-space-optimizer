@@ -5,7 +5,7 @@ import { usePowerSensors } from '../hooks';
 
 export function TopConsumers() {
   const { data: response } = usePowerSensors();
-  const sensors = response?.data || [];
+  const sensors = response || [];
 
   // Group sensors by room_id, compute average power per room
   const roomMap: Record<string, { room_id: string; power_watts: number[]; name: string }> = {};

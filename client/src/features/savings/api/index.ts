@@ -2,27 +2,27 @@ import { serverAPI } from '@/lib/api';
 import type { ApiResponse, SavingsSummary, SavingsBreakdown, SavingsTrend, YoYComparisonData, PowerStatsData } from '../types';
 
 export const savingsApi = {
-  getSummary: async (): Promise<ApiResponse<SavingsSummary>> => {
-    const response = await serverAPI.get('/savings/summary');
+  getSummary: async (filters?: any): Promise<SavingsSummary> => {
+    const response = await serverAPI.get('/savings/summary', { params: filters });
     return response.data.data || response.data;
   },
 
-  getBreakdown: async (): Promise<ApiResponse<SavingsBreakdown[]>> => {
-    const response = await serverAPI.get('/savings/breakdown');
+  getBreakdown: async (filters?: any): Promise<SavingsBreakdown[]> => {
+    const response = await serverAPI.get('/savings/breakdown', { params: filters });
     return response.data.data || response.data;
   },
 
-  getTrend: async (): Promise<ApiResponse<SavingsTrend[]>> => {
-    const response = await serverAPI.get('/savings/trend');
+  getTrend: async (filters?: any): Promise<SavingsTrend[]> => {
+    const response = await serverAPI.get('/savings/trend', { params: filters });
     return response.data.data || response.data;
   },
 
-  getYoY: async (): Promise<ApiResponse<YoYComparisonData>> => {
-    const response = await serverAPI.get('/savings/yoy');
+  getYoY: async (filters?: any): Promise<YoYComparisonData> => {
+    const response = await serverAPI.get('/savings/yoy', { params: filters });
     return response.data.data || response.data;
   },
 
-  getPowerStats: async (): Promise<ApiResponse<PowerStatsData>> => {
+  getPowerStats: async (): Promise<PowerStatsData> => {
     const response = await serverAPI.get('/savings/power-stats');
     return response.data.data || response.data;
   }

@@ -7,8 +7,8 @@ import { useEnergySummary, usePowerSensors } from '../hooks';
 export function MonitorStats() {
   const { data: response, isLoading } = useEnergySummary();
   const { data: sensorResponse } = usePowerSensors();
-  const summary = response?.data;
-  const sensors = sensorResponse?.data || [];
+  const summary = response;
+  const sensors = sensorResponse || [];
 
   const todayUsageKwh = summary ? (summary.today_usage / 1000).toFixed(1) : '0';
   const todaySavedKwh = summary ? (summary.today_saved / 1000).toFixed(1) : '0';

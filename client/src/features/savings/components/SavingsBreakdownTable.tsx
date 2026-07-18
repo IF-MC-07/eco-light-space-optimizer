@@ -5,9 +5,17 @@ import { Badge } from '../../../components/ui/Badge';
 import { Snowflake } from 'lucide-react';
 import { useSavingsBreakdown } from '../hooks';
 
-export function SavingsBreakdownTable() {
-  const { data: response, isLoading } = useSavingsBreakdown();
-  const breakdown = response?.data || [];
+interface SavingsBreakdownTableProps {
+  filters: {
+    range_type: string;
+    start_date: string;
+    end_date: string;
+  };
+}
+
+export function SavingsBreakdownTable({ filters }: SavingsBreakdownTableProps) {
+  const { data: response, isLoading } = useSavingsBreakdown(filters);
+  const breakdown = response || [];
 
   if (isLoading) {
     return <div className="text-center py-4">Loading savings breakdown...</div>;

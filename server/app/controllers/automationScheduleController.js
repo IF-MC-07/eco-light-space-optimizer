@@ -83,10 +83,10 @@ export const getStats = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: {
-        total_schedules: totalSchedules || 12,
-        active_schedules: activeSchedules || 8,
-        efficiency_score: efficiencyScore || 92,
-        automation_rate: automationRate || 88
+        total_schedules: totalSchedules,
+        active_schedules: activeSchedules,
+        efficiency_score: totalSchedules > 0 ? efficiencyScore : 0,
+        automation_rate: totalSchedules > 0 ? automationRate : 0
       },
       message: 'Automation stats retrieved successfully'
     });

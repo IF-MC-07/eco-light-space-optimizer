@@ -8,8 +8,8 @@ import { useSavingsSummary, usePowerStats } from '../hooks';
 export function SavingsStats() {
   const { data: response, isLoading } = useSavingsSummary();
   const { data: powerStatsResponse } = usePowerStats();
-  const stats = response?.data;
-  const powerStats = powerStatsResponse?.data;
+  const stats = response;
+  const powerStats = powerStatsResponse;
 
   // Formatting values
   const kwhSaved = stats ? (stats.total_saved_watts / 1000).toFixed(1) : '0';

@@ -6,7 +6,7 @@ import { useEnergySummary } from '../hooks';
 
 export function CurrentStatusBox() {
   const { data: response, isLoading } = useEnergySummary();
-  const summary = response?.data;
+  const summary = response;
 
   const kwDraw = summary ? (summary.current_consumption / 1000).toFixed(2) : '48.20';
 

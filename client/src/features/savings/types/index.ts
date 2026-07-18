@@ -18,10 +18,19 @@ export interface SavingsTrend {
   saved_watts: number;
 }
 
+export interface PeriodStats {
+  start: string;
+  end: string;
+  total_watts: number;
+  saved_watts: number;
+}
+
 export interface YoYComparisonData {
-  last_year_watts: number;
-  this_year_watts: number;
-  reduction_percentage: number;
+  current_period: PeriodStats;
+  previous_period: PeriodStats;
+  difference_watts: number;
+  change_percentage: number;
+  status: string;
 }
 
 export interface PowerStatsRoomBreakdown {

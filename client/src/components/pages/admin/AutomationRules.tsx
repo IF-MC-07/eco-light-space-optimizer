@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { AutomationStats } from '../../../features/automation/components/AutomationStats';
 import { ActiveRulesList } from '../../../features/automation/components/ActiveRulesList';
 import { RecommendedTemplates } from '../../../features/automation/components/RecommendedTemplates';
+import { InlineCalendar } from '../../../features/automation/components/InlineCalendar';
 import { QuickRuleSetup } from '../../../features/automation/components/QuickRuleSetup';
 import { WeeklySchedule } from '../../../features/automation/components/WeeklySchedule';
 import { EfficiencyVitality } from '../../../features/automation/components/EfficiencyVitality';
@@ -103,6 +104,7 @@ export default function AutomationRules() {
             }} 
           />
           <RecommendedTemplates />
+          <InlineCalendar />
         </div>
 
         <div className="col-span-1 flex flex-col space-y-6">

@@ -8,7 +8,7 @@ export function MasterControls() {
 
   const handleAction = async (action: string) => {
     await postMasterControl(action);
-    alert(`${action === 'kill_all' ? 'Kill All Power' : 'Eco Mode Pulse'} executed successfully!`);
+    alert(`${action === 'kill_all' ? 'Kill All Power' : 'Turn on All'} executed successfully!`);
   };
 
   return (
@@ -18,27 +18,27 @@ export function MasterControls() {
       </CardHeader>
       <CardContent className="space-y-3">
         <button 
-          onClick={() => handleAction('kill_all')}
+          onClick={() => handleAction('turn_on')}
           className="w-full flex items-center justify-between p-3 bg-white rounded-lg border border-neutral-border hover:border-primary/30 transition-all shadow-sm group"
         >
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-md bg-[#bbf7d0] text-primary flex items-center justify-center">
               <Power size={18} />
             </div>
-            <span className="text-sm font-bold text-black group-hover:text-primary transition-colors">Kill All Power</span>
+            <span className="text-sm font-bold text-black group-hover:text-primary transition-colors">Turn On All The Device</span>
           </div>
           <ChevronRight size={18} className="text-secondary" />
         </button>
 
         <button 
-          onClick={() => handleAction('eco_pulse')}
+          onClick={() => handleAction('kill_all')}
           className="w-full flex items-center justify-between p-3 bg-white rounded-lg border border-neutral-border hover:border-tertiary/30 transition-all shadow-sm group"
         >
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-md bg-tertiary/10 text-tertiary flex items-center justify-center">
-              <AlertOctagon size={18} />
+              <Power size={18} />
             </div>
-            <span className="text-sm font-bold text-black group-hover:text-tertiary transition-colors">Eco Mode Pulse</span>
+            <span className="text-sm font-bold text-black group-hover:text-tertiary transition-colors">Kill All Power</span>
           </div>
           <ChevronRight size={18} className="text-secondary" />
         </button>
