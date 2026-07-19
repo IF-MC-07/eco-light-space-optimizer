@@ -7,23 +7,21 @@ const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
 export const getSummary = async (req, res, next) => {
   try {
     const { room_id } = req.query;
-    
-    // Construct URLs
-    const summaryUrl = room_id 
-      ? `${AI_SERVICE_URL}/energy/summary?room_id=${room_id}` 
+
+    const summaryUrl = room_id
+      ? `${AI_SERVICE_URL}/energy/summary?room_id=${room_id}`
       : `${AI_SERVICE_URL}/energy/summary`;
-    
-    const realtimeUrl = room_id 
-      ? `${AI_SERVICE_URL}/stats/realtime?room_id=${room_id}` 
+
+    const realtimeUrl = room_id
+      ? `${AI_SERVICE_URL}/stats/realtime?room_id=${room_id}`
       : `${AI_SERVICE_URL}/stats/realtime`;
 
-    // Fetch in parallel with fallback
     let summaryData;
     let realtimeData;
     try {
       const [summaryRes, realtimeRes] = await Promise.all([
-        fetch(summaryUrl, { signal: AbortSignal.timeout(3000) }),
-        fetch(realtimeUrl, { signal: AbortSignal.timeout(3000) })
+        fetch(summaryUrl, { signal: AbortSignal.timeout(5000) }),
+        fetch(realtimeUrl, { signal: AbortSignal.timeout(5000) })
       ]);
       if (!summaryRes.ok || !realtimeRes.ok) throw new Error('AI service returned non-OK response');
       summaryData = await summaryRes.json();
@@ -31,62 +29,79 @@ export const getSummary = async (req, res, next) => {
     } catch (err) {
       console.warn('[fallback] AI service unavailable, using DB data');
       const whereClause = room_id ? { room_id } : {};
-      
+
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
       const recentSensors = await db.PowerSensor.findAll({
-        where: whereClause,
+        where: {
+          ...whereClause,
+          read_at: { [db.Sequelize.Op.gte]: twentyFourHoursAgo }
+        },
         order: [['read_at', 'DESC']],
-        limit: 24,
+        limit: 5000,
         raw: true
       });
-      const currentConsumption = recentSensors.length > 0 
-        ? recentSensors.reduce((sum, s) => sum + (s.power_watts || 0), 0) / recentSensors.length 
-        : 0;
 
-      const logs = await db.EnergyLog.findAll({
-        where: whereClause,
+      const validPowerReadings = recentSensors.filter(s => (s.power_watts || 0) <= 5000);
+      const currentConsumption = validPowerReadings.length > 0
+        ? validPowerReadings.reduce((sum, s) => sum + (s.power_watts || 0), 0) / validPowerReadings.length
+        : 0;
+      const latestReadingWatts = recentSensors.length > 0 ? (recentSensors[0].power_watts || 0) : 0;
+
+      const todayDateStr = new Date().toISOString().split('T')[0]; // "2026-07-20"
+      const todayLogs = await db.EnergyLog.findAll({
+        where: {
+          ...whereClause,
+          [db.Sequelize.Op.and]: db.Sequelize.where(
+            db.Sequelize.fn('DATE', db.Sequelize.col('date')),
+            db.Sequelize.fn('CURRENT_DATE')
+          )
+        },
         attributes: [
-          [db.Sequelize.fn('SUM', db.Sequelize.col('total_watts')), 'total_consumption_watts'],
-          [db.Sequelize.fn('SUM', db.Sequelize.col('saved_watts')), 'total_saved_watts']
+          [db.Sequelize.fn('SUM', db.Sequelize.col('total_watts')), 'today_total_watts'],
+          [db.Sequelize.fn('SUM', db.Sequelize.col('saved_watts')), 'today_saved_watts']
         ],
         raw: true
       });
-      const totalConsumption = logs[0]?.total_consumption_watts ? parseFloat(logs[0].total_consumption_watts) : 0;
-      const totalSaved = logs[0]?.total_saved_watts ? parseFloat(logs[0].total_saved_watts) : 0;
+
+      const todayTotalWatts = todayLogs[0]?.today_total_watts ? parseFloat(todayLogs[0].today_total_watts) : 0;
+      const todaySavedWatts = todayLogs[0]?.today_saved_watts ? parseFloat(todayLogs[0].today_saved_watts) : 0;
 
       summaryData = {
-        avg_daily_watts: totalConsumption / 30,
-        total_consumption_watts: totalConsumption,
-        total_saved_watts: totalSaved
+        today_total_watts: todayTotalWatts,
+        today_saved_watts: todaySavedWatts,
+        total_consumption_watts: todayTotalWatts,
+        total_saved_watts: todaySavedWatts
       };
       realtimeData = {
-        mean_watts: currentConsumption
+        mean_watts: currentConsumption,
+        latest_reading: { power_watts: latestReadingWatts }
       };
     }
 
     return responseFormatter.success(res, {
-        current_consumption: realtimeData.mean_watts || 0.0,
-        today_usage: summaryData.avg_daily_watts || 0.0,
-        today_saved: (summaryData.total_saved_watts / 30) || 0.0,
-        monthly_usage: summaryData.total_consumption_watts || 0.0,
-        monthly_saved: summaryData.total_saved_watts || 0.0,
-        chart_series: buildEnergyRangeSeries(
-          (await db.EnergyLog.findAll({
-            where: room_id ? { room_id } : {},
-            attributes: ['date', 'total_watts', 'saved_watts'],
-            order: [['date', 'ASC']],
-            raw: true,
-          })) || [],
-          'month'
-        ),
-        realtime_series: buildRealtimeHourlySeries(
-          (await db.PowerSensor.findAll({
-            where: room_id ? { room_id } : {},
-            attributes: ['read_at', 'power_watts'],
-            order: [['read_at', 'ASC']],
-            raw: true,
-          })) || []
-        )
-      }, 'Success');
+      current_consumption: realtimeData.latest_reading?.power_watts ?? realtimeData.mean_watts ?? 0.0,
+      today_usage: summaryData.today_total_watts ?? 0.0,
+      today_saved: summaryData.today_saved_watts ?? 0.0,
+      monthly_usage: summaryData.total_consumption_watts || 0.0,
+      monthly_saved: summaryData.total_saved_watts || 0.0,
+      chart_series: buildEnergyRangeSeries(
+        (await db.EnergyLog.findAll({
+          where: room_id ? { room_id } : {},
+          attributes: ['date', 'total_watts', 'saved_watts'],
+          order: [['date', 'ASC']],
+          raw: true,
+        })) || [],
+        'month'
+      ),
+      realtime_series: buildRealtimeHourlySeries(
+        (await db.PowerSensor.findAll({
+          where: room_id ? { room_id } : {},
+          attributes: ['read_at', 'power_watts'],
+          order: [['read_at', 'ASC']],
+          raw: true,
+        })) || []
+      )
+    }, 'Success');
   } catch (error) {
     next(error);
   }
@@ -96,9 +111,9 @@ export const getLogs = async (req, res, next) => {
   try {
     const { room_id, range } = req.query;
     const normalizedRange = ['day', 'week', 'month'].includes(range) ? range : 'month';
-    
+
     const url = `${AI_SERVICE_URL}/energy/trend?days=30`;
-    
+
     let trendData;
     try {
       const response = await fetch(url, { signal: AbortSignal.timeout(3000) });
@@ -106,10 +121,9 @@ export const getLogs = async (req, res, next) => {
       trendData = await response.json();
     } catch (err) {
       console.warn('[fallback] AI service unavailable, using DB data');
-      // AI service fallback — calculates from DB directly
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - 30);
-      
+
       const logs = await db.EnergyLog.findAll({
         where: {
           date: {
@@ -125,7 +139,7 @@ export const getLogs = async (req, res, next) => {
         order: [['date', 'ASC']],
         raw: true
       });
-      
+
       trendData = logs.map(log => {
         const tw = parseFloat(log.total_watts || 0);
         const sw = parseFloat(log.saved_watts || 0);
@@ -156,11 +170,11 @@ export const getLogs = async (req, res, next) => {
 export const getBreakdown = async (req, res, next) => {
   try {
     const { room_id } = req.query;
-    
-    const url = room_id 
-      ? `${AI_SERVICE_URL}/energy/breakdown?room_id=${room_id}` 
+
+    const url = room_id
+      ? `${AI_SERVICE_URL}/energy/breakdown?room_id=${room_id}`
       : `${AI_SERVICE_URL}/energy/breakdown`;
-      
+
     let breakdownData;
     try {
       const response = await fetch(url, { signal: AbortSignal.timeout(3000) });
@@ -168,7 +182,6 @@ export const getBreakdown = async (req, res, next) => {
       breakdownData = await response.json();
     } catch (err) {
       console.warn('[fallback] AI service unavailable, using DB data');
-      // AI service fallback — calculates from DB directly
       const whereClause = room_id ? { room_id } : {};
       const logs = await db.EnergyLog.findAll({
         where: whereClause,
@@ -182,7 +195,7 @@ export const getBreakdown = async (req, res, next) => {
         raw: true,
         nest: true
       });
-      
+
       breakdownData = logs.map((log, index) => {
         const sw = parseFloat(log.saved_watts || 0);
         const tw = parseFloat(log.total_watts || 0);
@@ -192,11 +205,10 @@ export const getBreakdown = async (req, res, next) => {
           total_watts: tw,
           saved_watts: sw,
           savings_pct: tw > 0 ? (sw / tw) * 100 : 0,
-          rank: index + 1 // arbitrary rank assignment
+          rank: index + 1
         };
-      }).sort((a, b) => b.total_watts - a.total_watts); // sort by highest consumption
-      
-      // Update ranks after sorting
+      }).sort((a, b) => b.total_watts - a.total_watts);
+
       breakdownData.forEach((item, index) => {
         item.rank = index + 1;
       });
@@ -211,7 +223,7 @@ export const getBreakdown = async (req, res, next) => {
       rank: item.rank
     }));
 
-    return responseFormatter.success(res, formatted , 'Success');
+    return responseFormatter.success(res, formatted, 'Success');
   } catch (error) {
     next(error);
   }

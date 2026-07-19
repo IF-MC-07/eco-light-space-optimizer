@@ -3,20 +3,43 @@ import paho.mqtt.client as mqtt
 import json
 import time
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 from ultralytics import YOLO
 
 load_dotenv()
 
-# Gunakan path Windows Anda sebagai default jika .env tidak diatur
-DEFAULT_PATH = r"C:\Users\User\OneDrive\Documents\3312411050\SEMESTER 4\IF-MC-07\Eco-light-Space-Optimizer\eco-light-space-optimizer\service_ai\app\models\best.pt"
-MODEL_PATH = os.path.expandvars(os.path.expanduser(os.getenv("MODEL_PATH", DEFAULT_PATH).strip()))
+# ============================================================
+# MODEL PATH
+# ============================================================
 
-if not os.path.isabs(MODEL_PATH):
-    MODEL_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", MODEL_PATH))
+BASE_DIR = Path(__file__).resolve().parent
+DEFAULT_MODEL = BASE_DIR / "models" / "best.pt"
+
+MODEL_PATH = os.getenv("MODEL_PATH")
+
+if MODEL_PATH:
+    MODEL_PATH = Path(os.path.expandvars(os.path.expanduser(MODEL_PATH)))
+    if not MODEL_PATH.is_absolute():
+        MODEL_PATH = BASE_DIR / MODEL_PATH
+else:
+    MODEL_PATH = DEFAULT_MODEL
+
+MODEL_PATH = MODEL_PATH.resolve()
 
 print(f"🚀 MODEL_PATH: {MODEL_PATH}")
-model = YOLO(MODEL_PATH)
+
+if not MODEL_PATH.exists():
+    raise FileNotFoundError(
+        f"Model tidak ditemukan:\n{MODEL_PATH}\n"
+        f"Pastikan file best.pt berada di folder:\n{DEFAULT_MODEL.parent}"
+    )
+
+model = YOLO(str(MODEL_PATH))
+
+# ============================================================
+# MQTT
+# ============================================================
 
 MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
@@ -26,9 +49,16 @@ client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
 client.connect(MQTT_BROKER, MQTT_PORT)
 client.loop_start()
 
-cap = cv2.VideoCapture(0)
-print("✅ Kamera aktif! Tekan 'q' untuk keluar")
+# ============================================================
+# CAMERA
+# ============================================================
 
+cap = cv2.VideoCapture(0)
+
+if not cap.isOpened():
+    raise RuntimeError("❌ Kamera gagal dibuka.")
+
+print("✅ Kamera aktif! Tekan 'q' untuk keluar")
 prev_data = {}
 last_send_time = 0
 SEND_INTERVAL = 2

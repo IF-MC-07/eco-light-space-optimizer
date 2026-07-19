@@ -6,6 +6,8 @@ export const useEnergySummary = () => {
     queryKey: ['energy', 'summary'],
     queryFn: () => energyApi.getSummary(),
     refetchInterval: 5000, // Poll real-time power every 5s
+    refetchIntervalInBackground: true,
+    staleTime: 0, 
   });
 };
 
@@ -28,5 +30,7 @@ export const usePowerSensors = () => {
     queryKey: ['power-sensors'],
     queryFn: () => energyApi.getPowerSensors(),
     refetchInterval: 5000, // Poll real-time sensors every 5s
+    refetchIntervalInBackground: true,
+    staleTime: 0,
   });
 };

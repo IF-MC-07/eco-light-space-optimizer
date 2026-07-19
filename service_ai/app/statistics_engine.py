@@ -35,68 +35,74 @@ def calculate_carbon_savings(saved_watts: float) -> dict:
 # --- 5A. Power Sensor Statistics ---
 def get_realtime_stats(room_id=None) -> dict:
     """
-    Returns descriptive stats from power_sensors:
-    - mean_watts, median_watts, std_watts
-    - min_watts, max_watts
-    - mean_voltage, mean_current
-    - latest_reading (most recent row)
-    - sample_count
-    Optional: filter by room_id
+    Statistik daya real-time dari power_sensors, dibatasi 24 jam terakhir
+    dengan outlier filtering agar tidak tercemar data korup/sensor error.
     """
     conn = None
     try:
         conn = get_db_connection()
         with conn.cursor() as cur:
-            query = "SELECT power_watts, voltage_v, current_a, read_at FROM power_sensors"
+            query = """
+                SELECT power_watts, voltage_v, current_a, read_at 
+                FROM power_sensors
+                WHERE read_at >= NOW() - INTERVAL '24 hours'
+            """
             params = []
             if room_id is not None:
-                query += " WHERE room_id = %s"
+                query += " AND room_id = %s"
                 params.append(room_id)
-            query += " ORDER BY read_at DESC"
-            
+            query += " ORDER BY read_at DESC LIMIT 5000"
+
             cur.execute(query, tuple(params))
             rows = cur.fetchall()
 
-        # Load into Pandas DataFrame
         df = pd.DataFrame(rows, columns=['power_watts', 'voltage_v', 'current_a', 'read_at'])
-        
-        if df.empty:
-            return {
-                "mean_watts": 0.0,
-                "median_watts": 0.0,
-                "std_watts": 0.0,
-                "min_watts": 0.0,
-                "max_watts": 0.0,
-                "mean_voltage": 0.0,
-                "mean_current": 0.0,
-                "latest_reading": None,
-                "sample_count": 0
-            }
 
-        # Cast column types
+        empty_result = {
+            "mean_watts": 0.0, "median_watts": 0.0, "std_watts": 0.0,
+            "min_watts": 0.0, "max_watts": 0.0, "mean_voltage": 0.0,
+            "mean_current": 0.0, "latest_reading": None, "sample_count": 0
+        }
+        if df.empty:
+            return empty_result
+
         df['power_watts'] = df['power_watts'].astype(float)
         df['voltage_v'] = df['voltage_v'].astype(float)
         df['current_a'] = df['current_a'].astype(float)
 
-        mean_watts = float(df['power_watts'].mean())
-        median_watts = float(df['power_watts'].median())
-        # std is nan if sample size is 1
-        std_watts = float(df['power_watts'].std()) if len(df) > 1 else 0.0
-        if np.isnan(std_watts):
-            std_watts = 0.0
-            
-        min_watts = float(df['power_watts'].min())
-        max_watts = float(df['power_watts'].max())
-        mean_voltage = float(df['voltage_v'].mean())
-        mean_current = float(df['current_a'].mean())
-
-        latest = df.iloc[0]
+        # Simpan pembacaan TERBARU sebelum filtering apapun
+        # (latest_reading harus tetap merepresentasikan kondisi sesaat, valid atau tidak)
+        latest_raw = df.iloc[0]
         latest_reading = {
-            "power_watts": float(latest["power_watts"]),
-            "voltage_v": float(latest["voltage_v"]),
-            "current_a": float(latest["current_a"]),
-            "read_at": latest["read_at"].isoformat() if hasattr(latest["read_at"], "isoformat") else str(latest["read_at"])
+            "power_watts": float(latest_raw["power_watts"]),
+            "voltage_v": float(latest_raw["voltage_v"]),
+            "current_a": float(latest_raw["current_a"]),
+            "read_at": latest_raw["read_at"].isoformat() if hasattr(latest_raw["read_at"], "isoformat") else str(latest_raw["read_at"])
         }
+
+        # --- Outlier filtering untuk POWER (bukan untuk latest_reading) ---
+        MAX_REASONABLE_WATTS = 5000.0  # sesuaikan dengan kapasitas MCB ruangan Anda
+        power_df = df[(df['power_watts'] >= 0) & (df['power_watts'] <= MAX_REASONABLE_WATTS)]
+
+        if power_df.empty:
+            mean_watts = median_watts = std_watts = min_watts = max_watts = 0.0
+        else:
+            mean_watts = float(power_df['power_watts'].mean())
+            median_watts = float(power_df['power_watts'].median())
+            std_watts = float(power_df['power_watts'].std()) if len(power_df) > 1 else 0.0
+            if np.isnan(std_watts):
+                std_watts = 0.0
+            min_watts = float(power_df['power_watts'].min())
+            max_watts = float(power_df['power_watts'].max())
+
+        # --- Filter TERPISAH untuk VOLTAGE ---
+        # voltage_v = 0 adalah sensor read failure, bukan kondisi listrik nyata (PLN tidak pernah 0V saat aktif)
+        VALID_VOLTAGE_MIN, VALID_VOLTAGE_MAX = 180.0, 240.0
+        voltage_df = df[(df['voltage_v'] >= VALID_VOLTAGE_MIN) & (df['voltage_v'] <= VALID_VOLTAGE_MAX)]
+        mean_voltage = float(voltage_df['voltage_v'].mean()) if not voltage_df.empty else 0.0
+
+        # current_a tetap pakai power_df (0A saat idle itu valid, bukan sensor error)
+        mean_current = float(power_df['current_a'].mean()) if not power_df.empty else 0.0
 
         return {
             "mean_watts": float(np.round(mean_watts, 2)),
@@ -107,7 +113,7 @@ def get_realtime_stats(room_id=None) -> dict:
             "mean_voltage": float(np.round(mean_voltage, 2)),
             "mean_current": float(np.round(mean_current, 2)),
             "latest_reading": latest_reading,
-            "sample_count": int(len(df))
+            "sample_count": int(len(power_df))
         }
     except Exception as e:
         logger.error(f"❌ Error in get_realtime_stats: {e}")
@@ -116,7 +122,6 @@ def get_realtime_stats(room_id=None) -> dict:
         if conn:
             from app.zona_loader import release_connection
             release_connection(conn)
-
 
 def get_top_consumers(limit=5) -> list:
     """
@@ -224,57 +229,59 @@ def detect_usage_alerts(threshold_watts=500) -> list:
 # --- 5B. Energy Log Statistics ---
 def get_energy_summary(room_id=None) -> dict:
     """
-    Returns from energy_logs:
-    - total_consumption_watts (sum of total_watts)
-    - total_saved_watts (sum of saved_watts)
-    - savings_percentage = (saved / total) * 100
-    - avg_daily_watts
-    - peak_day { date, total_watts }
-    - lowest_day { date, total_watts }
-    - trend: 'improving' | 'stable' | 'worsening'
-      (compare last 7 days avg vs previous 7 days avg)
+    Ringkasan energi dari energy_logs, dengan field eksplisit untuk HARI INI
+    (today_total_watts, today_saved_watts) agar tidak tercampur rata-rata historis.
     """
     conn = None
     try:
         conn = get_db_connection()
         with conn.cursor() as cur:
-            query = "SELECT date, total_watts, saved_watts FROM energy_logs"
+            query = """
+                SELECT date, total_watts, saved_watts 
+                FROM energy_logs
+                WHERE date >= CURRENT_DATE - INTERVAL '90 days'
+            """
             params = []
             if room_id is not None:
-                query += " WHERE room_id = %s"
+                query += " AND room_id = %s"
                 params.append(room_id)
             query += " ORDER BY date ASC"
-            
+
             cur.execute(query, tuple(params))
             rows = cur.fetchall()
 
         df = pd.DataFrame(rows, columns=['date', 'total_watts', 'saved_watts'])
+
+        empty_result = {
+            "total_consumption_watts": 0.0, "total_saved_watts": 0.0,
+            "savings_percentage": 0.0, "avg_daily_watts": 0.0,
+            "today_total_watts": 0.0, "today_saved_watts": 0.0,
+            "peak_day": None, "lowest_day": None, "trend": "stable"
+        }
         if df.empty:
-            return {
-                "total_consumption_watts": 0.0,
-                "total_saved_watts": 0.0,
-                "savings_percentage": 0.0,
-                "avg_daily_watts": 0.0,
-                "peak_day": None,
-                "lowest_day": None,
-                "trend": "stable"
-            }
+            return empty_result
 
         df['total_watts'] = df['total_watts'].astype(float)
         df['saved_watts'] = df['saved_watts'].astype(float)
 
-        # Aggregate by date
-        daily_df = df.groupby('date').agg({
-            'total_watts': 'sum',
-            'saved_watts': 'sum'
-        }).reset_index()
+        daily_df = df.groupby('date').agg({'total_watts': 'sum', 'saved_watts': 'sum'}).reset_index()
+
+        # --- Field eksplisit untuk HARI INI ---
+        today = pd.Timestamp(datetime.now().date())
+        daily_df['date_norm'] = pd.to_datetime(daily_df['date'])
+        today_row = daily_df[daily_df['date_norm'] == today]
+        today_total_watts = float(today_row['total_watts'].iloc[0]) if not today_row.empty else 0.0
+        today_saved_watts = float(today_row['saved_watts'].iloc[0]) if not today_row.empty else 0.0
 
         total_consumption = float(daily_df['total_watts'].sum())
         total_saved = float(daily_df['saved_watts'].sum())
-        savings_pct = (total_saved / total_consumption * 100) if total_consumption > 0 else 0.0
+
+        MIN_MEANINGFUL_WATTS = 1.0
+        savings_pct = (total_saved / total_consumption * 100) if total_consumption > MIN_MEANINGFUL_WATTS else 0.0
+        savings_pct = min(savings_pct, 100.0)
+
         avg_daily = float(daily_df['total_watts'].mean())
 
-        # Peak day
         peak_idx = daily_df['total_watts'].idxmax()
         peak_row = daily_df.loc[peak_idx]
         peak_day = {
@@ -282,7 +289,6 @@ def get_energy_summary(room_id=None) -> dict:
             "total_watts": float(np.round(peak_row['total_watts'], 2))
         }
 
-        # Lowest day
         lowest_idx = daily_df['total_watts'].idxmin()
         lowest_row = daily_df.loc[lowest_idx]
         lowest_day = {
@@ -290,27 +296,25 @@ def get_energy_summary(room_id=None) -> dict:
             "total_watts": float(np.round(lowest_row['total_watts'], 2))
         }
 
-        # Trend analysis
         trend = 'stable'
         if len(daily_df) >= 2:
             n = min(7, len(daily_df) // 2)
             if n > 0:
                 last_n_avg = daily_df.tail(n)['total_watts'].mean()
                 prev_n_avg = daily_df.iloc[-2*n:-n]['total_watts'].mean()
-                
                 diff_pct = ((last_n_avg - prev_n_avg) / prev_n_avg) if prev_n_avg > 0 else 0.0
-                if diff_pct < -0.05:  # consumption decreased by > 5%
+                if diff_pct < -0.05:
                     trend = 'improving'
-                elif diff_pct > 0.05:  # consumption increased by > 5%
+                elif diff_pct > 0.05:
                     trend = 'worsening'
-                else:
-                    trend = 'stable'
 
         return {
             "total_consumption_watts": float(np.round(total_consumption, 2)),
             "total_saved_watts": float(np.round(total_saved, 2)),
             "savings_percentage": float(np.round(savings_pct, 2)),
             "avg_daily_watts": float(np.round(avg_daily, 2)),
+            "today_total_watts": float(np.round(today_total_watts, 2)),
+            "today_saved_watts": float(np.round(today_saved_watts, 2)),
             "peak_day": peak_day,
             "lowest_day": lowest_day,
             "trend": trend
@@ -322,8 +326,7 @@ def get_energy_summary(room_id=None) -> dict:
         if conn:
             from app.zona_loader import release_connection
             release_connection(conn)
-
-
+            
 def get_savings_breakdown(room_id=None) -> list:
     """
     Returns per-room savings breakdown:

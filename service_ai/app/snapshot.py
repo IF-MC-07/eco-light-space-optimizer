@@ -145,7 +145,7 @@ def api_usage_alerts(threshold: float = None):
 
 
 @app.get("/energy/summary")
-def api_energy_summary(room_id: int = None):
+def api_energy_summary(room_id: str = None):
     summary = get_energy_summary(room_id)
     total_saved = summary.get("total_saved_watts", 0.0)
     carbon_cost = calculate_carbon_savings(total_saved)
@@ -154,7 +154,7 @@ def api_energy_summary(room_id: int = None):
 
 
 @app.get("/energy/breakdown")
-def api_energy_breakdown(room_id: int = None):
+def api_energy_breakdown(room_id: str = None):
     return get_savings_breakdown(room_id)
 
 

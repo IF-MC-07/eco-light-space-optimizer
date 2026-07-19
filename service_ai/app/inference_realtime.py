@@ -205,10 +205,17 @@ def camera_worker(camera_id: str, ip_address: str, mqtt_handler: MQTTHandler, st
     log.info(f"🎥 Starting worker for {camera_id} ({ip_address})")
 
     cam_source = int(ip_address) if ip_address.isdigit() else ip_address
+
+    print(f"DEBUG cam_source = {cam_source}")
+    print(f"DEBUG type = {type(cam_source)}")
+
     zones = []
     last_zone_fetch = 0.0
     last_decision_call = 0.0
+
     cap = open_capture(cam_source)
+
+    print(f"DEBUG cap.isOpened() = {cap.isOpened()}")
 
     while not stop_event.is_set():
         now = time.time()

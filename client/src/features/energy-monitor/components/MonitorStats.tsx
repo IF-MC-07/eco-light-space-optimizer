@@ -10,10 +10,17 @@ export function MonitorStats() {
   const summary = response;
   const sensors = sensorResponse || [];
 
-  const todayUsageKwh = summary ? (summary.today_usage / 1000).toFixed(1) : '0';
-  const todaySavedKwh = summary ? (summary.today_saved / 1000).toFixed(1) : '0';
+const todayUsageWatts = summary ? (summary.today_usage || 0) : 0;
+const todayUsageDisplay = todayUsageWatts >= 1000
+  ? `${(todayUsageWatts / 1000).toFixed(2)} kWh`
+  : `${todayUsageWatts.toFixed(1)} Wh`;
 
-  // Calculate efficiency from sensor data
+const todaySavedWatts = summary ? (summary.today_saved || 0) : 0;
+const todaySavedDisplay = todaySavedWatts >= 1000
+  ? `${(todaySavedWatts / 1000).toFixed(2)} kWh saved`
+  : `${todaySavedWatts.toFixed(1)} Wh saved`;
+
+// Calculate efficiency from sensor data
   const watts = sensors.map((s: any) => parseFloat(s.power_watts) || 0).filter((w: number) => w > 0);
   const meanWatts = watts.length > 0 ? watts.reduce((a: number, b: number) => a + b, 0) / watts.length : 0;
   const maxWatts = watts.length > 0 ? Math.max(...watts) : 1;
@@ -41,7 +48,7 @@ export function MonitorStats() {
         <CardContent className="p-5 mt-5">
           <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-2">Today's Consumption</p>
           <div className="flex items-baseline gap-2 mb-1">
-            <h3 className="text-2xl font-heading font-bold text-black">{todayUsageKwh} kWh</h3>
+            <h3 className="text-2xl font-heading font-bold text-black">{todayUsageDisplay}</h3>
             <span className="text-xs font-bold text-primary">{changeSign}{changePct}%</span>
           </div>
           <p className="text-xs text-secondary-light font-medium">vs previous period</p>
@@ -63,7 +70,7 @@ export function MonitorStats() {
         <CardContent className="p-5 mt-5">
           <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-2">Energy Saved Today</p>
           <div className="mb-1">
-            <h3 className="text-2xl font-heading font-bold text-black">{todaySavedKwh} kWh saved</h3>
+            <h3 className="text-2xl font-heading font-bold text-black">{todaySavedDisplay}</h3>
           </div>
           <p className="text-xs text-secondary-light font-medium">This day's optimization</p>
         </CardContent>

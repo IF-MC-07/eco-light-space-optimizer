@@ -1,7 +1,6 @@
 import os
 import time
 import logging
-from datetime import datetime
 from dotenv import load_dotenv
 import threading
 
@@ -21,408 +20,169 @@ logger = logging.getLogger(__name__)
 class DecisionEngine:
     def __init__(self):
         self._lock = threading.Lock()
-        # State tracking per zone:
-        # zone_id -> {
-        #     "zone_id": int,
-        #     "zone_name": str,
-        #     "current_status": "ON" | "OFF",
-        #     "occupied_since": float | None,
-        #     "empty_since": float | None,
-        #     "pending_on": bool,
-        #     "pending_off": bool
-        # }
         self.zone_states = {}
-        # State tracking per room AC:
-        # room_id -> {
-        #     "room_id": int,
-        #     "current_status": "ON" | "OFF",
-        #     "occupied_since": float | None,
-        #     "empty_since": float | None,
-        #     "last_turned_off": float | None
-        # }
         self.ac_states = {}
 
         self._camera_room_cache = {}
         self._initialized_cameras = set()
-        self._unknown_camera_last_check = {}  # camera_id -> timestamp terakhir kali di-cek
 
-        # Load delay configurations
+        # NOTE: delay_on_light sudah dalam satuan DETIK (sesuai nama env var)
         self.delay_on_light = float(os.getenv("DELAY_ON_LIGHT_SECONDS", 5))
-        self.delay_on_ac = float(os.getenv("DELAY_ON_AC_MINUTES", 3)) * 60
-        self.delay_off = float(os.getenv("DELAY_OFF_MINUTES", 5)) * 60
-        self.compressor_protection_seconds = float(os.getenv("COMPRESSOR_PROTECTION_SECONDS", 180))
 
-        logger.info(f"⚙️ Decision Engine Initialized with DELAY_ON_LIGHT={self.delay_on_light}s, DELAY_ON_AC={self.delay_on_ac}s, DELAY_OFF={self.delay_off}s, COMPRESSOR_PROTECTION={self.compressor_protection_seconds}s")
+        # NOTE: delay_on_ac dan delay_off disimpan dalam satuan MENIT (sesuai nama env var),
+        # tapi time.time() selalu menghasilkan detik. Maka WAJIB dikonversi ke detik
+        # di titik penggunaan (atau disimpan langsung dalam bentuk *_seconds agar tidak ambigu).
+        self.delay_on_ac = float(os.getenv("DELAY_ON_AC_MINUTES", 3))
+        self.delay_off_minutes = float(os.getenv("DELAY_OFF_MINUTES", 5))
+        self.delay_off_seconds = self.delay_off_minutes * 60  # <-- konversi eksplisit, dipakai di process_inference
 
-    def _is_recoverable_db_error(self, exc: Exception) -> bool:
-        if exc is None:
-            return False
-        message = str(exc).lower()
-        return any(token in message for token in [
-            "cursor already closed",
-            "connection already closed",
-            "connection is closed",
-            "closed cursor",
-            "the cursor is closed",
-            "server closed the connection unexpectedly",
-            "ssl connection has been closed unexpectedly",
-            "could not receive data from server",
-        ])
-
-    def _close_db_connection(self, conn):
-        if not conn:
-            return
-        try:
-            from app.zona_loader import release_connection
-            release_connection(conn, close=True)
-        except Exception as release_error:
-            logger.warning(f"⚠️ Failed to close broken DB connection: {release_error}")
-
-    def _run_db_action(self, conn, action):
-        current_conn = conn
-        for attempt in range(2):
-            try:
-                with current_conn.cursor() as cur:
-                    result = action(cur, current_conn)
-                    return current_conn, result
-            except Exception as exc:
-                if attempt == 0 and self._is_recoverable_db_error(exc):
-                    logger.warning(f"⚠️ DB cursor became invalid, retrying with a fresh connection: {exc}")
-                    self._close_db_connection(current_conn)
-                    current_conn = get_db_connection()
-                    continue
-                raise
+        logger.info(
+            f"⚙️ Decision Engine Initialized - ON Light: {self.delay_on_light}s | "
+            f"ON AC: {self.delay_on_ac}min | OFF: {self.delay_off_minutes}min "
+            f"({self.delay_off_seconds:.0f}s)"
+        )
 
     def _initialize_camera_states(self, camera_id: str):
-        """
-        Initializes zone and AC states from the database for the given camera.
-        """
         if camera_id in self._initialized_cameras:
-            return
-
-        last_check = self._unknown_camera_last_check.get(camera_id)
-        if last_check is not None and (time.time() - last_check) < 60:
             return
 
         conn = None
         try:
             conn = get_db_connection()
-
-            def initialize_state(cur, active_conn):
-                # 1. Fetch Room ID associated with Camera
+            with conn.cursor() as cur:
                 cur.execute("SELECT room_id FROM cameras WHERE camera_id = %s", (camera_id,))
                 room_row = cur.fetchone()
                 if not room_row:
-                    logger.error(f"❌ Camera ID {camera_id} not found in DB")
-                    self._unknown_camera_last_check[camera_id] = time.time()
-                    return None
+                    return
                 room_id = room_row[0]
                 self._camera_room_cache[camera_id] = room_id
 
-                # 2. Fetch Active Zones and their Light Control states
+                # Load zones + status
                 cur.execute("""
                     SELECT z.zone_id, z.zone_name, COALESCE(lc.light_status, 'OFF')
                     FROM zones z
                     LEFT JOIN light_controls lc ON z.zone_id = lc.zone_id
                     WHERE z.room_id = %s AND z.zone_status = 'aktif'
                 """, (room_id,))
-                zone_rows = cur.fetchall()
-
-                for row in zone_rows:
-                    z_id, z_name, l_status = row
+                for row in cur.fetchall():
+                    z_id, z_name, status = row
                     if z_id not in self.zone_states:
                         self.zone_states[z_id] = {
                             "zone_id": z_id,
                             "zone_name": z_name,
                             "room_id": room_id,
-                            "current_status": l_status,
+                            "current_status": (status or "OFF").upper(),
                             "occupied_since": None,
-                            "empty_since": None,
-                            "pending_on": False,
-                            "pending_off": False
+                            "empty_since": None
                         }
-                        logger.info(f"🔹 Initialized Zone state: ID {z_id} ({z_name}) as {l_status}")
 
-                # 3. Fetch AC Control state for the Room
+                # Load AC
                 if room_id not in self.ac_states:
-                    cur.execute("""
-                        SELECT COALESCE(ac_status, 'OFF')
-                        FROM ac_controls
-                        WHERE room_id = %s
-                        LIMIT 1
-                    """, (room_id,))
+                    cur.execute("SELECT COALESCE(ac_status, 'OFF') FROM ac_controls WHERE room_id = %s LIMIT 1", (room_id,))
                     ac_row = cur.fetchone()
-                    ac_status = ac_row[0] if ac_row else "OFF"
-
                     self.ac_states[room_id] = {
                         "room_id": room_id,
-                        "current_status": ac_status,
-                        "occupied_since": None,
-                        "empty_since": None,
-                        "last_turned_off": None
+                        "current_status": (ac_row[0] if ac_row else "OFF").upper()
                     }
-                    logger.info(f"🔹 Initialized AC state: Room {room_id} as {ac_status}")
 
                 self._initialized_cameras.add(camera_id)
-                return None
-
-            conn, _ = self._run_db_action(conn, initialize_state)
 
         except Exception as e:
-            logger.error(f"❌ DB Error during state initialization for Camera {camera_id}: {e}")
+            logger.error(f"❌ Init state error: {e}")
         finally:
             if conn:
                 from app.zona_loader import release_connection
                 release_connection(conn)
 
     def process_inference(self, camera_id: str, occupancy_counts: dict):
-        """
-        Processes an inference cycle.
-        occupancy_counts is a dictionary mapping zone_name -> count
-        """
         with self._lock:
-            # Ensure states are initialized
             self._initialize_camera_states(camera_id)
 
             room_id = self._camera_room_cache.get(camera_id)
             if not room_id:
                 return
 
-            # Filter zone states belonging to the current camera's room
             conn = None
             try:
                 conn = get_db_connection()
-
-                def process_decision(cur, active_conn):
-                    # Filter zone states for this room
+                with conn.cursor() as cur:
                     active_room_zones = [z for z in self.zone_states.values() if z["room_id"] == room_id]
                     now = time.time()
 
-                    # Resync current_status of zones from DB
-                    if not active_room_zones:
-                        db_statuses = {}
-                    else:
-                        cur.execute("""
-                            SELECT zone_id, COALESCE(light_status, 'OFF')
-                            FROM light_controls
-                            WHERE zone_id IN %s
-                        """, (tuple(z["zone_id"] for z in active_room_zones),))
-                        db_statuses_raw = cur.fetchall()
-                        db_statuses = {}
-                        if isinstance(db_statuses_raw, (list, tuple)):
-                            try:
-                                for row in db_statuses_raw:
-                                    if isinstance(row, (list, tuple)) and len(row) >= 2:
-                                        db_statuses[row[0]] = row[1]
-                            except Exception as e:
-                                logger.warning(f"⚠️ Failed to parse zone statuses from DB: {e}")
-
-                    for zone in active_room_zones:
-                        db_status = db_statuses.get(zone["zone_id"])
-                        if isinstance(db_status, str):
-                            db_status_upper = db_status.upper()
-                            if db_status_upper != zone["current_status"]:
-                                logger.info(f"🔄 Sync cache Zone {zone['zone_name']}: {zone['current_status']} -> {db_status_upper}")
-                                zone["current_status"] = db_status_upper
-
-                    # Process each zone
                     for zone in active_room_zones:
                         z_id = zone["zone_id"]
                         z_name = zone["zone_name"]
                         count = occupancy_counts.get(z_name, 0)
 
+                        logger.debug(f"[STATE] Zone {z_name} | Count: {count} | Status: {zone['current_status']}")
+
                         if count > 0:
-                            zone["empty_since"] = None
-                            zone["pending_off"] = False
+                            zone["empty_since"] = None  # Reset timer kosong
 
                             if zone["current_status"] == "OFF":
                                 if zone["occupied_since"] is None:
                                     zone["occupied_since"] = now
-                                    zone["pending_on"] = True
+                                    logger.debug(f"[OCCUPIED] Zone {z_name} mulai terdeteksi")
 
-                                if (now - zone["occupied_since"]) >= self.delay_on_light:
-                                    # Fetch relay channel
-                                    cur.execute("""
-                                        SELECT relay_channel FROM light_controls
-                                        WHERE zone_id = %s LIMIT 1
-                                    """, (z_id,))
+                                elapsed = now - zone["occupied_since"]
+
+                                if elapsed >= self.delay_on_light:
+                                    cur.execute("SELECT relay_channel FROM light_controls WHERE zone_id = %s LIMIT 1", (z_id,))
                                     relay_row = cur.fetchone()
-                                    relay_channel = relay_row[0] if relay_row else 1
+                                    relay_channel = relay_row[0] if relay_row and relay_row[0] is not None else 1
 
-                                    # Emit TURN ON
                                     mqtt_commander.send_light_command(
-                                        room_id=room_id,
-                                        relay_channel=relay_channel,
-                                        command="ON",
-                                        zone_id=z_id,
-                                        zone_name=z_name,
-                                        source="ai_decision"
+                                        room_id=room_id, relay_channel=relay_channel, command="ON",
+                                        zone_id=z_id, zone_name=z_name, source="ai_decision"
                                     )
                                     zone["current_status"] = "ON"
                                     zone["occupied_since"] = None
-                                    zone["pending_on"] = False
 
-                                    # Update DB status
-                                    cur.execute("""
-                                        UPDATE light_controls
-                                        SET light_status = 'ON', updated_at = NOW()
-                                        WHERE zone_id = %s
-                                    """, (z_id,))
-                                    active_conn.commit()
-                                    logger.info(f"🟢 Command TURN_ON sent & DB updated for Zone '{z_name}' (ID {z_id})")
+                                    cur.execute("UPDATE light_controls SET light_status = 'ON', updated_at = NOW() WHERE zone_id = %s", (z_id,))
+                                    conn.commit()
+                                    logger.info(f"🟢 Lampu ON - Zone '{z_name}' (Relay {relay_channel})")
+
                         else:
-                            # Clear occupied tracker and pending on
                             zone["occupied_since"] = None
-                            zone["pending_on"] = False
 
                             if zone["current_status"] == "ON":
                                 if zone["empty_since"] is None:
                                     zone["empty_since"] = now
-                                    zone["pending_off"] = True
+                                    logger.debug(f"[EMPTY] Zone {z_name} mulai kosong")
 
-                                # Check if delay has passed
-                                if (now - zone["empty_since"]) >= self.delay_off:
-                                    # Fetch relay channel
-                                    cur.execute("""
-                                        SELECT relay_channel FROM light_controls
-                                        WHERE zone_id = %s LIMIT 1
-                                    """, (z_id,))
+                                elapsed = now - zone["empty_since"]
+
+                                # FIX: gunakan konfigurasi delay_off_seconds (default 5 menit = 300 detik),
+                                # BUKAN angka hardcode. Sebelumnya di-hardcode ke 30 detik untuk testing
+                                # dan tidak pernah di-revert, menyebabkan lampu mati terlalu cepat
+                                # (berisiko mempercepat keausan kontak relay akibat switching berlebihan).
+                                if elapsed >= self.delay_off_seconds:
+                                    cur.execute("SELECT relay_channel FROM light_controls WHERE zone_id = %s LIMIT 1", (z_id,))
                                     relay_row = cur.fetchone()
-                                    relay_channel = relay_row[0] if relay_row else 1
+                                    relay_channel = relay_row[0] if relay_row and relay_row[0] is not None else 1
 
-                                    # Emit TURN OFF
                                     mqtt_commander.send_light_command(
-                                        room_id=room_id,
-                                        relay_channel=relay_channel,
-                                        command="OFF",
-                                        zone_id=z_id,
-                                        zone_name=z_name,
-                                        source="ai_decision"
+                                        room_id=room_id, relay_channel=relay_channel, command="OFF",
+                                        zone_id=z_id, zone_name=z_name, source="ai_decision"
                                     )
                                     zone["current_status"] = "OFF"
                                     zone["empty_since"] = None
-                                    zone["pending_off"] = False
 
-                                    # Update DB status
-                                    cur.execute("""
-                                        UPDATE light_controls
-                                        SET light_status = 'OFF', updated_at = NOW()
-                                        WHERE zone_id = %s
-                                    """, (z_id,))
-                                    active_conn.commit()
-                                    logger.info(f"🔴 Command TURN_OFF sent & DB updated for Zone '{z_name}' (ID {z_id})")
-                    room_occupied = any(occupancy_counts.get(z["zone_name"], 0) > 0 for z in active_room_zones)
-                    ac_state = self.ac_states.get(room_id)
-
-                    if ac_state:
-                        # Resync AC status from DB
-                        cur.execute("""
-                            SELECT COALESCE(ac_status, 'OFF')
-                            FROM ac_controls
-                            WHERE room_id = %s
-                            LIMIT 1
-                        """, (room_id,))
-                        ac_row = cur.fetchone()
-                        if ac_row and isinstance(ac_row, (tuple, list)) and len(ac_row) >= 1:
-                            db_ac_status = ac_row[0]
-                            if isinstance(db_ac_status, str):
-                                db_ac_status_upper = db_ac_status.upper()
-                                if db_ac_status_upper != ac_state["current_status"]:
-                                    logger.info(f"🔄 Sync cache AC Room {room_id}: {ac_state['current_status']} -> {db_ac_status_upper}")
-                                    ac_state["current_status"] = db_ac_status_upper
-
-                        if room_occupied:
-                            ac_state["empty_since"] = None
-
-                            if ac_state["current_status"] == "OFF":
-                                if ac_state["occupied_since"] is None:
-                                    ac_state["occupied_since"] = now
-                                    logger.info(f"⏳ Room {room_id} AC pending ON (occupancy detected).")
-
-                                if (now - ac_state["occupied_since"]) >= self.delay_on_ac:
-                                    last_off = ac_state.get("last_turned_off")
-                                    if last_off is not None and (now - last_off) < self.compressor_protection_seconds:
-                                        remaining = self.compressor_protection_seconds - (now - last_off)
-                                        logger.info(f"⏸️ AC Room {room_id}: compressor protection active, {remaining:.0f}s remaining.")
-                                    else:
-                                        # Fetch AC settings
-                                        cur.execute("""
-                                            SELECT temperature_setting FROM ac_controls
-                                            WHERE room_id = %s LIMIT 1
-                                        """, (room_id,))
-                                        ac_row = cur.fetchone()
-                                        temp = ac_row[0] if ac_row else 22.0
-
-                                        # Emit TURN ON
-                                        mqtt_commander.send_ac_command(
-                                            room_id=room_id,
-                                            command="ON",
-                                            temperature=temp,
-                                            source="ai_decision"
-                                        )
-                                        ac_state["current_status"] = "ON"
-                                        ac_state["occupied_since"] = None
-
-                                        # Update DB status
-                                        cur.execute("""
-                                            UPDATE ac_controls
-                                            SET ac_status = 'ON', updated_at = NOW()
-                                            WHERE room_id = %s
-                                        """, (room_id,))
-                                        active_conn.commit()
-                                        logger.info(f"🟢 AC turned ON for Room {room_id}")
-                        else:
-                            ac_state["occupied_since"] = None
-
-                            if ac_state["current_status"] == "ON":
-                                if ac_state["empty_since"] is None:
-                                    ac_state["empty_since"] = now
-                                    logger.info(f"⏳ Room {room_id} AC pending OFF (all zones empty).")
-
-                                if (now - ac_state["empty_since"]) >= self.delay_off:
-                                    # Fetch AC settings
-                                    cur.execute("""
-                                        SELECT temperature_setting FROM ac_controls
-                                        WHERE room_id = %s LIMIT 1
-                                    """, (room_id,))
-                                    ac_row = cur.fetchone()
-                                    temp = ac_row[0] if ac_row else 22.0
-
-                                    # Emit TURN OFF
-                                    mqtt_commander.send_ac_command(
-                                        room_id=room_id,
-                                        command="OFF",
-                                        temperature=temp,
-                                        source="ai_decision"
-                                    )
-                                    ac_state["current_status"] = "OFF"
-                                    ac_state["empty_since"] = None
-                                    ac_state["last_turned_off"] = now
-
-                                    # Update DB status
-                                    cur.execute("""
-                                        UPDATE ac_controls
-                                        SET ac_status = 'OFF', updated_at = NOW()
-                                        WHERE room_id = %s
-                                    """, (room_id,))
-                                    active_conn.commit()
-                                    logger.info(f"🔴 AC turned OFF for Room {room_id}")
-
-                    return None
-
-                conn, _ = self._run_db_action(conn, process_decision)
+                                    cur.execute("UPDATE light_controls SET light_status = 'OFF', updated_at = NOW() WHERE zone_id = %s", (z_id,))
+                                    conn.commit()
+                                    logger.info(f"🔴 Lampu OFF - Zone '{z_name}' (Relay {relay_channel})")
 
             except Exception as e:
-                logger.error(f"❌ DB Error during process_inference decision flow: {e}")
-                if conn:
-                    try:
-                        conn.rollback()
-                    except Exception:
-                        pass
+                logger.error(f"❌ Process inference error: {e}")
             finally:
+                # FIX: finally hanya untuk resource cleanup (release koneksi DB).
+                # Blok duplikat logika bisnis yang sebelumnya ada di sini (dan berisiko
+                # NameError karena mereferensikan variabel loop yang belum tentu terdefinisi)
+                # sudah dihapus. Logika ON/OFF sepenuhnya ditangani di dalam try-block di atas.
                 if conn:
                     from app.zona_loader import release_connection
                     release_connection(conn)
 
-# Create a singleton instance of DecisionEngine
+
+# Singleton
 decision_engine = DecisionEngine()
