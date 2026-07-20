@@ -105,103 +105,128 @@ class MqttService {
     });
   }
 
-  async handleEnergyData(topic, payload) {
-    try {
-      const topicString = topic.toString();
-      const parts = topicString.split('/');
-      const roomId = payload.room_id || parts[1];
-      const sensorId = generateCustomId("PWR");
-      const powerWatts = payload.power_watts ?? payload.power ?? 0;
-      const voltageV = payload.voltage_v ?? payload.voltage ?? 0;
-      const currentA = payload.current_a ?? payload.current ?? 0;
-      const recordedAt = payload.read_at
-        ? new Date(payload.read_at)
-        : payload.timestamp
-          ? new Date(payload.timestamp)
-          : new Date();
+async handleEnergyData(topic, payload) {
+  try {
+    const topicString = topic.toString();
+    const parts = topicString.split('/');
+    const roomId = payload.room_id || parts[1];
+    const sensorId = generateCustomId("PWR");
+    const powerWatts = payload.power_watts ?? payload.power ?? 0;
+    const voltageV = payload.voltage_v ?? payload.voltage ?? 0;
+    const currentA = payload.current_a ?? payload.current ?? 0;
+    const recordedAt = payload.read_at
+      ? new Date(payload.read_at)
+      : payload.timestamp
+        ? new Date(payload.timestamp)
+        : new Date();
 
-      const insertPowerSensorQuery = `
-        INSERT INTO power_sensors (sensor_id, room_id, voltage_v, current_a, power_watts, read_at)
-        VALUES (:sensor_id, :room_id, :voltage_v, :current_a, :power_watts, :read_at)
-      `;
-      await db.sequelize.query(insertPowerSensorQuery, {
-        replacements: {
-          sensor_id: sensorId,
-          room_id: roomId,
-          voltage_v: voltageV,
-          current_a: currentA,
-          power_watts: powerWatts,
-          read_at: recordedAt
-        },
-        type: db.sequelize.QueryTypes.INSERT
-      });
+    // === LANGKAH 1: Ambil pembacaan SEBELUMNYA (sebelum insert baris baru) ===
+    // Ini dibutuhkan untuk menghitung delta_t pada integrasi trapesium
+    const prevReadingQuery = `
+      SELECT power_watts, read_at
+      FROM power_sensors
+      WHERE room_id = :room_id
+      ORDER BY read_at DESC
+      LIMIT 1
+    `;
+    const [prevReading] = await db.sequelize.query(prevReadingQuery, {
+      replacements: { room_id: roomId },
+      type: db.sequelize.QueryTypes.SELECT
+    });
 
-      const totalWattsQuery = `
-        SELECT (power_watts)
-        FROM power_sensors
-        WHERE room_id = :room_id ORDER BY read_at DESC 
-        LIMIT 1
-      `;
-      const [totalResult] = await db.sequelize.query(totalWattsQuery, {
-        replacements: { room_id: roomId },
-        type: db.sequelize.QueryTypes.SELECT
-      });
-      const totalWatts = totalResult ? parseFloat(totalResult.power_watts) || 0 : 0;
+    // === LANGKAH 2: Insert pembacaan sensor baru (raw log, tidak berubah) ===
+    const insertPowerSensorQuery = `
+      INSERT INTO power_sensors (sensor_id, room_id, voltage_v, current_a, power_watts, read_at)
+      VALUES (:sensor_id, :room_id, :voltage_v, :current_a, :power_watts, :read_at)
+    `;
+    await db.sequelize.query(insertPowerSensorQuery, {
+      replacements: {
+        sensor_id: sensorId,
+        room_id: roomId,
+        voltage_v: voltageV,
+        current_a: currentA,
+        power_watts: powerWatts,
+        read_at: recordedAt
+      },
+      type: db.sequelize.QueryTypes.INSERT
+    });
 
-      const savedWattsQuery = `
-        SELECT COUNT(*) as relays_off
-        FROM light_controls
-        WHERE zone_id IN (
-          SELECT zone_id FROM zones WHERE room_id = :room_id
-        )
-        AND LOWER(COALESCE(light_status, 'off')) = 'off'
-      `;
-      const [savedResult] = await db.sequelize.query(savedWattsQuery, {
-        replacements: { room_id: roomId },
-        type: db.sequelize.QueryTypes.SELECT
-      });
-      const relaysOff = savedResult ? parseInt(savedResult.relays_off) || 0 : 0;
-      const savedWatts = relaysOff * 5.0;
+    // === LANGKAH 3: Hitung increment energi via TRAPEZOIDAL RULE ===
+    // E = ((P_lama + P_baru) / 2) * delta_t   -> hasil dalam Watt-hour (Wh)
+    let energyIncrementWh = 0;
+    if (prevReading && prevReading.read_at) {
+      const prevPower = parseFloat(prevReading.power_watts) || 0;
+      const prevTime = new Date(prevReading.read_at).getTime();
+      const currTime = recordedAt.getTime();
+      let deltaTHours = (currTime - prevTime) / (1000 * 60 * 60);
 
-      const logId = generateCustomId("ENG");
-      const upsertEnergyLogQuery = `
+      // Guard: cegah lonjakan energi tidak wajar jika device sempat offline lama
+      // (mis. mati 2 jam lalu nyala lagi -> jangan hitung 2 jam penuh sebagai satu increment)
+      const MAX_GAP_HOURS = 5 / 60; // maksimal gap dianggap wajar: 5 menit
+      if (deltaTHours < 0) deltaTHours = 0; // guard clock skew
+      if (deltaTHours > MAX_GAP_HOURS) deltaTHours = MAX_GAP_HOURS;
 
-        INSERT INTO energy_logs (log_id, room_id, total_watts, saved_watts, date)
-        VALUES (:log_id,:room_id, :total_watts, :saved_watts, CURRENT_DATE)
-        ON CONFLICT (room_id, date)
-        DO UPDATE SET 
-          total_watts = EXCLUDED.total_watts,
-          saved_watts = EXCLUDED.saved_watts
-      `;
-      await db.sequelize.query(upsertEnergyLogQuery, {
-        replacements: {
-          log_id: logId,
-          room_id: roomId,
-          total_watts: totalWatts,
-          saved_watts: savedWatts
-        }
-      });
-
-      console.log(`[MQTT] Energy saved: room=${roomId} power=${powerWatts}W`);
-      console.log(`[MQTT] Energy log updated: total=${totalWatts}W saved=${savedWatts}W`);
-
-    } catch (error) {
-      console.error("========== ENERGY ERROR ==========");
-      console.error(error);
-
-      if (error.errors) {
-        console.error("Validation Errors:");
-        error.errors.forEach(err => {
-          console.error(
-            `Field: ${err.path}, Value: ${err.value}, Message: ${err.message}`
-          );
-        });
-      }
-
-      console.error("Parent:", error.parent);
-      console.error("Original:", error.original);
+      energyIncrementWh = ((prevPower + powerWatts) / 2) * deltaTHours;
     }
+    // Jika prevReading null (baris pertama untuk room ini), increment = 0 (belum ada delta_t)
+
+    // === LANGKAH 4: Hitung saved_watts (metrik instan, tetap seperti semula) ===
+    const savedWattsQuery = `
+      SELECT COUNT(*) as relays_off
+      FROM light_controls
+      WHERE zone_id IN (
+        SELECT zone_id FROM zones WHERE room_id = :room_id
+      )
+      AND LOWER(COALESCE(light_status, 'off')) = 'off'
+    `;
+    const [savedResult] = await db.sequelize.query(savedWattsQuery, {
+      replacements: { room_id: roomId },
+      type: db.sequelize.QueryTypes.SELECT
+    });
+    const relaysOff = savedResult ? parseInt(savedResult.relays_off) || 0 : 0;
+    const savedWattsIncrement = relaysOff * 5.0 * ((energyIncrementWh > 0 || !prevReading) ? 1 : 1);
+    // Catatan: saved_watts diakumulasi dengan pendekatan sama (proporsional terhadap delta_t)
+    let deltaTHoursForSaved = 0;
+    if (prevReading && prevReading.read_at) {
+      const prevTime = new Date(prevReading.read_at).getTime();
+      deltaTHoursForSaved = Math.max(0, Math.min((recordedAt.getTime() - prevTime) / (1000 * 60 * 60), 5 / 60));
+    }
+    const savedIncrementWh = relaysOff * 5.0 * deltaTHoursForSaved;
+
+    // === LANGKAH 5: AKUMULASI ke energy_logs — TAMBAHKAN, JANGAN TIMPA ===
+    const logId = generateCustomId("ENG");
+    const upsertEnergyLogQuery = `
+      INSERT INTO energy_logs (log_id, room_id, total_watts, saved_watts, date)
+      VALUES (:log_id, :room_id, :increment, :saved_increment, CURRENT_DATE)
+      ON CONFLICT (room_id, date)
+      DO UPDATE SET 
+        total_watts = energy_logs.total_watts + :increment,
+        saved_watts = energy_logs.saved_watts + :saved_increment
+    `;
+    await db.sequelize.query(upsertEnergyLogQuery, {
+      replacements: {
+        log_id: logId,
+        room_id: roomId,
+        increment: energyIncrementWh,
+        saved_increment: savedIncrementWh
+      }
+    });
+
+    console.log(`[MQTT] Energy saved: room=${roomId} power=${powerWatts}W`);
+    console.log(`[MQTT] Energy log ACCUMULATED: +${energyIncrementWh.toFixed(4)}Wh (saved +${savedIncrementWh.toFixed(4)}Wh)`);
+
+  } catch (error) {
+    console.error("========== ENERGY ERROR ==========");
+    console.error(error);
+    if (error.errors) {
+      error.errors.forEach(err => {
+        console.error(`Field: ${err.path}, Value: ${err.value}, Message: ${err.message}`);
+      });
+    }
+    console.error("Parent:", error.parent);
+    console.error("Original:", error.original);
   }
+}
 
   async handleRelayStatus(payload) {
     try {
