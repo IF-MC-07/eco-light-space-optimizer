@@ -42,21 +42,39 @@ export function SavingsBreakdownTable({ filters }: SavingsBreakdownTableProps) {
                 <td colSpan={4} className="py-4 text-center text-secondary-light">No savings data available.</td>
               </tr>
             ) : (
-              breakdown.map((row, i) => (
-                <tr key={row.room_id || i}>
-                  <td className="py-4 px-2 font-medium text-secondary-dark flex items-center">
-                    <Snowflake className="w-4 h-4 mr-3 text-primary" />
-                    {row.room_name}
-                  </td>
-                  <td className="py-4 px-2 text-secondary">{(row.total_watts / 1000).toFixed(1)} kWh</td>
-                  <td className="py-4 px-2 font-bold text-primary">{(row.saved_watts / 1000).toFixed(1)} kWh</td>
-                  <td className="py-4 px-2 text-right">
-                    <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-transparent font-bold">
-                      {row.percentage}%
-                    </Badge>
-                  </td>
-                </tr>
-              ))
+              breakdown.map((row, i) => {
+                const totalEnergy = row.total_wh 
+                  ? (row.total_wh >= 1000 
+                      ? `${row.total_kwh.toFixed(3)} kWh` 
+                      : `${row.total_wh.toFixed(1)} Wh`)
+                  : '0 Wh';
+
+                const savedEnergyDisplay = row.has_savings_data 
+                  ? `${row.saved_watts?.toFixed(1) || 0} Wh` 
+                  : 'Belum tersedia';
+
+                const savingPercentage = row.has_savings_data 
+                  ? `${row.percentage || 0}%` 
+                  : 'N/A';
+
+                return (
+                  <tr key={row.room_id || i}>
+                    <td className="py-4 px-2 font-medium text-secondary-dark flex items-center">
+                      <Snowflake className="w-4 h-4 mr-3 text-primary" />
+                      {row.room_name}
+                    </td>
+                    <td className="py-4 px-2 text-secondary">{totalEnergy}</td>
+                    <td className="py-4 px-2 font-bold text-primary">
+                      {savedEnergyDisplay}
+                    </td>
+                    <td className="py-4 px-2 text-right">
+                      <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-transparent font-bold">
+                        {savingPercentage}
+                      </Badge>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

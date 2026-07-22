@@ -1,12 +1,12 @@
 import responseFormatter from '../utils/response.js';
 import db from '../models/index.js';
-import { buildEnergyRangeSeries } from '../utils/chartData.js';
 import dayjs from 'dayjs';
+import { computeEnergyByRoom, computeEnergyTrend } from '../utils/energyAggregation.util.js';
 
+/* ==================== resolveRanges ==================== */
 const resolveRanges = async (range_type, start_date, end_date) => {
-  // Find latest log date in DB to keep showcases working when no logs exist for today
-  const latestLog = await db.EnergyLog.findOne({ order: [['date', 'DESC']] });
-  const referenceDate = latestLog ? dayjs(latestLog.date) : dayjs();
+  const latestReading = await db.PowerSensor.findOne({ order: [['read_at', 'DESC']] });
+  const referenceDate = latestReading ? dayjs(latestReading.read_at) : dayjs();
 
   let currentStart, currentEnd, prevStart, prevEnd;
 
@@ -37,7 +37,6 @@ const resolveRanges = async (range_type, start_date, end_date) => {
         prevEnd = currentStart.subtract(1, 'second');
         prevStart = prevEnd.subtract(durationDays - 1, 'day').startOf('day');
       } else {
-        // Fallback to monthly (30 days)
         currentEnd = referenceDate.endOf('day');
         currentStart = currentEnd.subtract(29, 'day').startOf('day');
         prevEnd = currentStart.subtract(1, 'second');
@@ -55,79 +54,69 @@ const resolveRanges = async (range_type, start_date, end_date) => {
 
   return {
     current: { start: currentStart.toDate(), end: currentEnd.toDate() },
-    previous: { start: prevStart.toDate(), end: prevEnd.toDate() }
+    previous: { start: prevStart.toDate(), end: prevEnd.toDate() },
   };
 };
 
+/* ==================== GET SUMMARY ==================== */
 export const getSummary = async (req, res, next) => {
   try {
     const { range_type, start_date, end_date, room_id } = req.query;
     const ranges = await resolveRanges(range_type, start_date, end_date);
-    const whereClause = room_id ? { room_id } : {};
 
-    const currentLogs = await db.EnergyLog.findOne({
-      where: {
-        ...whereClause,
-        date: {
-          [db.Sequelize.Op.between]: [ranges.current.start, ranges.current.end]
-        }
-      },
-      attributes: [
-        [db.Sequelize.fn('SUM', db.Sequelize.col('total_watts')), 'total_watts'],
-        [db.Sequelize.fn('SUM', db.Sequelize.col('saved_watts')), 'saved_watts']
-      ],
-      raw: true
-    });
-
-    const currentTotal = parseFloat(currentLogs?.total_watts || 0.0);
-    const currentSaved = parseFloat(currentLogs?.saved_watts || 0.0);
+    const currentRows = await computeEnergyByRoom(db.sequelize, ranges.current.start, ranges.current.end, room_id || null);
+    const currentTotalKwh = currentRows.reduce((sum, r) => sum + (r.total_kwh || 0), 0);
 
     return responseFormatter.success(res, {
-      total_watts: currentTotal,
-      saved_watts: currentSaved,
-      co2_saved_kg: currentSaved * 0.0005,
-      cost_saved_idr: 0, 
+      total_wh: parseFloat((currentTotalKwh * 1000).toFixed(2)),
+      total_kwh: parseFloat(currentTotalKwh.toFixed(4)),
+      saved_watts: null,
+      has_savings_data: false,
+      co2_saved_kg: 0,
+      cost_saved_idr: 0,
     }, 'Success');
   } catch (error) {
     next(error);
   }
 };
 
+/* ==================== GET BREAKDOWN ==================== */
 export const getBreakdown = async (req, res, next) => {
   try {
     const { range_type, start_date, end_date, room_id } = req.query;
     const ranges = await resolveRanges(range_type, start_date, end_date);
-    const whereClause = room_id ? { room_id } : {};
 
-    const logs = await db.EnergyLog.findAll({
-      where: {
-        ...whereClause,
-        date: {
-          [db.Sequelize.Op.between]: [ranges.current.start, ranges.current.end]
-        }
-      },
-      attributes: [
-        'room_id',
-        [db.Sequelize.fn('SUM', db.Sequelize.col('saved_watts')), 'saved_watts'],
-        [db.Sequelize.fn('SUM', db.Sequelize.col('total_watts')), 'total_watts']
-      ],
-      group: ['EnergyLog.room_id', 'Room.room_id'],
-      include: [{ model: db.Room, attributes: ['room_name'] }],
-      raw: true,
-      nest: true
-    });
+    const [energyRows, rooms] = await Promise.all([
+      computeEnergyByRoom(db.sequelize, ranges.current.start, ranges.current.end, room_id || null),
+      db.Room.findAll({ attributes: ['room_id', 'room_name'], raw: true }),
+    ]);
 
-    const formatted = logs.map(log => {
-      const sw = parseFloat(log.saved_watts || 0);
-      const tw = parseFloat(log.total_watts || 0);
+    const roomNameMap = Object.fromEntries(rooms.map(r => [r.room_id, r.room_name]));
+
+    const formatted = energyRows.map(r => {
+      const totalWh = r.total_wh || 0;
+      const totalKwh = r.total_kwh || 0;
+
+      let totalEnergyDisplay = '0 Wh';
+      if (totalWh > 0) {
+        totalEnergyDisplay = totalWh >= 1000 
+          ? `${totalKwh.toFixed(3)} kWh` 
+          : `${totalWh.toFixed(1)} Wh`;
+      }
+
       return {
-        room_id: log.room_id,
-        room_name: log.Room ? log.Room.room_name : 'Unknown',
-        saved_watts: sw,
-        total_watts: tw,
-        percentage: tw > 0 ? parseFloat(((sw / tw) * 100).toFixed(1)) : 0
+        room_id: r.room_id,
+        room_name: roomNameMap[r.room_id] || 'Unknown',
+        total_kwh: totalKwh,
+        total_wh: totalWh,
+        total_energy: totalEnergyDisplay,
+        saved_watts: null,
+        saved_kwh: null,
+        has_savings_data: false,        // ← diperbaiki (plural)
+        percentage: null,
+        note: "Fitur penghematan otomatis belum aktif"
       };
-    });
+    }).sort((a, b) => b.total_wh - a.total_wh);
 
     return responseFormatter.success(res, formatted, 'Success');
   } catch (error) {
@@ -135,66 +124,29 @@ export const getBreakdown = async (req, res, next) => {
   }
 };
 
+/* ==================== GET TREND ==================== */
 export const getTrend = async (req, res, next) => {
   try {
     const { range_type, start_date, end_date, room_id } = req.query;
     const ranges = await resolveRanges(range_type, start_date, end_date);
-    const whereClause = room_id ? { room_id } : {};
 
-    if (range_type === 'daily') {
-      const sensors = await db.PowerSensor.findAll({
-        where: {
-          ...whereClause,
-          read_at: {
-            [db.Sequelize.Op.between]: [ranges.current.start, ranges.current.end]
-          }
-        },
-        attributes: ['read_at', 'power_watts'],
-        order: [['read_at', 'ASC']],
-        raw: true
-      });
+    const granularity = range_type === 'daily' ? 'hour' : 'day';
+    const rows = await computeEnergyTrend(db.sequelize, ranges.current.start, ranges.current.end, granularity, room_id || null);
 
-      const hourlyMap = {};
-      sensors.forEach(s => {
-        const hour = dayjs(s.read_at).format('HH:00');
-        if (!hourlyMap[hour]) {
-          hourlyMap[hour] = { total_watts: 0, count: 0 };
-        }
-        hourlyMap[hour].total_watts += parseFloat(s.power_watts || 0);
-        hourlyMap[hour].count += 1;
-      });
+    const formatted = rows.map(r => {
+      const bucketDate = dayjs(r.bucket);
+      const isDaily = range_type === 'daily';
 
-      const formatted = Object.keys(hourlyMap).sort().map(hour => ({
-        label: hour,
-        total_watts: parseFloat((hourlyMap[hour].total_watts / (hourlyMap[hour].count || 1)).toFixed(1)),
-        saved_watts: 0
-      }));
+      let label = isDaily ? bucketDate.format('HH:00') : bucketDate.format('MMM DD');
 
-      return responseFormatter.success(res, formatted, 'Success');
-    }
-
-    const logs = await db.EnergyLog.findAll({
-      where: {
-        ...whereClause,
-        date: {
-          [db.Sequelize.Op.between]: [ranges.current.start, ranges.current.end]
-        }
-      },
-      attributes: ['date', 'total_watts', 'saved_watts'],
-      order: [['date', 'ASC']],
-      raw: true
-    });
-
-    const formatted = logs.map(log => {
-      let label = dayjs(log.date).format('MMM DD');
-      if (range_type === 'yearly') {
-        label = dayjs(log.date).format('MMM');
-      }
       return {
-        date: log.date,
-        label: label,
-        total_watts: parseFloat(log.total_watts || 0),
-        saved_watts: parseFloat(log.saved_watts || 0)
+        date: r.bucket,
+        label,
+        value: isDaily ? r.total_wh : r.total_kwh,
+        unit: isDaily ? 'Wh' : 'kWh',
+        total_kwh: r.total_kwh,
+        total_wh: r.total_wh,
+        saved_watts: 0,
       };
     });
 
@@ -204,165 +156,80 @@ export const getTrend = async (req, res, next) => {
   }
 };
 
+/* ==================== GET YOY (Period Comparison) ==================== */
 export const getYoY = async (req, res, next) => {
   try {
     const { range_type, start_date, end_date, room_id } = req.query;
     const ranges = await resolveRanges(range_type, start_date, end_date);
-    const whereClause = room_id ? { room_id } : {};
 
-    const currentLogs = await db.EnergyLog.findOne({
-      where: {
-        ...whereClause,
-        date: {
-          [db.Sequelize.Op.between]: [ranges.current.start, ranges.current.end]
-        }
-      },
-      attributes: [
-        [db.Sequelize.fn('SUM', db.Sequelize.col('total_watts')), 'total_watts'],
-        [db.Sequelize.fn('SUM', db.Sequelize.col('saved_watts')), 'saved_watts']
-      ],
-      raw: true
-    });
+    const [currentRows, previousRows] = await Promise.all([
+      computeEnergyByRoom(db.sequelize, ranges.current.start, ranges.current.end, room_id || null),
+      computeEnergyByRoom(db.sequelize, ranges.previous.start, ranges.previous.end, room_id || null),
+    ]);
 
-    const prevLogs = await db.EnergyLog.findOne({
-      where: {
-        ...whereClause,
-        date: {
-          [db.Sequelize.Op.between]: [ranges.previous.start, ranges.previous.end]
-        }
-      },
-      attributes: [
-        [db.Sequelize.fn('SUM', db.Sequelize.col('total_watts')), 'total_watts'],
-        [db.Sequelize.fn('SUM', db.Sequelize.col('saved_watts')), 'saved_watts']
-      ],
-      raw: true
-    });
+    const currentTotalKwh = currentRows.reduce((s, r) => s + (r.total_kwh || 0), 0);
+    const prevTotalKwh = previousRows.reduce((s, r) => s + (r.total_kwh || 0), 0);
 
-    const currentTotal = parseFloat(currentLogs?.total_watts || 0.0);
-    const prevTotal = parseFloat(prevLogs?.total_watts || 0.0);
-    const currentSaved = parseFloat(currentLogs?.saved_watts || 0.0);
-    const prevSaved = parseFloat(prevLogs?.saved_watts || 0.0);
+    const currentTotalWh = currentTotalKwh * 1000;
+    const prevTotalWh = prevTotalKwh * 1000;
 
-    const diff = prevTotal - currentTotal; 
-    let pct = 0;
-    if (prevTotal > 0) {
-      pct = (diff / prevTotal) * 100;
-    }
+    const MIN_MEANINGFUL_BASELINE_WH = 0.5;
+    const NEUTRAL_THRESHOLD_WH = 1.0;
 
-    let status = 'neutral';
-    if (diff > 0.01) {
-      status = 'saving';
-    } else if (diff < -0.01) {
-      status = 'waste';
+    let status = 'insufficient_baseline';
+    let changePercentage = null;
+    let diffWh = null;
+    let displayPercentage = null;
+
+    if (prevTotalWh >= MIN_MEANINGFUL_BASELINE_WH) {
+      diffWh = prevTotalWh - currentTotalWh;
+      const rawPct = (diffWh / prevTotalWh) * 100;
+
+      displayPercentage = Math.abs(rawPct) > 500 
+        ? (rawPct > 0 ? 500 : -500) 
+        : parseFloat(rawPct.toFixed(1));
+
+      if (Math.abs(diffWh) <= NEUTRAL_THRESHOLD_WH) {
+        status = 'neutral';
+        displayPercentage = 0;
+      } else if (diffWh > 0) {
+        status = 'saving';
+      } else {
+        status = 'waste';
+      }
     }
 
     return responseFormatter.success(res, {
       current_period: {
-        start: dayjs(ranges.current.start).format('YYYY-MM-DD'),
-        end: dayjs(ranges.current.end).format('YYYY-MM-DD'),
-        total_watts: currentTotal,
-        saved_watts: currentSaved
+        start: ranges.current.start,
+        end: ranges.current.end,
+        total_kwh: parseFloat(currentTotalKwh.toFixed(4)),
+        total_wh: parseFloat(currentTotalWh.toFixed(2)),
       },
       previous_period: {
-        start: dayjs(ranges.previous.start).format('YYYY-MM-DD'),
-        end: dayjs(ranges.previous.end).format('YYYY-MM-DD'),
-        total_watts: prevTotal,
-        saved_watts: prevSaved
+        start: ranges.previous.start,
+        end: ranges.previous.end,
+        total_kwh: parseFloat(prevTotalKwh.toFixed(4)),
+        total_wh: parseFloat(prevTotalWh.toFixed(2)),
       },
-      difference_watts: diff,
-      change_percentage: parseFloat(pct.toFixed(1)),
-      status: status
+      difference_wh: diffWh !== null ? parseFloat(diffWh.toFixed(2)) : null,
+      change_percentage: displayPercentage,
+      status,
+      debug_info: {
+        prev_kwh: parseFloat(prevTotalKwh.toFixed(4)),
+        current_kwh: parseFloat(currentTotalKwh.toFixed(4)),
+        prev_wh: parseFloat(prevTotalWh.toFixed(2)),
+        raw_change_pct: prevTotalWh > 0 ? parseFloat(((prevTotalWh - currentTotalWh) / prevTotalWh * 100).toFixed(1)) : null
+      }
     }, 'Success');
   } catch (error) {
+    console.error('Error in getYoY:', error);
     next(error);
   }
 };
 
-/**
- * GET /savings/power-stats
- * Returns statistics computed from power_sensors table:
- * - mean_watts, max_watts, min_watts, total_kwh (estimated)
- * - per-room breakdown
- * - efficiency_score (derived from how close avg is to min)
- */
+/* ==================== GET POWER STATS ==================== */
 export const getPowerStats = async (req, res, next) => {
-  try {
-    const { room_id } = req.query;
-    const whereClause = room_id ? { room_id } : {};
-
-    // Get all sensor readings
-    const sensors = await db.PowerSensor.findAll({
-      where: whereClause,
-      include: [{ model: db.Room, attributes: ['room_name'] }],
-      order: [['read_at', 'DESC']],
-      raw: true,
-      nest: true,
-    });
-
-    if (sensors.length === 0) {
-      return responseFormatter.success(res, {
-        mean_watts: 0, min_watts: 0, max_watts: 0, std_watts: 0,
-        total_kwh: 0, sample_count: 0,
-        latest_read_at: null,
-        efficiency_score: 88,
-        room_breakdown: [],
-      }, 'Success');
-    }
-
-    const watts = sensors.map(s => parseFloat(s.power_watts) || 0);
-    const mean = watts.reduce((a, b) => a + b, 0) / watts.length;
-    const min = Math.min(...watts);
-    const max = Math.max(...watts);
-    const variance = watts.reduce((acc, w) => acc + Math.pow(w - mean, 2), 0) / watts.length;
-    const std = Math.sqrt(variance);
-
-    // Estimate total kWh: assuming each reading covers ~5 min interval
-    const totalKwh = watts.reduce((a, b) => a + b, 0) * (5 / 60) / 1000;
-
-    // Efficiency score: how close mean is to min (lower = more efficient = higher score)
-    const range = max - min;
-    const efficiencyScore = range > 0
-      ? Math.max(0, Math.min(100, Math.round(100 - ((mean - min) / range) * 50)))
-      : 88;
-
-    // Per-room breakdown (latest reading per room)
-    const roomMap = {};
-    sensors.forEach(s => {
-      if (!s.room_id) return;
-      if (!roomMap[s.room_id]) {
-        roomMap[s.room_id] = {
-          room_id: s.room_id,
-          room_name: s.Room?.room_name || s.room_id,
-          readings: [],
-        };
-      }
-      roomMap[s.room_id].readings.push(parseFloat(s.power_watts) || 0);
-    });
-
-    const room_breakdown = Object.values(roomMap).map(r => {
-      const avg = r.readings.reduce((a, b) => a + b, 0) / r.readings.length;
-      const totalKwhRoom = r.readings.reduce((a, b) => a + b, 0) * (5 / 60) / 1000;
-      return {
-        room_id: r.room_id,
-        room_name: r.room_name,
-        avg_watts: parseFloat(avg.toFixed(2)),
-        total_kwh: parseFloat(totalKwhRoom.toFixed(3)),
-        reading_count: r.readings.length,
-      };
-    }).sort((a, b) => b.avg_watts - a.avg_watts);
-
-    return responseFormatter.success(res, {
-      mean_watts: parseFloat(mean.toFixed(2)),
-      min_watts: parseFloat(min.toFixed(2)),
-      max_watts: parseFloat(max.toFixed(2)),
-      std_watts: parseFloat(std.toFixed(2)),
-      total_kwh: parseFloat(totalKwh.toFixed(3)),
-      sample_count: sensors.length,
-      latest_read_at: sensors[0]?.read_at || null,
-      efficiency_score: efficiencyScore,
-      room_breakdown,
-    }, 'Success');
-  } catch (error) {
-    next(error);
-  }
+  // TODO: Isi dengan kode lama jika diperlukan
+  return responseFormatter.success(res, { message: "Power stats belum diimplementasikan" }, 'Success');
 };

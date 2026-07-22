@@ -18,12 +18,23 @@ export function SavingsTrendChart({ filters }: SavingsTrendChartProps) {
 
   const formattedData = useMemo(() => {
     if (trendData.length > 0) {
-      return trendData.map((item: any) => ({
-        dateLabel: item.label || 'N/A',
-        kwh: Number(((item.total_watts || 0) / 1000).toFixed(3)),
-        savedKwh: Number(((item.saved_watts || 0) / 1000).toFixed(3))
-      }));
+      return trendData.map((item: any) => {
+        const isDaily = filters.range_type === 'daily';
+
+        // Prioritas: pakai total_wh kalau daily, total_kwh kalau tidak
+        const value = isDaily
+          ? (item.total_wh ?? item.value ?? 0)
+          : (item.total_kwh ?? item.value ?? 0);
+
+        return {
+          dateLabel: item.label || 'N/A',
+          kwh: Number(value.toFixed(3)),           // tetap pakai nama "kwh" biar chart aman
+          savedKwh: Number(((item.saved_watts || 0) / 1000).toFixed(3)),
+          unit: isDaily ? 'Wh' : 'kWh'             // untuk tooltip
+        };
+      });
     }
+
     // Fallback static data
     return [
       { dateLabel: 'Mon', kwh: 1.2 },
@@ -34,7 +45,7 @@ export function SavingsTrendChart({ filters }: SavingsTrendChartProps) {
       { dateLabel: 'Sat', kwh: 0.7 },
       { dateLabel: 'Sun', kwh: 0.6 }
     ];
-  }, [trendData]);
+  }, [trendData, filters.range_type]);
 
   if (isLoading) {
     return <div className="text-center py-20 text-xs text-secondary">Loading savings chart...</div>;
@@ -45,7 +56,9 @@ export function SavingsTrendChart({ filters }: SavingsTrendChartProps) {
       <CardHeader className="pb-2 flex flex-row items-center justify-between px-6 pt-6">
         <div>
           <CardTitle className="text-lg text-black font-heading font-bold">Accumulated Energy Consumption</CardTitle>
-          <p className="text-xs text-secondary-light font-semibold mt-1">Total energy usage (kWh) across the selected period</p>
+          <p className="text-xs text-secondary-light font-semibold mt-1">
+            Total energy usage across the selected period
+          </p>
         </div>
         <div className="flex items-center space-x-4 text-[10px] font-bold text-secondary uppercase tracking-widest">
           <div className="flex items-center">
@@ -60,35 +73,38 @@ export function SavingsTrendChart({ filters }: SavingsTrendChartProps) {
             <AreaChart data={formattedData} margin={{ top: 10, right: 30, left: 30, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorKwh" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#1B4D1E" stopOpacity={0.25}/>
-                  <stop offset="95%" stopColor="#1B4D1E" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#1B4D1E" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#1B4D1E" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis 
-                dataKey="dateLabel" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fontSize: 10, fill: '#475569', fontWeight: 700 }} 
-                dy={15} 
+              <XAxis
+                dataKey="dateLabel"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 10, fill: '#475569', fontWeight: 700 }}
+                dy={15}
               />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fontSize: 10, fill: '#475569', fontWeight: 700 }} 
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 10, fill: '#475569', fontWeight: 700 }}
                 width={30}
               />
-              <Tooltip 
+              <Tooltip
                 cursor={{ stroke: '#475569', strokeWidth: 1, strokeDasharray: '4 4' }}
                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                formatter={(value: number) => [`${value.toFixed(3)} kWh`, 'Energy Consumption']}
+                formatter={(value: number, name: string, props: any) => {
+                  const unit = props.payload?.unit || 'kWh';
+                  return [`${value.toFixed(3)} ${unit}`, 'Energy Consumption'];
+                }}
               />
-              <Area 
-                type="monotone" 
-                dataKey="kwh" 
-                stroke="#1B4D1E" 
+              <Area
+                type="monotone"
+                dataKey="kwh"
+                stroke="#1B4D1E"
                 strokeWidth={3}
-                fillOpacity={1} 
-                fill="url(#colorKwh)" 
+                fillOpacity={1}
+                fill="url(#colorKwh)"
                 activeDot={{ r: 6, fill: "#1B4D1E", stroke: "#fff", strokeWidth: 2 }}
               />
             </AreaChart>
