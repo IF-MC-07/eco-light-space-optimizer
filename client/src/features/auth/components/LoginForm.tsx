@@ -4,7 +4,6 @@ import { Input } from "../../../components/ui/Input";
 import { Button } from "../../../components/ui/Button";
 import { Checkbox } from "../../../components/ui/Checkbox";
 import { AuthAlert } from "../../../components/ui/AuthAlert";
-import { FcGoogle } from "react-icons/fc";
 import { useAuth } from "../../../hooks/useAuth";
 import { useRouter } from "next/navigation";
 
@@ -104,17 +103,8 @@ export function LoginForm() {
 
       <div className="flex items-center my-8">
         <div className="flex-1 border-t border-neutral-border"></div>
-        <span className="px-4 text-[10px] font-bold text-secondary-light uppercase tracking-wider">Or Continue With</span>
         <div className="flex-1 border-t border-neutral-border"></div>
       </div>
-
-      <div className="gap-4 mb-8">
-        <Button variant="outlined" className="w-full bg-[#F8FAFC] border-none hover:bg-neutral-border/50 text-secondary-dark py-5 text-sm font-semibold rounded-md transition-colors flex items-center justify-center gap-2">
-          <FcGoogle className="w-5 h-5" />
-          Google
-        </Button>
-      </div>
-
       <p className="text-center text-xs font-medium text-secondary-light">
         Don't have an account?{" "}
         <a href="register" className="font-bold text-primary hover:text-primary-dark transition-colors">
