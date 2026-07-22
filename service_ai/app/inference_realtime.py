@@ -15,11 +15,13 @@ try:
     from app.camera_loader import get_camera_stream_source, get_active_camera_sources
     from app.mqtt_subscriber import mqtt_client
     from app.decision_engine import decision_engine
+    from app.log_writer import write_detection_logs
 except ImportError:
     from zona_loader import ambil_zona_dari_db, titik_di_zona
     from camera_loader import get_camera_stream_source, get_active_camera_sources
     from mqtt_subscriber import mqtt_client
     from decision_engine import decision_engine
+    from log_writer import write_detection_logs
 
 load_dotenv()
 
@@ -37,6 +39,7 @@ MQTT_USER          = os.getenv("MQTT_USER")
 MQTT_PASSWORD      = os.getenv("MQTT_PASSWORD")
 SNAPSHOT_INTERVAL  = float(os.getenv("SNAPSHOT_INTERVAL", 3))
 ZONE_FETCH_INTERVAL= float(os.getenv("ZONE_FETCH_INTERVAL", 60))
+DETECTION_LOG_INTERVAL = float(os.getenv("DETECTION_LOG_INTERVAL", 120)) # 2-3 menit (120 detik)
 CONF_THRESHOLD     = float(os.getenv("CONF_THRESHOLD", 0.25))
 IOU_THRESHOLD      = float(os.getenv("IOU_THRESHOLD", 0.45))
 MODEL_PATH         = os.getenv("MODEL_PATH", "yolov8n.pt")
@@ -212,6 +215,8 @@ def camera_worker(camera_id: str, ip_address: str, mqtt_handler: MQTTHandler, st
     zones = []
     last_zone_fetch = 0.0
     last_decision_call = 0.0
+    last_detection_log_time = 0.0
+    prev_occupancy_state = None
 
     cap = open_capture(cam_source)
 
@@ -311,6 +316,15 @@ def camera_worker(camera_id: str, ip_address: str, mqtt_handler: MQTTHandler, st
             now2,
             throttle_seconds=1.0,
         )
+
+        curr_state = count["total"] > 0
+        if (now2 - last_detection_log_time >= DETECTION_LOG_INTERVAL) or (prev_occupancy_state != curr_state):
+            try:
+                write_detection_logs(camera_id, count)
+                last_detection_log_time = now2
+                prev_occupancy_state = curr_state
+            except Exception as e:
+                log.error(f"❌ [{camera_id}] Gagal mencatat detection_logs: {e}")
 
         try:
             annotated = results[0].plot()

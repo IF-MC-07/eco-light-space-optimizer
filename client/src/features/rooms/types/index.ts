@@ -10,6 +10,7 @@ export interface Room {
   location: string;
   capacity: number;
   status: RoomStatus;
+  availability?: 'available' | 'occupied' | string;
 }
 
 export interface IotDevice {

@@ -51,7 +51,7 @@ def write_detection_logs(camera_id: str, occupancy_counts: dict):
                     # We skip it or log it
                     continue
 
-                status = 'occupied' if count > 0 else 'empty'
+                status = 'occupied' if count > 0 else 'available'
                 detection_id = f"DET-{uuid.uuid4().hex[:8]}"
                 insert_tuples.append((
                     detection_id,
