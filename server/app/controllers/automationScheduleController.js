@@ -5,7 +5,7 @@ import db from '../models/index.js';
 export const getAll = async (req, res, next) => {
   try {
     const data = await automationScheduleService.getAll();
-    return responseFormatter.success(res, data, 'Automation schedules retrieved successfully' );
+    return responseFormatter.success(res, data, 'Automation schedules retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -14,10 +14,8 @@ export const getAll = async (req, res, next) => {
 export const getById = async (req, res, next) => {
   try {
     const data = await automationScheduleService.getById(req.params.id);
-    if (!data) {
-      return responseFormatter.error(res, 'Automation schedule not found' , 404);
-    }
-    return responseFormatter.success(res, data, 'Automation schedule retrieved successfully' );
+    if (!data) return responseFormatter.error(res, 'Automation schedule not found', 404);
+    return responseFormatter.success(res, data, 'Automation schedule retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -25,12 +23,11 @@ export const getById = async (req, res, next) => {
 
 export const create = async (req, res, next) => {
   try {
-    // Prevent foreign key constraint errors by converting empty strings to null
     if (req.body.room_id === '') req.body.room_id = null;
     if (req.body.user_id === '') req.body.user_id = null;
 
     const data = await automationScheduleService.create(req.body);
-    return responseFormatter.success(res, data, 'Automation schedule created successfully' , 201);
+    return responseFormatter.success(res, data, 'Automation schedule created successfully', 201);
   } catch (error) {
     next(error);
   }
@@ -38,15 +35,12 @@ export const create = async (req, res, next) => {
 
 export const update = async (req, res, next) => {
   try {
-    // Prevent foreign key constraint errors by converting empty strings to null
     if (req.body.room_id === '') req.body.room_id = null;
     if (req.body.user_id === '') req.body.user_id = null;
 
     const data = await automationScheduleService.update(req.params.id, req.body);
-    if (!data) {
-      return responseFormatter.error(res, 'Automation schedule not found' , 404);
-    }
-    return responseFormatter.success(res, data, 'Automation schedule updated successfully' );
+    if (!data) return responseFormatter.error(res, 'Automation schedule not found', 404);
+    return responseFormatter.success(res, data, 'Automation schedule updated successfully');
   } catch (error) {
     next(error);
   }
@@ -55,10 +49,8 @@ export const update = async (req, res, next) => {
 export const remove = async (req, res, next) => {
   try {
     const isDeleted = await automationScheduleService.remove(req.params.id);
-    if (!isDeleted) {
-      return responseFormatter.error(res, 'Automation schedule not found' , 404);
-    }
-    return responseFormatter.success(res, null, 'Automation schedule deleted successfully' );
+    if (!isDeleted) return responseFormatter.error(res, 'Automation schedule not found', 404);
+    return responseFormatter.success(res, null, 'Automation schedule deleted successfully');
   } catch (error) {
     next(error);
   }
@@ -67,7 +59,7 @@ export const remove = async (req, res, next) => {
 export const removeAll = async (req, res, next) => {
   try {
     const deletedCount = await automationScheduleService.removeAll();
-    return responseFormatter.success(res, { deletedCount }, 'All automation schedules deleted successfully' );
+    return responseFormatter.success(res, { deletedCount }, 'All automation schedules deleted successfully');
   } catch (error) {
     next(error);
   }
@@ -79,16 +71,16 @@ export const getStats = async (req, res, next) => {
     const activeSchedules = Math.max(0, totalSchedules - 1);
     const efficiencyScore = Math.min(98, 85 + totalSchedules);
     const automationRate = Math.min(95, 80 + totalSchedules);
-    
-    res.status(200).json({
+
+    return res.status(200).json({
       success: true,
       data: {
         total_schedules: totalSchedules,
         active_schedules: activeSchedules,
         efficiency_score: totalSchedules > 0 ? efficiencyScore : 0,
-        automation_rate: totalSchedules > 0 ? automationRate : 0
+        automation_rate: totalSchedules > 0 ? automationRate : 0,
       },
-      message: 'Automation stats retrieved successfully'
+      message: 'Automation stats retrieved successfully',
     });
   } catch (error) {
     next(error);

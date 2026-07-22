@@ -1,122 +1,116 @@
 import db from '../models/index.js';
 import mqttService from './mqttService.js';
 
-const { LightControl, IotDevice } = db;
+const { LightControl, Zone } = db;
 
-/**
- * Automation and Decision Engine
- * Implements logic for energy-efficient lighting based on occupancy and conditions.
- */
 class AutomationService {
   constructor() {
-    this.timers = new Map(); // Store timeout timers for zones
-    this.debounceTime = 3000; // 3 seconds debounce protection
-    this.lastActionTime = new Map(); // Store last action time per zone
-    
-    // Configurable thresholds
+    this.timers = new Map(); // zone_id => timeout
+    this.debounceTime = 3000;
+    this.lastActionTime = new Map();
+    this.scheduledRooms = new Set(); // room_id yang sedang aktif jadwal
+
     this.config = {
       occupancyTimeoutMs: (parseInt(process.env.OCCUPANCY_TIMEOUT_MINS) || 5) * 60 * 1000,
-      controlTopic: process.env.MQTT_TOPIC_CONTROL || 'kelas/control'
+      scheduledTimeoutMs: 2 * 60 * 1000,
+      controlTopic: process.env.MQTT_TOPIC_CONTROL || 'kelas/control',
     };
   }
 
-  /**
-   * Main entry point called when a new detection log is recorded.
-   * @param {Object} log - The DetectionLog instance
-   */
-  async handleDetection(log) {
-    const { zone_id, occupancy_count } = log;
-    
-    if (!zone_id) return;
-
-    console.log(`[Automation] Processing Zone ${zone_id}: Occupancy ${occupancy_count}`);
-
-    // Rule 1: IF occupancy detected → light ON
-    if (occupancy_count > 0) {
-      await this._clearTimeout(zone_id);
-      await this._triggerLightAction(zone_id, 'ON');
-    } 
-    // Rule 2: IF occupancy == 0 → Start timer for light OFF
-    else {
-      await this._scheduleTimeout(zone_id);
-    }
+  activateScheduledMode(room_id) {
+    if (!room_id) return;
+    this.scheduledRooms.add(String(room_id));
   }
 
-  /**
-   * Schedule a light-off command if occupancy remains 0.
-   */
-  async _scheduleTimeout(zone_id) {
-    if (this.timers.has(zone_id)) return; // Timer already running
+  deactivateScheduledMode(room_id) {
+    if (!room_id) return;
+    this.scheduledRooms.delete(String(room_id));
+  }
 
-    console.log(`[Automation] Zone ${zone_id} is empty. Scheduling OFF in ${this.config.occupancyTimeoutMs / 60000} mins.`);
-    
+  isScheduled(room_id) {
+    if (!room_id) return false;
+    return this.scheduledRooms.has(String(room_id));
+  }
+
+  async handleDetection(log) {
+    const { zone_id, occupancy_count } = log;
+    if (!zone_id) return;
+
+    const zone = await db.Zone.findByPk(zone_id, {
+      include: [{ model: db.Room, as: 'Room' }],
+    });
+
+    const room_id = zone?.Room?.room_id;
+    const inSchedule = this.isScheduled(room_id);
+
+    if (occupancy_count > 0) {
+      await this.clearTimeout(zone_id);
+      await this.triggerLightAction(zone_id, 'ON');
+      return;
+    }
+
+    const timeoutMs = inSchedule ? this.config.scheduledTimeoutMs : this.config.occupancyTimeoutMs;
+    await this.scheduleTimeout(zone_id, timeoutMs);
+  }
+
+  async scheduleTimeout(zone_id, timeoutMs) {
+    if (this.timers.has(zone_id)) return;
+
     const timerId = setTimeout(async () => {
-      console.log(`[Automation] Timeout for Zone ${zone_id}. Turning light OFF.`);
-      await this._triggerLightAction(zone_id, 'OFF');
-      this.timers.delete(zone_id);
-    }, this.config.occupancyTimeoutMs);
+      try {
+        await this.triggerLightAction(zone_id, 'OFF');
+      } finally {
+        this.timers.delete(zone_id);
+      }
+    }, timeoutMs);
 
     this.timers.set(zone_id, timerId);
   }
 
-  /**
-   * Clear any existing light-off timers for a zone.
-   */
-  async _clearTimeout(zone_id) {
-    if (this.timers.has(zone_id)) {
-      clearTimeout(this.timers.get(zone_id));
-      this.timers.delete(zone_id);
-      console.log(`[Automation] Occupancy in Zone ${zone_id}. OFF timer cleared.`);
-    }
+  async clearTimeout(zone_id) {
+    if (!this.timers.has(zone_id)) return;
+    clearTimeout(this.timers.get(zone_id));
+    this.timers.delete(zone_id);
   }
 
-  /**
-   * Execute light control action: update DB and publish MQTT.
-   */
-  async _triggerLightAction(zone_id, status) {
+  async triggerLightAction(zone_id, status) {
     try {
-      // Debounce protection
       const now = Date.now();
       const lastAction = this.lastActionTime.get(zone_id) || 0;
-      if (now - lastAction < this.debounceTime) {
-        return; 
-      }
+      if (now - lastAction < this.debounceTime) return;
 
-      // Find relevant light control devices for this zone
       const controls = await LightControl.findAll({
-        where: { zone_id },
-        include: [{ model: IotDevice }]
+        include: [
+          {
+            model: Zone,
+            where: { zone_id },
+          },
+        ],
       });
 
-      if (controls.length === 0) {
-        return;
-      }
+      if (!controls.length) return;
 
       for (const control of controls) {
-        // Skip if status is already correct
-        if (control.light_status.toUpperCase() === status.toUpperCase()) continue;
+        const current = String(control.light_status || '').toUpperCase();
+        if (current === status.toUpperCase()) continue;
 
-        // 1. Update Database
         await control.update({
           light_status: status.toLowerCase(),
-          updated_at: new Date()
+          updated_at: new Date(),
         });
 
-        // 2. Publish MQTT Command
-        // Standardized format: { "device_id": 1, "relay": 1, "action": "ON" }
-        const payload = {
+        await mqttService.publish(this.config.controlTopic, {
           device_id: control.device_id,
           relay_channel: control.relay_channel,
-          action: status.toUpperCase()
-        };
-
-        mqttService.publish(this.config.controlTopic, payload);
+          action: status.toUpperCase(),
+          source: 'automation',
+          zone_id,
+        });
       }
 
       this.lastActionTime.set(zone_id, now);
-      console.log(`[Automation] Action ${status} applied to Zone ${zone_id}`);
     } catch (error) {
-      console.error(`[Automation] Action Error for Zone ${zone_id}:`, error);
+      console.error('[AutomationService] triggerLightAction error:', error);
     }
   }
 }
