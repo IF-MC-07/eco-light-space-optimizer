@@ -7,6 +7,7 @@ export const useRooms = () => {
   return useQuery({
     queryKey: ['rooms', 'list'],
     queryFn: () => roomsApi.getAll(),
+    refetchInterval: 3000,
   });
 };
 
@@ -15,6 +16,7 @@ export const useRoom = (id: string) => {
     queryKey: ['rooms', 'detail', id],
     queryFn: () => roomsApi.getById(id),
     enabled: !!id,
+    refetchInterval: 3000,
   });
 };
 
