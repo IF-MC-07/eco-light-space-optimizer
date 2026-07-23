@@ -175,13 +175,25 @@ class DecisionEngine:
             except Exception as e:
                 logger.error(f"❌ Process inference error: {e}")
             finally:
-                # FIX: finally hanya untuk resource cleanup (release koneksi DB).
-                # Blok duplikat logika bisnis yang sebelumnya ada di sini (dan berisiko
-                # NameError karena mereferensikan variabel loop yang belum tentu terdefinisi)
-                # sudah dihapus. Logika ON/OFF sepenuhnya ditangani di dalam try-block di atas.
                 if conn:
                     from app.zona_loader import release_connection
                     release_connection(conn)
+
+    def sync_room_zone_statuses(self, room_id: str, status: str):
+        """
+        Thread-safe method to sync internal zone states when external triggers
+        (e.g., ScheduleRunner or manual commands) change light status to ON or OFF.
+        """
+        with self._lock:
+            synced = 0
+            target_status = status.upper()
+            for z_id, zone in self.zone_states.items():
+                if zone.get("room_id") == room_id:
+                    zone["current_status"] = target_status
+                    zone["occupied_since"] = None
+                    zone["empty_since"] = None
+                    synced += 1
+            logger.info(f"🔄 [DECISION ENGINE] Synced {synced} zone(s) to '{target_status}' for Room {room_id}")
 
 
 # Singleton

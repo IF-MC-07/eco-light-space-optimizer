@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import logging
 from datetime import datetime, time as dt_time
@@ -27,6 +28,9 @@ class ScheduleRunner:
         # Key: schedule_id -> "ON" or "OFF" -> date string "YYYY-MM-DD"
         self.triggered_on = {}
         self.triggered_off = {}
+        # Tracking ON trigger timestamps for No-Show Eco check
+        # Key: schedule_id -> { "room_id": str, "s_name": str, "timestamp": float, "checked": bool, "date": str }
+        self.schedule_on_timestamps = {}
 
     def run(self):
         """
@@ -89,6 +93,59 @@ class ScheduleRunner:
         # --- No restriction: runs every day ---
         return True
 
+    def _check_room_occupancy_since(self, cur, room_id: str, start_timestamp: float) -> bool:
+        """
+        Checks if real human presence was detected in room_id since start_timestamp.
+        Evaluates statistics per-zone rather than room total to avoid ratio dilution
+        when a human is present in only 1 zone.
+        If ANY single zone has >= 3 positive detection logs AND >= 15% positive ratio,
+        it is considered real human presence.
+        """
+        try:
+            elapsed_seconds = time.time() - start_timestamp
+
+            # Query positive logs and total logs per zone for this room
+            cur.execute("""
+                SELECT 
+                    z.zone_name,
+                    COUNT(dl.detection_id) AS total_zone_logs,
+                    COUNT(CASE WHEN dl.occupancy_count > 0 THEN 1 END) AS positive_zone_logs
+                FROM zones z
+                LEFT JOIN detection_logs dl ON z.zone_id = dl.zone_id 
+                    AND dl.detection_time >= (NOW() - (%s * INTERVAL '1 second'))
+                WHERE z.room_id = %s AND z.zone_status = 'aktif'
+                GROUP BY z.zone_id, z.zone_name
+            """, (elapsed_seconds, room_id))
+            
+            zone_stats = cur.fetchall()
+            
+            MIN_POSITIVE_LOGS_PER_ZONE = 3
+            MIN_ZONE_RATIO = 0.15
+            
+            has_presence = False
+            details = []
+            
+            for z_name, total_zone_logs, pos_zone_logs in zone_stats:
+                total_zone_logs = total_zone_logs or 0
+                pos_zone_logs = pos_zone_logs or 0
+                ratio = (pos_zone_logs / total_zone_logs) if total_zone_logs > 0 else 0.0
+                
+                details.append(f"{z_name}: {pos_zone_logs}/{total_zone_logs} ({ratio:.1%})")
+                
+                if pos_zone_logs >= MIN_POSITIVE_LOGS_PER_ZONE and ratio >= MIN_ZONE_RATIO:
+                    has_presence = True
+                    
+            status_str = "ADA ORANG (Lampu tetap ON)" if has_presence else "KOSONG (Lampu dimatikan)"
+            logger.info(
+                f"🔍 [NO-SHOW ECO] Room '{room_id}' (sejak {elapsed_seconds:.1f}s lalu) Per-Zone: "
+                f"[{', '.join(details)}] → {status_str}"
+            )
+            return has_presence
+
+        except Exception as e:
+            logger.error(f"❌ Error checking occupancy since schedule start: {e}")
+            return True
+
     def process_schedules(self):
         """
         Polls DB and executes schedule logic.
@@ -126,7 +183,11 @@ class ScheduleRunner:
                     manual_lockout = (time.time() - last_manual) < 300.0
 
                     if manual_lockout:
-                        logger.info(f"⏳ Room {room_id} has active manual lockout. Skipping schedule '{s_name}'.")
+                        remaining = 300.0 - (time.time() - last_manual)
+                        logger.info(
+                            f"⏳ [LOCKOUT] Room {room_id} masih dalam manual lockout selama {remaining:.0f} detik lagi. "
+                            f"Schedule '{s_name}' (ID {schedule_id}) DILEWATI."
+                        )
                         continue
 
                     # Determine if current time falls within schedule duration
@@ -137,6 +198,15 @@ class ScheduleRunner:
                             logger.info(f"🔔 Triggering schedule '{s_name}' (ID {schedule_id}) ON for Room {room_id}")
                             self._trigger_room_devices(room_id, "ON")
                             self.triggered_on[schedule_id] = today_str
+                            
+                            # Record trigger timestamp for No-Show Eco check
+                            self.schedule_on_timestamps[schedule_id] = {
+                                "room_id": room_id,
+                                "s_name": s_name,
+                                "timestamp": time.time(),
+                                "checked": False,
+                                "date": today_str
+                            }
                             
                             # Clear OFF trigger for today
                             if schedule_id in self.triggered_off:
@@ -154,6 +224,33 @@ class ScheduleRunner:
                             if schedule_id in self.triggered_on:
                                 self.triggered_on.pop(schedule_id)
 
+                # --- Check Schedule No-Show Eco Auto-OFF ---
+                no_show_minutes = float(os.getenv("SCHEDULE_NO_SHOW_MINUTES", "2"))
+                no_show_seconds = no_show_minutes * 60.0
+                now_time = time.time()
+
+                for sched_id, info in list(self.schedule_on_timestamps.items()):
+                    if info["date"] != today_str:
+                        continue
+                    if not info["checked"] and (now_time - info["timestamp"]) >= no_show_seconds:
+                        room_id = info["room_id"]
+                        s_name = info["s_name"]
+                        has_occupancy = self._check_room_occupancy_since(cur, room_id, info["timestamp"])
+
+                        if not has_occupancy:
+                            logger.info(
+                                f"🍃 [NO-SHOW ECO] Tidak ada orang terdeteksi {no_show_minutes:.0f} menit setelah "
+                                f"jadwal '{s_name}' (ID {sched_id}) dimulai. Mematikan lampu Room {room_id} untuk menghemat energi."
+                            )
+                            self._trigger_room_devices(room_id, "OFF")
+                            self._sync_decision_engine(room_id, "OFF")
+                        else:
+                            logger.info(
+                                f"👥 [SCHEDULE ECO] Terdeteksi kehadiran orang di Room {room_id} setelah jadwal '{s_name}' dimulai. Lampu tetap ON."
+                            )
+
+                        info["checked"] = True
+
         except Exception as e:
             logger.error(f"❌ DB Error in ScheduleRunner process_schedules: {e}")
         finally:
@@ -161,7 +258,18 @@ class ScheduleRunner:
                 from app.zona_loader import release_connection
                 release_connection(conn)
 
-    def _trigger_room_devices(self, room_id: int, command: str):
+    def _sync_decision_engine(self, room_id: str, status: str):
+        """
+        Syncs decision_engine's internal zone states to status ('ON' or 'OFF')
+        so decision_engine stays aligned with Schedule triggers.
+        """
+        try:
+            from app.decision_engine import decision_engine
+            decision_engine.sync_room_zone_statuses(room_id, status)
+        except Exception as e:
+            logger.error(f"❌ Error syncing decision_engine states: {e}")
+
+    def _trigger_room_devices(self, room_id: str, command: str):
         """
         Turns all lights and AC devices ON or OFF for the given room.
         """
@@ -169,7 +277,6 @@ class ScheduleRunner:
         try:
             conn = get_db_connection()
             with conn.cursor() as cur:
-                # Fetch all devices for this room
                 cur.execute("""
                     SELECT d.device_id, d.type, lc.relay_channel, lc.zone_id, z.zone_name
                     FROM iot_devices d
@@ -179,34 +286,56 @@ class ScheduleRunner:
                 """, (room_id,))
                 devices = cur.fetchall()
 
+                logger.info(f"🔍 [SCHEDULE] Found {len(devices)} device row(s) for room '{room_id}'")
+
                 for dev in devices:
                     dev_id, dev_type, relay_channel, zone_id, zone_name = dev
-                    
-                    if dev_type == 'light':
-                        # Ensure relay_channel is present
-                        r_chan = relay_channel if relay_channel is not None else 1
+                    normalized_type = (dev_type or "").strip().lower()
+                    logger.info(f"🔍 [SCHEDULE] Device {dev_id} | Type: '{dev_type}' | Relay Channel: {relay_channel}")
+
+                    is_light = (
+                        relay_channel is not None
+                        or normalized_type in ('light', 'lighting', 'lamp', 'lampu', 'esp32', 'relay', 'light_4ch', 'switch')
+                        or 'light' in normalized_type
+                        or 'lamp' in normalized_type
+                        or 'relay' in normalized_type
+                        or 'esp' in normalized_type
+                    )
+
+                    if is_light:
+                        if relay_channel is None:
+                            logger.error(
+                                f"❌ [SCHEDULE] Device {dev_id} bertipe '{dev_type}' TIDAK memiliki "
+                                f"baris di light_controls (relay_channel NULL). Command DIBATALKAN "
+                                f"untuk device ini — tidak menggunakan channel default agar tidak "
+                                f"salah memicu relay fisik yang salah."
+                            )
+                            continue
+
                         z_id = zone_id if zone_id is not None else 0
                         z_name = zone_name if zone_name is not None else "Unknown"
 
-                        # Send MQTT light command
                         mqtt_commander.send_light_command(
                             room_id=room_id,
-                            relay_channel=r_chan,
+                            relay_channel=relay_channel,
                             command=command,
                             zone_id=z_id,
                             zone_name=z_name,
                             source="schedule"
                         )
-                        
-                        # Update light_controls table in DB
+
                         cur.execute("""
                             UPDATE light_controls
                             SET light_status = %s, updated_at = NOW()
-                            WHERE device_id = %s
-                        """, (command, dev_id))
-                        
-                    elif dev_type == 'ac':
-                        # Fetch AC settings
+                            WHERE device_id = %s AND relay_channel = %s
+                        """, (command, dev_id, relay_channel))
+
+                        logger.info(
+                            f"✅ [SCHEDULE] Light command '{command}' terkirim -> "
+                            f"room={room_id}, device={dev_id}, channel={relay_channel}"
+                        )
+
+                    elif normalized_type == 'ac':
                         cur.execute("""
                             SELECT COALESCE(temperature_setting, 22.0)
                             FROM ac_controls
@@ -216,7 +345,6 @@ class ScheduleRunner:
                         ac_row = cur.fetchone()
                         temp = ac_row[0] if ac_row else 22.0
 
-                        # Send MQTT AC command
                         mqtt_commander.send_ac_command(
                             room_id=room_id,
                             command=command,
@@ -224,15 +352,20 @@ class ScheduleRunner:
                             source="schedule"
                         )
 
-                        # Update ac_controls table in DB
                         cur.execute("""
                             UPDATE ac_controls
                             SET ac_status = %s, updated_at = NOW()
                             WHERE device_id = %s
                         """, (command, dev_id))
-                
+
+                    else:
+                        logger.info(
+                            f"⚠️ [SCHEDULE] Device {dev_id} type='{dev_type}' bukan light/ac, dilewati."
+                        )
+
                 conn.commit()
-                logger.info(f"💾 Updated device statuses in DB for Room {room_id} to {command}")
+                self._sync_decision_engine(room_id, command)
+                logger.info(f"💾 Status device untuk Room {room_id} diperbarui menjadi {command}")
 
         except Exception as e:
             logger.error(f"❌ Error triggering devices for Room {room_id}: {e}")
