@@ -87,7 +87,8 @@ CREATE TABLE automation_schedules (
     user_id         CHARACTER VARYING(30) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL,
     schedule_name   CHARACTER VARYING(100),
     start_time      TIME WITHOUT TIME ZONE,
-    end_time        TIME WITHOUT TIME ZONE
+    end_time        TIME WITHOUT TIME ZONE,
+    schedule_days   CHARACTER VARYING(50) DEFAULT 'MON,TUE,WED,THU,FRI'
 );
 
 -- ============================================================

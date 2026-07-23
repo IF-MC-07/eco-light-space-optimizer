@@ -42,12 +42,28 @@ class AutomationScheduler {
     return d;
   }
 
+  /**
+   * Returns true if today's weekday is in the schedule's schedule_days list.
+   * schedule_days is a comma-separated string like 'MON,TUE,WED,THU,FRI'.
+   * If schedule_days is null or empty, the schedule is treated as active every day.
+   */
+  isActiveToday(scheduleDays) {
+    if (!scheduleDays) return true;
+    const DAY_CODES = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    const todayCode = DAY_CODES[new Date().getDay()];
+    const activeDays = scheduleDays.split(',').map(d => d.trim().toUpperCase());
+    return activeDays.includes(todayCode);
+  }
+
   async tick(force = false) {
     const schedules = await db.AutomationSchedule.findAll({ where: {} });
     const now = new Date();
 
     for (const schedule of schedules) {
       if (!schedule.room_id || !schedule.start_time || !schedule.end_time) continue;
+
+      // Skip if today is not an active day for this schedule
+      if (!this.isActiveToday(schedule.schedule_days)) continue;
 
       const startParts = this.parseTime(schedule.start_time);
       const endParts = this.parseTime(schedule.end_time);

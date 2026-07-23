@@ -6,18 +6,25 @@ interface WeeklyScheduleProps {
   onViewFullCalendar?: () => void;
 }
 
+const ALL_WEEK_DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const;
+
 export function WeeklySchedule({ onViewFullCalendar }: WeeklyScheduleProps) {
   const { data: response } = useSchedules();
   const schedules = response?.data || [];
-  const hasActiveSchedules = schedules.length > 0;
 
-  const scheduleDays = [
-    { day: 'MON', status: hasActiveSchedules ? 'Active' : 'Inactive', isHoliday: false },
-    { day: 'TUE', status: hasActiveSchedules ? 'Active' : 'Inactive', isHoliday: false },
-    { day: 'WED', status: hasActiveSchedules ? 'Active' : 'Inactive', isHoliday: false },
-    { day: 'THU', status: 'Holiday', isHoliday: true },
-    { day: 'FRI', status: hasActiveSchedules ? 'Active' : 'Inactive', isHoliday: false },
-  ];
+  // Compute which days have at least one active schedule
+  const activeDaySet = new Set<string>();
+  for (const s of schedules) {
+    const days = s.schedule_days
+      ? s.schedule_days.split(',').map((d: string) => d.trim().toUpperCase())
+      : ['MON', 'TUE', 'WED', 'THU', 'FRI'];
+    days.forEach((d: string) => activeDaySet.add(d));
+  }
+
+  const scheduleDays = ALL_WEEK_DAYS.map((day) => ({
+    day,
+    isActive: activeDaySet.has(day),
+  }));
 
   return (
     <Card className="bg-[#F8FAFC]">
@@ -31,7 +38,7 @@ export function WeeklySchedule({ onViewFullCalendar }: WeeklyScheduleProps) {
               <span className="w-8 font-bold text-secondary-light">{item.day}</span>
               
               <div className="flex-1 px-4 flex items-center">
-                {item.isHoliday ? (
+                {!item.isActive ? (
                   <div className="w-full border-t-[3px] border-dashed border-tertiary-light opacity-50"></div>
                 ) : (
                   <div className="w-full flex items-center gap-2">
@@ -42,8 +49,8 @@ export function WeeklySchedule({ onViewFullCalendar }: WeeklyScheduleProps) {
                 )}
               </div>
               
-              <span className={`w-12 text-right font-bold ${item.isHoliday ? 'text-tertiary' : 'text-primary'}`}>
-                {item.status}
+              <span className={`w-14 text-right font-bold ${item.isActive ? 'text-primary' : 'text-tertiary'}`}>
+                {item.isActive ? 'Active' : 'Inactive'}
               </span>
             </div>
           ))}

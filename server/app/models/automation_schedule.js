@@ -31,6 +31,12 @@ export default (sequelize, DataTypes) => {
     },
     end_time: {
       type: DataTypes.TIME
+    },
+    schedule_days: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      defaultValue: 'MON,TUE,WED,THU,FRI',
+      comment: 'Comma-separated list of active days, e.g. MON,TUE,WED,THU,FRI'
     }
   }, {
     tableName: 'automation_schedules',

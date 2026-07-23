@@ -8,6 +8,21 @@ import type { AutomationSchedule } from "../types";
 import { useMe } from "../../auth/hooks";
 import { useRooms } from "../../rooms/hooks";
 
+const ALL_DAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"] as const;
+type DayCode = typeof ALL_DAYS[number];
+
+const DAY_LABELS: Record<DayCode, string> = {
+  MON: "Mon", TUE: "Tue", WED: "Wed", THU: "Thu", FRI: "Fri", SAT: "Sat", SUN: "Sun",
+};
+
+function parseDays(schedule_days: string | null | undefined): DayCode[] {
+  if (!schedule_days) return ["MON", "TUE", "WED", "THU", "FRI"];
+  return schedule_days
+    .split(",")
+    .map((d) => d.trim().toUpperCase() as DayCode)
+    .filter((d) => ALL_DAYS.includes(d));
+}
+
 interface EditScheduleModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -28,6 +43,7 @@ export function EditScheduleModal({ isOpen, onClose, schedule, isAddingNew = fal
   const [startTime, setStartTime] = useState("08:00");
   const [endTime, setEndTime] = useState("17:00");
   const [roomId, setRoomId] = useState<string>("");
+  const [selectedDays, setSelectedDays] = useState<DayCode[]>(["MON", "TUE", "WED", "THU", "FRI"]);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
 
   useEffect(() => {
@@ -35,7 +51,8 @@ export function EditScheduleModal({ isOpen, onClose, schedule, isAddingNew = fal
       setName(schedule.schedule_name || "");
       setStartTime(schedule.start_time || "08:00");
       setEndTime(schedule.end_time || "17:00");
-      
+      setSelectedDays(parseDays(schedule.schedule_days));
+
       if (schedule.room_id) {
         setRoomId(schedule.room_id);
       } else if (rooms.length > 0) {
@@ -46,12 +63,19 @@ export function EditScheduleModal({ isOpen, onClose, schedule, isAddingNew = fal
 
   if (!isOpen || !schedule) return null;
 
+  const toggleDay = (day: DayCode) => {
+    setSelectedDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+  };
+
   const handleSave = () => {
     const payload: Partial<AutomationSchedule> = {
       schedule_name: name,
       start_time: startTime,
       end_time: endTime,
       room_id: roomId,
+      schedule_days: selectedDays.join(","),
     };
     if (me?.user_id) {
       payload.user_id = me.user_id;
@@ -107,6 +131,7 @@ export function EditScheduleModal({ isOpen, onClose, schedule, isAddingNew = fal
           </div>
 
           <div className="space-y-4">
+            {/* Schedule Name */}
             <div className="space-y-2">
               <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">Schedule Name</label>
               <input 
@@ -118,6 +143,34 @@ export function EditScheduleModal({ isOpen, onClose, schedule, isAddingNew = fal
               />
             </div>
 
+            {/* Active Days Picker */}
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">Active Days</label>
+              <div className="flex gap-1.5 flex-wrap">
+                {ALL_DAYS.map((day) => {
+                  const active = selectedDays.includes(day);
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => toggleDay(day)}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all border
+                        ${active
+                          ? "bg-primary-dark text-white border-primary-dark shadow-sm"
+                          : "bg-[#F1F5F9] text-secondary-light border-transparent hover:border-primary/30 hover:text-primary-dark"
+                        }`}
+                    >
+                      {DAY_LABELS[day]}
+                    </button>
+                  );
+                })}
+              </div>
+              {selectedDays.length === 0 && (
+                <p className="text-[10px] text-red-500 font-semibold">Select at least one day.</p>
+              )}
+            </div>
+
+            {/* Time Range */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">Start Time</label>
@@ -149,6 +202,7 @@ export function EditScheduleModal({ isOpen, onClose, schedule, isAddingNew = fal
               </div>
             </div>
 
+            {/* Select Room */}
             <div className="space-y-2">
               <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest">Select Room</label>
               {rooms.length > 0 ? (
@@ -184,7 +238,7 @@ export function EditScheduleModal({ isOpen, onClose, schedule, isAddingNew = fal
           )}
           <Button 
             onClick={handleSave}
-            disabled={isSaving}
+            disabled={isSaving || selectedDays.length === 0}
             className="w-full bg-primary-dark hover:bg-primary text-white py-4 rounded-xl text-base font-semibold transition-colors shadow-sm mb-4"
           >
             {isSaving ? "Saving..." : isAddingNew ? "Create Schedule" : "Update Schedule"}
@@ -214,3 +268,5 @@ export function EditScheduleModal({ isOpen, onClose, schedule, isAddingNew = fal
     </div>
   );
 }
+
+
