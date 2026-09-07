@@ -1,61 +1,3 @@
-# ============================================================================
-# FINAL MQTT TOPICS FOR FIRMWARE SYNCHRONIZATION REFERENCE
-# ----------------------------------------------------------------------------
-# Command (Backend -> ESP32):
-# - Light : devices/{room_id}/light/{relay_channel}
-# - AC    : devices/{room_id}/ac
-# - Status: devices/{room_id}/status/request
-#
-# Event/Response (ESP32 -> Backend):
-# - Online: devices/{room_id}/status/online
-# - Status: devices/{room_id}/status/response
-# - Energy: devices/{room_id}/energy
-#
-# Energy payload (current firmware — only voltage/current/power are mandatory):
-# {
-#   "room_id": "ROM-1464452b",
-#   "voltage": 220.0,
-#   "current": 0.45,
-#   "power": 98.0,
-#   "energy": 0.05,     <- OPTIONAL, firmware may not send this yet
-#   "frequency": 50.0,  <- OPTIONAL, firmware may not send this yet
-#   "pf": 0.95          <- OPTIONAL, firmware may not send this yet
-# }
-#
-# NOTE: The firmware (ESP32) MUST subscribe to and publish on these exact
-# prefixes (`devices/`). Ensure {room_id} and {relay_channel} types match!
-#
-# ============================================================================
-# PATCH NOTES (fixed version)
-# ----------------------------------------------------------------------------
-# 1. Added subscription to "devices/+/energy" in _on_connect (previously
-#    missing -> _handle_energy() was unreachable dead code).
-# 2. Added routing branch in _route_message() for the energy topic.
-# 3. _handle_energy() now performs a REAL upsert (ON CONFLICT DO UPDATE)
-#    instead of a plain INSERT that silently failed/rolled back on the
-#    second message of the same day for the same room.
-# 4. total_watts is no longer a raw instantaneous Watt snapshot. It is now
-#    an accumulated kWh value computed via trapezoidal-rule integration of
-#    power over the time elapsed since the previous reading for that room:
-#        E_increment(kWh) = ((P_now + P_prev) / 2) * delta_t(hours) / 1000
-#    This follows the standard electrical energy relation E = ∫P dt.
-# 5. Delta-t is computed from the DB (last row in power_sensors for that
-#    room), NOT from in-memory state -> correct even after service restart
-#    or when running multiple instances.
-# 6. Delta-t is capped at 1 hour to avoid inflating totals after a long
-#    device offline gap (defensive guard against clock/connectivity gaps).
-#
-# REQUIRES a UNIQUE constraint on energy_logs(room_id, date). See the
-# accompanying migration_energy_logs_constraint.sql file.
-#
-# IMPORTANT: verify whether a separate Node.js MQTT client (e.g.
-# mqttService.js) ALSO subscribes to "devices/+/energy" and writes to
-# power_sensors / energy_logs. If it does, this fix alone is NOT sufficient
-# — you will have two independent, uncoordinated writers racing on the same
-# rows (a classic "lost update" problem). Pick exactly one authoritative
-# ingestion path and disable energy handling in the other.
-# ============================================================================
-
 import paho.mqtt.client as mqtt
 import os
 import json
@@ -67,11 +9,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 logger = logging.getLogger(__name__)
-
-# Maximum allowed gap (in hours) between two consecutive readings for the
-# same room when computing incremental energy. Gaps larger than this are
-# treated as "device was offline" and contribute 0 kWh for that interval,
-# to avoid artificially inflating the daily total.
 MAX_INTEGRATION_GAP_HOURS = 1.0
 
 
@@ -88,7 +25,7 @@ class MQTTSubscriber:
         self.topic_request = os.getenv("MQTT_TOPIC_REQUEST", "ai/inference/request")
         self.topic_zone_reload = "ai/zone/reload"
         self.topic_esp32_online = "devices/+/status/online"
-        self.topic_energy = "devices/+/energy"  # [FIX] was previously not defined/subscribed
+        self.topic_energy = "devices/+/energy"
 
         self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         self.client.on_connect = self._on_connect
@@ -97,6 +34,15 @@ class MQTTSubscriber:
 
         if self.username and self.password:
             self.client.username_pw_set(self.username, self.password)
+        lwt_topic = os.getenv("MQTT_LWT_TOPIC", "ai/service/status")
+        lwt_payload = json.dumps({"service": "ai", "status": "offline"})
+        self.client.will_set(
+            topic=lwt_topic,
+            payload=lwt_payload,
+            qos=1,
+            retain=True,
+        )
+        logger.info(f"📋 LWT configured on '{lwt_topic}'")
 
     def _on_connect(self, client, userdata, flags, reason_code, properties):
         if reason_code == 0:
@@ -106,8 +52,16 @@ class MQTTSubscriber:
             client.subscribe(self.topic_zone_reload)
             client.subscribe("devices/+/status/response")
             client.subscribe(self.topic_esp32_online)
-            client.subscribe(self.topic_energy)  # [FIX] energy topic now actually subscribed
+            client.subscribe(self.topic_energy)
             logger.info("📡 Subscribed to control/status/energy topics")
+
+            lwt_topic = os.getenv("MQTT_LWT_TOPIC", "ai/service/status")
+            client.publish(
+                lwt_topic,
+                json.dumps({"service": "ai", "status": "online"}),
+                qos=1,
+                retain=True,
+            )
         else:
             logger.error(f"❌ Failed to connect, reason: {reason_code}")
 
@@ -142,9 +96,6 @@ class MQTTSubscriber:
         else:
             logger.debug(f"Unhandled topic: {topic}")
 
-    # =========================================================================
-    # PRIMARY ENERGY HANDLER — writes to power_sensors AND energy_logs
-    # =========================================================================
     def _handle_energy(self, topic: str, payload: dict):
         """
         Handle PZEM-004T energy data from ESP32.
@@ -196,13 +147,6 @@ class MQTTSubscriber:
 
             conn = get_db_connection()
             with conn.cursor() as cur:
-                # -----------------------------------------------------------------
-                # 0. [FIX] Look up the previous raw reading for this room BEFORE
-                #    inserting the new one, so we can compute the elapsed time
-                #    (delta_t) needed for trapezoidal energy integration.
-                #    Read from the DB (not in-memory state) so this stays correct
-                #    across service restarts / multiple instances.
-                # -----------------------------------------------------------------
                 cur.execute("""
                     SELECT power_watts, read_at
                     FROM power_sensors
@@ -212,9 +156,6 @@ class MQTTSubscriber:
                 """, (room_id,))
                 prev_row = cur.fetchone()
 
-                # -----------------------------------------------------------------
-                # 1. INSERT into power_sensors (real-time raw reading) — unchanged
-                # -----------------------------------------------------------------
                 sensor_id = "PWR" + uuid.uuid4().hex[:15].upper()
                 cur.execute("""
                     INSERT INTO power_sensors
@@ -222,17 +163,6 @@ class MQTTSubscriber:
                     VALUES (%s, %s, %s, %s, %s, NOW())
                 """, (sensor_id, room_id, voltage, current, power))
 
-                # -----------------------------------------------------------------
-                # 2. [FIX] Compute incremental energy (kWh) using the trapezoidal
-                #    rule: E = ((P_now + P_prev) / 2) * delta_t(hours) / 1000
-                #    - If there is no previous reading (first message ever for
-                #      this room), the increment is 0 — we cannot infer a
-                #      duration for the very first sample.
-                #    - If the gap since the previous reading exceeds
-                #      MAX_INTEGRATION_GAP_HOURS, treat it as a connectivity
-                #      gap and contribute 0 kWh for that interval, to avoid
-                #      wildly overestimating consumption after downtime.
-                # -----------------------------------------------------------------
                 energy_increment_kwh = 0.0
                 if prev_row:
                     prev_power, prev_time = prev_row
@@ -247,15 +177,6 @@ class MQTTSubscriber:
                         avg_power = (power + float(prev_power)) / 2.0
                         energy_increment_kwh = (avg_power * delta_hours) / 1000.0
 
-                # -----------------------------------------------------------------
-                # 3. [FIX] REAL upsert into energy_logs using ON CONFLICT.
-                #    total_watts now holds ACCUMULATED daily kWh (despite the
-                #    legacy column name — consider renaming to energy_kwh in a
-                #    future migration for clarity).
-                #
-                #    REQUIRES: UNIQUE (room_id, date) constraint — see
-                #    migration_energy_logs_constraint.sql
-                # -----------------------------------------------------------------
                 today = datetime.date.today()
                 log_id = "ENG" + uuid.uuid4().hex[:15].upper()
 
@@ -308,19 +229,18 @@ class MQTTSubscriber:
                     from zona_loader import release_connection
                 release_connection(conn)
 
-    # =========================================================================
-    # CAMERA / INFERENCE HANDLERS (unchanged)
-    # =========================================================================
     def _handle_camera_trigger(self, payload):
         from app.snapshot import take_snapshot
         logger.info("📷 Camera trigger received, taking snapshot...")
         take_snapshot()
 
     def _handle_inference_request(self, payload):
-        from app.inference_realtime import run_inference
-        image_path = payload.get("image_path") if isinstance(payload, dict) else None
-        logger.info(f"🤖 Inference request received: {image_path}")
-        run_inference(image_path)
+        try:
+            from app.inference_realtime import run
+        except ImportError:
+            from inference_realtime import run
+        logger.info("🤖 Inference request received")
+        run()
 
     def _handle_zone_reload(self):
         try:

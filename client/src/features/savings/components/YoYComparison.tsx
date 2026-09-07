@@ -129,18 +129,57 @@ const renderBanner = () => {
 
 const renderInsight = () => {
   switch (status) {
-
     case 'saving':
-      return `Energy consumption decreased by ${differenceDisplay} compared to the previous period, indicating improved energy efficiency.`;
+      return (
+        <div className="space-y-2">
+          <p className="text-xs text-secondary-dark leading-relaxed">
+            <span className="font-bold text-green-700">Explainability:</span> Energy consumption decreased by <span className="font-bold text-black">{differenceDisplay}</span> compared to the previous period due to effective automation schedules and optimized HVAC/lighting usage.
+          </p>
+          <div className="p-3 bg-green-50/70 border border-green-200/60 rounded-xl text-xs text-green-900 font-medium">
+            <span className="font-bold text-green-800 block mb-0.5">Recommended Action:</span>
+            Maintain current automation rules and replicate these eco-templates across remaining primary zones to maximize efficiency.
+          </div>
+        </div>
+      );
 
     case 'waste':
-      return `Energy consumption increased by ${differenceDisplay}. Review active electrical devices or operating schedules to reduce unnecessary energy usage.`;
+      return (
+        <div className="space-y-2">
+          <p className="text-xs text-secondary-dark leading-relaxed">
+            <span className="font-bold text-red-700">Explainability:</span> Energy consumption increased by <span className="font-bold text-black">{differenceDisplay}</span> compared to the previous period due to extended device operation or low AC setpoints in unoccupied rooms.
+          </p>
+          <div className="p-3 bg-red-50/70 border border-red-200/60 rounded-xl text-xs text-red-900 font-medium">
+            <span className="font-bold text-red-800 block mb-0.5">Recommended Action:</span>
+            Review active AC & lighting schedules, adjust AC setpoint to 24°C, and enable motion sensor auto-cutoff for unoccupied zones.
+          </div>
+        </div>
+      );
 
     case 'neutral':
-      return `Energy consumption remained relatively stable compared to the previous period.`;
+      return (
+        <div className="space-y-2">
+          <p className="text-xs text-secondary-dark leading-relaxed">
+            <span className="font-bold text-secondary-dark">Explainability:</span> Energy consumption remained relatively stable compared to the previous period with minor fluctuations.
+          </p>
+          <div className="p-3 bg-neutral-100 border border-neutral-200 rounded-xl text-xs text-secondary-dark font-medium">
+            <span className="font-bold text-black block mb-0.5">Recommended Action:</span>
+            Fine-tune occupancy automation rules and light dimming thresholds to unlock further energy savings.
+          </div>
+        </div>
+      );
 
     default:
-      return `The previous period recorded very low energy usage, therefore percentage comparison is not displayed to avoid misleading interpretation.`;
+      return (
+        <div className="space-y-2">
+          <p className="text-xs text-secondary-dark leading-relaxed">
+            <span className="font-bold text-blue-700">Explainability:</span> The previous period recorded minimal energy data, making baseline percentage comparison limited.
+          </p>
+          <div className="p-3 bg-blue-50/70 border border-blue-200/60 rounded-xl text-xs text-blue-900 font-medium">
+            <span className="font-bold text-blue-800 block mb-0.5">Recommended Action:</span>
+            Continue monitoring room sensors over the current cycle to establish a consistent energy baseline.
+          </div>
+        </div>
+      );
   }
 };
 
@@ -177,7 +216,7 @@ const renderInsight = () => {
         </div>
 
         <div className="pt-4 border-t border-neutral-border/40">
-          <p className="text-xs leading-relaxed text-secondary italic">{renderInsight()}</p>
+          {renderInsight()}
         </div>
       </CardContent>
     </Card>

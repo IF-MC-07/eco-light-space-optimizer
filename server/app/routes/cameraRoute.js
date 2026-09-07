@@ -8,8 +8,8 @@ const router = Router();
 router.get('/ai/stream-urls', cameraController.getAiStreamUrls);
 router.get('/', authenticate, requireRole(['admin']), cameraController.getAll);
 router.get('/:id', authenticate, cameraController.getById);
-router.post('/', authenticate, cameraController.create);
-router.put('/:id', authenticate, cameraController.update);
-router.delete('/:id', authenticate, cameraController.remove);
+router.post('/', authenticate, requireRole(['admin']), cameraController.create);
+router.put('/:id', authenticate, requireRole(['admin']), cameraController.update);
+router.delete('/:id', authenticate, requireRole(['admin']), cameraController.remove);
 
 export default router;

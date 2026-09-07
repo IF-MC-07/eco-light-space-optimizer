@@ -106,6 +106,19 @@ class AutomationService {
           source: 'automation',
           zone_id,
         });
+
+        const zoneData = await Zone.findByPk(zone_id, {
+          include: [{ model: db.Room, as: 'Room' }],
+        });
+        const roomId = zoneData?.Room?.room_id;
+        if (roomId) {
+          mqttService.publish(`devices/${roomId}/light/${control.relay_channel}`, {
+            command: status.toUpperCase(),
+            zone_id,
+            relay_channel: control.relay_channel,
+            source: 'ai_automation'
+          });
+        }
       }
 
       this.lastActionTime.set(zone_id, now);

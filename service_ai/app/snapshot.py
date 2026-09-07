@@ -1,7 +1,3 @@
-"""
-snapshot.py — FastAPI application for the Eco-Light AI service.
-"""
-
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse

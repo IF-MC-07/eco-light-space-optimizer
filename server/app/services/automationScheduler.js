@@ -102,7 +102,12 @@ class AutomationScheduler {
       const controls = await db.LightControl.findAll({ where: { zone_id: zone.zone_id } });
       for (const control of controls) {
         await control.update({ light_status: 'on', updated_at: new Date() });
-        mqttService.publish(`devices/${control.device_id}/relay/${control.relay_channel}`, { action: 'ON' });
+        mqttService.publish(`devices/${schedule.room_id}/light/${control.relay_channel}`, {
+          command: 'ON',
+          zone_id: control.zone_id,
+          relay_channel: control.relay_channel,
+          source: 'schedule_automation'
+        });
       }
     }
   }
@@ -116,7 +121,12 @@ class AutomationScheduler {
       const controls = await db.LightControl.findAll({ where: { zone_id: zone.zone_id } });
       for (const control of controls) {
         await control.update({ light_status: 'off', updated_at: new Date() });
-        mqttService.publish(`devices/${control.device_id}/relay/${control.relay_channel}`, { action: 'OFF' });
+        mqttService.publish(`devices/${schedule.room_id}/light/${control.relay_channel}`, {
+          command: 'OFF',
+          zone_id: control.zone_id,
+          relay_channel: control.relay_channel,
+          source: 'schedule_automation'
+        });
       }
     }
   }

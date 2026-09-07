@@ -45,7 +45,7 @@ export function SavingsBreakdownTable({ filters }: SavingsBreakdownTableProps) {
               breakdown.map((row, i) => {
                 const totalEnergy = row.total_wh 
                   ? (row.total_wh >= 1000 
-                      ? `${row.total_kwh.toFixed(3)} kWh` 
+                      ? `${(row.total_kwh ?? (row.total_wh / 1000)).toFixed(3)} kWh` 
                       : `${row.total_wh.toFixed(1)} Wh`)
                   : '0 Wh';
 

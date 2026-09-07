@@ -89,7 +89,7 @@ class MqttService {
           payload.camera_id = cameraId;
 
           // Standard standardized payload (Bulk zone result)
-          await DetectionPipelineService.processBulkAIResult(payload, cameraId);
+          await DetectionPipelineService.processBulkAIResult(payload);
         }
       } catch (error) {
         console.error(`[MQTT] Error handling message on ${topic}:`, error.message);
@@ -120,8 +120,6 @@ async handleEnergyData(topic, payload) {
         ? new Date(payload.timestamp)
         : new Date();
 
-    // === LANGKAH 1: Ambil pembacaan SEBELUMNYA (sebelum insert baris baru) ===
-    // Ini dibutuhkan untuk menghitung delta_t pada integrasi trapesium
     const prevReadingQuery = `
       SELECT power_watts, read_at
       FROM power_sensors
@@ -134,7 +132,6 @@ async handleEnergyData(topic, payload) {
       type: db.sequelize.QueryTypes.SELECT
     });
 
-    // === LANGKAH 2: Insert pembacaan sensor baru (raw log, tidak berubah) ===
     const insertPowerSensorQuery = `
       INSERT INTO power_sensors (sensor_id, room_id, voltage_v, current_a, power_watts, read_at)
       VALUES (:sensor_id, :room_id, :voltage_v, :current_a, :power_watts, :read_at)
@@ -151,8 +148,6 @@ async handleEnergyData(topic, payload) {
       type: db.sequelize.QueryTypes.INSERT
     });
 
-    // === LANGKAH 3: Hitung increment energi via TRAPEZOIDAL RULE ===
-    // E = ((P_lama + P_baru) / 2) * delta_t   -> hasil dalam Watt-hour (Wh)
     let energyIncrementWh = 0;
     if (prevReading && prevReading.read_at) {
       const prevPower = parseFloat(prevReading.power_watts) || 0;
@@ -287,25 +282,16 @@ async handleEnergyData(topic, payload) {
       }
     });
 
-    // jika belum ada device -> otomatis buat
     if (!device) {
 
       device = await db.IotDevice.create({
-
         room_id: deviceId,
-
         device_name: `ESP32 ${deviceId}`,
-
         type: "ESP32",
-
         status: status,
-
         last_seen: new Date()
-
       });
-
       console.log(`[MQTT] Device baru berhasil dibuat untuk room ${deviceId}`);
-
     }
 
     else {

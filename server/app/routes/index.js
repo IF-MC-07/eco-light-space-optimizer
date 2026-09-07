@@ -66,7 +66,21 @@ router.use(
   lightControlRoute,
 );
 router.use(
+  "/kontrol-lampu",
+  authenticate,
+  requireRole(["admin"]),
+  controlLimiter,
+  lightControlRoute,
+);
+router.use(
   "/ac-controls",
+  authenticate,
+  requireRole(["admin"]),
+  controlLimiter,
+  acControlRoute,
+);
+router.use(
+  "/kontrol-ac",
   authenticate,
   requireRole(["admin"]),
   controlLimiter,

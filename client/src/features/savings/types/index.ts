@@ -11,6 +11,9 @@ export interface SavingsBreakdown {
   saved_watts: number;
   total_watts: number;
   percentage: number;
+  total_wh?: number;
+  total_kwh?: number;
+  has_savings_data?: boolean;
 }
 
 export interface SavingsTrend {
@@ -23,12 +26,15 @@ export interface PeriodStats {
   end: string;
   total_watts: number;
   saved_watts: number;
+  total_kwh?: number;
+  total_wh?: number;
 }
 
 export interface YoYComparisonData {
   current_period: PeriodStats;
   previous_period: PeriodStats;
   difference_watts: number;
+  difference_wh?: number;
   change_percentage: number;
   status: string;
 }

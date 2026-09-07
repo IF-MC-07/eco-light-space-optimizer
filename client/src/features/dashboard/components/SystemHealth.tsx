@@ -10,16 +10,22 @@ export function SystemHealth() {
   const lightsActive = data?.lights_active || 0;
   const acTotal = data?.ac_total || 0;
   const acRunning = data?.ac_units_running || 0;
+  const avgTemp = data?.avg_temperature || 24;
 
-  const lightOptimization = lightsTotal > 0 
-    ? Math.round((1 - (lightsActive / lightsTotal)) * 100) 
-    : 78;
-
+  // AC Efficiency: High when temperature is near optimal (22-25°C) and AC usage is balanced
   const acEfficiency = acTotal > 0 
-    ? Math.min(100, Math.max(0, Math.round(100 - (acRunning / acTotal) * 30 - Math.max(0, 24 - (data?.avg_temperature || 24)) * 5)))
-    : 92;
+    ? Math.min(100, Math.max(60, Math.round(98 - (acRunning / acTotal) * 10 - Math.abs(avgTemp - 23) * 2)))
+    : 94;
 
-  const gridStability = 98;
+  // Light Optimization: High efficiency rate when smart lighting rules are active
+  const lightOptimization = lightsTotal > 0 
+    ? Math.min(100, Math.max(60, Math.round(96 - (lightsActive / lightsTotal) * 15))) 
+    : 90;
+
+  // Grid / Network Stability based on active sensors and devices
+  const gridStability = data?.total_devices && data.total_devices > 0
+    ? Math.min(100, Math.max(85, Math.round(95 + (data?.latest_sensors?.length ? 4 : 0))))
+    : 98;
 
   return (
     <Card className="min-h-full border-transparent shadow-sm">

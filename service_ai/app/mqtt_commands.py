@@ -49,7 +49,7 @@ class MQTTCommander:
         payload = {
             "command": command,
             "room_id": room_id,
-            "temperature": float(temperature),
+            "temperature": float(temperature) if temperature is not None else 24.0,
             "source": source,
             "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
         }

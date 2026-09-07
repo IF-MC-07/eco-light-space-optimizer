@@ -4,7 +4,6 @@ import { AutomationStats } from '../../../features/automation/components/Automat
 import { ActiveRulesList } from '../../../features/automation/components/ActiveRulesList';
 import { RecommendedTemplates } from '../../../features/automation/components/RecommendedTemplates';
 import { InlineCalendar } from '../../../features/automation/components/InlineCalendar';
-import { QuickRuleSetup } from '../../../features/automation/components/QuickRuleSetup';
 import { WeeklySchedule } from '../../../features/automation/components/WeeklySchedule';
 import { EfficiencyVitality } from '../../../features/automation/components/EfficiencyVitality';
 import { EditScheduleModal } from '../../../features/automation/components/EditScheduleModal';
@@ -34,7 +33,8 @@ export default function AutomationRules() {
       user_id: "", 
       schedule_name: '', 
       start_time: '08:00', 
-      end_time: '17:00' 
+      end_time: '17:00',
+      schedule_days: ''
     });
   };
 
@@ -108,7 +108,6 @@ export default function AutomationRules() {
         </div>
 
         <div className="col-span-1 flex flex-col space-y-6">
-          <QuickRuleSetup />
           <WeeklySchedule onViewFullCalendar={() => setIsCalendarOpen(true)} />
           <EfficiencyVitality />
         </div>

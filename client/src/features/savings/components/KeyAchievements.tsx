@@ -36,33 +36,36 @@ export function KeyAchievements({ filters }: KeyAchievementsProps) {
       <CardContent className="px-6 pb-6">
         <ul className="space-y-5">
           <li className="flex items-start">
-            <span className="mt-1.5 mr-3 w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0"></span>
-            <p className="text-xs text-secondary-dark leading-relaxed">
+            <span className={`mt-1.5 mr-3 w-2 h-2 rounded-full ${status === 'saving' ? 'bg-green-500' : status === 'waste' ? 'bg-red-500' : 'bg-primary'} flex-shrink-0`}></span>
+            <div className="text-xs text-secondary-dark leading-relaxed">
               {status === 'saving' ? (
                 <>
-                  Energy consumption decreased by <span className="font-bold text-black">{changePct}%</span> compared to the last period.
+                  <p><span className="font-bold text-green-700">Energy Saving (-{changePct}%):</span> Energy consumption decreased compared to the previous period due to effective automation rules.</p>
+                  <p className="mt-1 text-[11px] text-green-800 font-semibold">Action: Maintain current automation rules and replicate eco-templates to other rooms.</p>
                 </>
               ) : status === 'waste' ? (
                 <>
-                  Energy consumption increased by <span className="font-bold text-black">{Math.abs(changePct)}%</span>. Look into automating devices to limit waste.
+                  <p><span className="font-bold text-red-700">Energy Waste (+{Math.abs(changePct)}%):</span> Energy consumption increased due to extended AC cooling duration or active lighting in unoccupied rooms.</p>
+                  <p className="mt-1 text-[11px] text-red-800 font-semibold">Action: Enable automation schedules (08:00 AM - 05:00 PM) & set AC temperature to 24°C.</p>
                 </>
               ) : (
                 <>
-                  Your energy consumption was stable compared to the last period.
+                  <p><span className="font-bold text-black">Stable Consumption:</span> Energy consumption remains at a normal and stable baseline compared to the previous period.</p>
+                  <p className="mt-1 text-[11px] text-secondary font-semibold">Action: Apply ambient light dimming thresholds for further efficiency.</p>
                 </>
               )}
-            </p>
+            </div>
           </li>
           
           <li className="flex items-start">
-            <span className="mt-1.5 mr-3 w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0"></span>
+            <span className="mt-1.5 mr-3 w-2 h-2 rounded-full bg-primary flex-shrink-0"></span>
             <p className="text-xs text-secondary-dark leading-relaxed">
-              Optimizations prevented <span className="font-bold text-black">{co2SavedKg.toFixed(2)} kg</span> of CO2 from being released into the atmosphere.
+              System optimization prevented up to <span className="font-bold text-black">{co2SavedKg.toFixed(2)} kg</span> of CO2 emissions.
             </p>
           </li>
 
           <li className="flex items-start">
-            <span className="mt-1.5 mr-3 w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0"></span>
+            <span className="mt-1.5 mr-3 w-2 h-2 rounded-full bg-primary flex-shrink-0"></span>
             <p className="text-xs text-secondary-dark leading-relaxed">
               Total energy saved is equivalent to offsetting <span className="font-bold text-black">{treesPlanted} trees</span> or powering a laptop for <span className="font-bold text-black">{laptopHours} hours</span>.
             </p>

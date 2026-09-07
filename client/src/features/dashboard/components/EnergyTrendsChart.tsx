@@ -1,12 +1,11 @@
 "use client";
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { AreaChart, Area, XAxis, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
 import { useEnergyLogs } from '../../energy-monitor/hooks';
 
 export function EnergyTrendsChart() {
-  const [activeTab, setActiveTab] = useState('Day');
-  const { data: response } = useEnergyLogs({ range: activeTab.toLowerCase() });
+  const { data: response } = useEnergyLogs({ range: 'day' });
   const chartData = useMemo(() => {
     const source = response || [];
 
@@ -25,29 +24,14 @@ export function EnergyTrendsChart() {
       { time: '04:00 PM', value: 80 },
       { time: '06:00 PM', value: 45 },
     ];
-  }, [response, activeTab]);
+  }, [response]);
 
   return (
     <Card className="min-h-[400px] flex flex-col bg-[#F5F7F5] border-transparent">
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
         <div>
           <CardTitle className="text-xl text-black font-heading font-bold">Energy Usage Trends</CardTitle>
-          <p className="text-sm text-secondary mt-1 font-medium">Consumption across all zones today</p>
-        </div>
-        <div className="flex items-center p-1 bg-neutral-border/30 rounded-lg border border-neutral-border">
-          {['Day', 'Week', 'Month'].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-1 text-xs font-bold rounded-md transition-colors ${
-                activeTab === tab 
-                  ? 'bg-white shadow-sm text-black' 
-                  : 'text-secondary hover:text-black'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
+          <p className="text-sm text-secondary mt-1 font-medium">Daily consumption across all zones</p>
         </div>
       </CardHeader>
       <CardContent className="flex-1 pb-6 pt-10">
