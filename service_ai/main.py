@@ -40,6 +40,13 @@ try:
 except ImportError:
     from mqtt_commands import MQTTCommander
 
+try:
+    from app.dslb_config import DslbConfig
+    from app.dslb_engine import DslbEngine
+except ImportError:
+    from dslb_config import DslbConfig
+    from dslb_engine import DslbEngine
+
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
@@ -76,6 +83,18 @@ def main():
     logger.info("⏰ Starting Schedule Runner background thread...")
     schedule_runner = ScheduleRunner()
     threading.Thread(target=schedule_runner.run, daemon=True).start()
+
+    # Start DSLB Engine if enabled and config valid
+    try:
+        dslb_config = DslbConfig.from_env()
+        if dslb_config.enabled:
+            logger.info("🏢 Starting DSLB Engine background thread...")
+            dslb_engine = DslbEngine(config=dslb_config)
+            dslb_engine.start()
+        else:
+            logger.info("ℹ️ DSLB Engine is disabled (DSLB_ENABLED=false).")
+    except Exception as e:
+        logger.error(f"❌ Failed to start DSLB Engine: {e}. Continuing without DSLB.")
 
     logger.info("⚡ Starting FastAPI Server on http://localhost:8000...")
     threading.Thread(
