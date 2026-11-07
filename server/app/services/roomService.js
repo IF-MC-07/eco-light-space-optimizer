@@ -60,13 +60,40 @@ export const getById = async (id) => {
 };
 
 export const create = async (data) => {
-  return await Room.create(data);
+  const allowedFields = ['room_id', 'room_name', 'location', 'capacity', 'building', 'floor', 'status'];
+  const sanitized = {};
+  for (const field of allowedFields) {
+    if (data && field in data) {
+      sanitized[field] = data[field];
+    }
+  }
+  for (const field of ['building', 'floor', 'location']) {
+    if (field in sanitized && typeof sanitized[field] === 'string' && sanitized[field].trim() === '') {
+      sanitized[field] = null;
+    }
+  }
+  return await Room.create(sanitized);
 };
 
 export const update = async (id, data) => {
   const room = await Room.findByPk(id);
   if (!room) return null;
-  return await room.update(data);
+
+  // Strict whitelist: prevent unverified attributes (e.g. is_simulated) from passing to model
+  const allowedFields = ['room_name', 'location', 'capacity', 'building', 'floor', 'status'];
+  const sanitized = {};
+  for (const field of allowedFields) {
+    if (data && field in data) {
+      sanitized[field] = data[field];
+    }
+  }
+  for (const field of ['building', 'floor', 'location']) {
+    if (field in sanitized && typeof sanitized[field] === 'string' && sanitized[field].trim() === '') {
+      sanitized[field] = null;
+    }
+  }
+
+  return await room.update(sanitized);
 };
 
 export const remove = async (id) => {

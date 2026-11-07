@@ -1,6 +1,7 @@
 import responseFormatter from '../utils/response.js';
 import * as roomService from '../services/roomService.js';
 import db from '../models/index.js';
+import { createRoomSchema, updateRoomSchema } from '../validations/room.validation.js';
 
 export const getAll = async (req, res, next) => {
   try {
@@ -25,8 +26,12 @@ export const getById = async (req, res, next) => {
 
 export const create = async (req, res, next) => {
   try {
-    const data = await roomService.create(req.body);
-    return responseFormatter.success(res, data, 'Room created successfully' , 201);
+    const { error, value } = createRoomSchema.validate(req.body);
+    if (error) {
+      return responseFormatter.error(res, error.details[0].message, 400);
+    }
+    const data = await roomService.create(value);
+    return responseFormatter.success(res, data, 'Room created successfully', 201);
   } catch (error) {
     next(error);
   }
@@ -34,11 +39,15 @@ export const create = async (req, res, next) => {
 
 export const update = async (req, res, next) => {
   try {
-    const data = await roomService.update(req.params.id, req.body);
-    if (!data) {
-      return responseFormatter.error(res, 'Room not found' , 404);
+    const { error, value } = updateRoomSchema.validate(req.body);
+    if (error) {
+      return responseFormatter.error(res, error.details[0].message, 400);
     }
-    return responseFormatter.success(res, data, 'Room updated successfully' );
+    const data = await roomService.update(req.params.id, value);
+    if (!data) {
+      return responseFormatter.error(res, 'Room not found', 404);
+    }
+    return responseFormatter.success(res, data, 'Room updated successfully');
   } catch (error) {
     next(error);
   }
