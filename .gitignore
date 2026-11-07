@@ -130,3 +130,7 @@ service_ai/certs/
 server/certs/
 *.pem
 *.key
+
+# local env files
+.env*
+!.env.example
