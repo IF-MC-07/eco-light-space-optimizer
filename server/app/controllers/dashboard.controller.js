@@ -3,7 +3,9 @@ import db from "../models/index.js";
 
 export const getSummary = async (req, res, next) => {
   try {
-    const total_rooms = await db.Room.count();
+    const total_rooms = await db.Room.count({
+      where: { is_simulated: false }
+    });
     const total_zones = await db.Zone.count();
     const total_devices = await db.IotDevice.count();
     const total_cameras = await db.Camera.count();
