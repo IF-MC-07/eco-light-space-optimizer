@@ -17,6 +17,19 @@ export default (sequelize, DataTypes) => {
     capacity: {
       type: DataTypes.INTEGER
     },
+    building: {
+      type: DataTypes.STRING(100),
+      allowNull: true
+    },
+    floor: {
+      type: DataTypes.STRING(20),
+      allowNull: true
+    },
+    is_simulated: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    },
     status: {
       type: DataTypes.STRING(20),
       defaultValue: 'ACTIVE'
