@@ -134,3 +134,10 @@ server/certs/
 # local env files
 .env*
 !.env.example
+
+# ─── EVALUATION OUTPUT ───────────────────────────────────────
+eval_out/
+
+
+# local working notes
+docs/dslb_*.md
