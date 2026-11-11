@@ -1,5 +1,6 @@
 import db from '../models/index.js';
 import mqttService from './mqttService.js';
+import { isSimulatedRoom } from '../utils/simulationGuard.js';
 
 const { LightControl, Zone } = db;
 
@@ -78,6 +79,14 @@ class AutomationService {
       const now = Date.now();
       const lastAction = this.lastActionTime.get(zone_id) || 0;
       if (now - lastAction < this.debounceTime) return;
+
+      // DSLB Guard: Lookup room_id for this zone_id BEFORE controls update or publish
+      const guardZone = await Zone.findByPk(zone_id, { attributes: ['room_id'] });
+      const guardRoomId = guardZone?.room_id;
+      if (guardRoomId && await isSimulatedRoom(guardRoomId)) {
+        console.info(`[DSLB Guard] Skipping triggerLightAction for simulated room ${guardRoomId} (zone ${zone_id})`);
+        return;
+      }
 
       const controls = await LightControl.findAll({
         include: [

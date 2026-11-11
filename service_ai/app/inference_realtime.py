@@ -16,12 +16,14 @@ try:
     from app.mqtt_subscriber import mqtt_client
     from app.decision_engine import decision_engine
     from app.log_writer import write_detection_logs
+    from app.occupancy_store import record_count
 except ImportError:
     from zona_loader import ambil_zona_dari_db, titik_di_zona
     from camera_loader import get_camera_stream_source, get_active_camera_sources
     from mqtt_subscriber import mqtt_client
     from decision_engine import decision_engine
     from log_writer import write_detection_logs
+    from occupancy_store import record_count
 
 load_dotenv()
 
@@ -306,6 +308,11 @@ def camera_worker(camera_id: str, ip_address: str, mqtt_handler: MQTTHandler, st
         height, width = frame.shape[:2]
         count = hitung_per_zona(results[0].boxes, zones, width, height)
         status = "ON" if count["total"] > 0 else "OFF"
+
+        try:
+            record_count(camera_id, int(count["total"]))
+        except Exception as e:
+            log.warning(f"⚠️ [{camera_id}] DSLB record_count error: {e}")
 
         now2 = time.time()
         last_decision_call = _maybe_process_decision(

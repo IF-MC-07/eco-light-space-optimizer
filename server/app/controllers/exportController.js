@@ -216,7 +216,9 @@ export const exportGeneric = async (req, res, next) => {
 
     switch (resource) {
       case 'rooms':
-        data = await db.Room.findAll();
+        data = await db.Room.findAll({
+          where: { is_simulated: false }
+        });
         columns = [
           { header: 'Room ID', key: 'room_id' },
           { header: 'Room Name', key: 'room_name' },

@@ -1,6 +1,7 @@
 import responseFormatter from '../utils/response.js';
 import db from '../models/index.js';
 import mqttService from '../services/mqttService.js';
+import { isSimulatedRoom } from '../utils/simulationGuard.js';
 
 export const getEnergi = async (req, res, next) => {
   try {
@@ -137,6 +138,20 @@ export const updateDevice = async (req, res, next) => {
 
     if (!device) {
       return responseFormatter.error(res, 'Device not found' , 404);
+    }
+
+    // DSLB Guard: Lookup room_id and guard before device save, controls update, or MQTT publish
+    let guardRoomId = device.room_id;
+    if (!guardRoomId) {
+      const lc = await db.LightControl.findOne({
+        where: { device_id: id },
+        include: [{ model: db.Zone }]
+      });
+      guardRoomId = lc?.Zone?.room_id;
+    }
+    if (guardRoomId && await isSimulatedRoom(guardRoomId)) {
+      console.info(`[DSLB Guard] Skipping updateDevice for simulated room ${guardRoomId} (device ${id})`);
+      return responseFormatter.success(res, null, 'Device updated successfully' );
     }
 
     if (device_status !== undefined) {
@@ -322,4 +337,3 @@ export const updateClimate = async (req, res, next) => {
     next(error);
   }
 };
-

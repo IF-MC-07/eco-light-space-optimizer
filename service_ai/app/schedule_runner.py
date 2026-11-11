@@ -15,6 +15,11 @@ try:
 except ImportError:
     from mqtt_commands import mqtt_commander
 
+try:
+    from app.simulation_guard import is_simulated_room
+except ImportError:
+    from simulation_guard import is_simulated_room
+
 load_dotenv()
 logger = logging.getLogger(__name__)
 
@@ -273,6 +278,10 @@ class ScheduleRunner:
         """
         Turns all lights and AC devices ON or OFF for the given room.
         """
+        if is_simulated_room(room_id):
+            logger.info(f"🚫 [DSLB Guard] Skipping schedule device trigger for simulated room {room_id}")
+            return
+
         conn = None
         try:
             conn = get_db_connection()

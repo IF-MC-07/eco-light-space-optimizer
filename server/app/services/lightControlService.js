@@ -1,5 +1,6 @@
 import db from '../models/index.js';
 import mqttService from './mqttService.js';
+import { isSimulatedRoom } from '../utils/simulationGuard.js';
 
 const { LightControl } = db;
 
@@ -20,6 +21,13 @@ export const update = async (id, data) => {
     include: [{ model: db.IotDevice }, { model: db.Zone }]
   });
   if (!control) return null;
+
+  // DSLB Guard: Lookup room_id and guard before modifying DB or publishing
+  const guardRoomId = control.IotDevice ? control.IotDevice.room_id : (control.Zone ? control.Zone.room_id : null);
+  if (guardRoomId && await isSimulatedRoom(guardRoomId)) {
+    console.info(`[DSLB Guard] Skipping light control update/publish for simulated room ${guardRoomId}`);
+    return control;
+  }
   
   const updated = await control.update(data);
   

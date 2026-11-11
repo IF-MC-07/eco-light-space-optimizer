@@ -18,6 +18,7 @@ import energyRoute from "./energy.route.js";
 import savingsRoute from "./savings.route.js";
 import exportRoute from "./exportRoute.js";
 import activityLogRoute from "./activityLogRoute.js";
+import occupancyRoute from "./occupancyRoute.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 import { requireRole } from "../middlewares/role.middleware.js";
 import {
@@ -35,6 +36,7 @@ router.use("/monitoring", authenticate, monitoringRoute);
 router.use("/energy", authenticate, requireRole(["admin"]), energyRoute);
 router.use("/savings", authenticate, requireRole(["admin"]), savingsRoute);
 router.use("/rooms", authenticate, roomRoute);
+router.use("/occupancy", authenticate, occupancyRoute);
 router.use("/users", authenticate, requireRole(["admin"]), userRoute);
 router.use("/zones", authenticate, zoneRoute);
 router.use("/cameras", cameraRoute);

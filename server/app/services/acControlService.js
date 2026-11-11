@@ -1,5 +1,6 @@
 import db from '../models/index.js';
 import mqttService from './mqttService.js';
+import { isSimulatedRoom } from '../utils/simulationGuard.js';
 
 const { AcControl } = db;
 
@@ -18,6 +19,12 @@ export const create = async (data) => {
 export const update = async (id, data) => {
   const control = await AcControl.findByPk(id);
   if (!control) return null;
+
+  // DSLB Guard: check if room is simulated before modifying DB or publishing
+  if (control.room_id && await isSimulatedRoom(control.room_id)) {
+    console.info(`[DSLB Guard] Skipping AC control update/publish for simulated room ${control.room_id}`);
+    return control;
+  }
   
   const updated = await control.update(data);
   
@@ -43,4 +50,3 @@ export const remove = async (id) => {
   await control.destroy();
   return true;
 };
-
