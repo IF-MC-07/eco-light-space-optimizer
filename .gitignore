@@ -141,3 +141,6 @@ eval_out/
 
 # local working notes
 docs/dslb_*.md
+
+# fine-tuned detection weights (tracked)
+!service_ai/app/models/s1_best.pt
