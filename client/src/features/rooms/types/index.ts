@@ -8,8 +8,11 @@ export interface Room {
   room_id: string;
   room_name: string;
   location: string;
-  capacity: number;
+  capacity?: number | null;
   status: RoomStatus;
+  building?: string | null;
+  floor?: string | number | null;
+  readonly is_simulated?: boolean;
   availability?: 'available' | 'occupied' | string;
 }
 

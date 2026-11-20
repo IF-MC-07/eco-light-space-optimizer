@@ -8,9 +8,10 @@ import { useMe } from '../../auth/hooks';
 interface RoomHeaderProps {
   rooms: Room[];
   onAddRoom?: () => void;
+  statsSlot?: React.ReactNode;
 }
 
-export function RoomHeader({ rooms, onAddRoom }: RoomHeaderProps) {
+export function RoomHeader({ rooms, onAddRoom, statsSlot }: RoomHeaderProps) {
   const { data: userData } = useMe();
   const role = userData?.user?.role;
   const isAdmin = role === 'admin';
@@ -36,7 +37,7 @@ export function RoomHeader({ rooms, onAddRoom }: RoomHeaderProps) {
         </div>
       </div>
       
-      <RoomStats rooms={rooms} />
+      {statsSlot !== undefined ? statsSlot : <RoomStats rooms={rooms} />}
     </div>
   );
 }

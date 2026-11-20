@@ -26,6 +26,7 @@ export const useCreateRoom = () => {
     mutationFn: (payload: Omit<Room, 'room_id'>) => roomsApi.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      queryClient.invalidateQueries({ queryKey: ['occupancy'] });
     },
   });
 };
@@ -36,6 +37,7 @@ export const useUpdateRoom = () => {
     mutationFn: ({ id, payload }: { id: string; payload: Partial<Room> }) => roomsApi.update(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      queryClient.invalidateQueries({ queryKey: ['occupancy'] });
     },
   });
 };
@@ -46,6 +48,7 @@ export const useRemoveRoom = () => {
     mutationFn: (id: string) => roomsApi.remove(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      queryClient.invalidateQueries({ queryKey: ['occupancy'] });
     },
   });
 };
