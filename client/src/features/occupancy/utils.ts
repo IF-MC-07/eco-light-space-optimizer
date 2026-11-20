@@ -53,6 +53,14 @@ export const statusMeta: Record<OccupancyStatus, StatusMetaItem> = {
   },
 };
 
+export const isAvailableStatus = (status: string): boolean => {
+  return status === 'Kosong' || status === 'Rendah' || status === 'Sedang';
+};
+
+export const isNeedsCheckStatus = (status: string): boolean => {
+  return status === 'Tidak tersedia' || status === 'Kapasitas belum dikonfigurasi';
+};
+
 export const STATUS_FILTER_ORDER: readonly OccupancyStatus[] = [
   'Padat',
   'Sedang',

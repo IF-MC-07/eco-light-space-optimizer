@@ -5,4 +5,5 @@ export * from './utils';
 export * from './components/OccupancyCard';
 export * from './components/OccupancyGrid';
 export * from './components/RecommendationList';
+export * from './components/OccupancySummary';
 
