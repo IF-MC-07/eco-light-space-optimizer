@@ -2,6 +2,7 @@ import React from 'react';
 import { Card } from '../../ui/Card';
 import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
+import { EfficiencyVitality } from '../../../features/automation/components/EfficiencyVitality';
 import {
   TrendingUp, Sun, Focus, Thermometer,
   Edit2, Moon, Briefcase, Zap, ChevronDown
@@ -199,7 +200,7 @@ export default function DeviceAutomation() {
 
               <div className="mb-5">
                 <label className="text-[10px] font-bold text-secondary uppercase tracking-wider mb-2 block">When this happens</label>
-                <Select value="Time of day (08:00 AM)" />
+                <Select value="Time of day (08:00)" />
               </div>
 
               <div className="mb-6">
@@ -267,24 +268,7 @@ export default function DeviceAutomation() {
             </Card>
 
             {/* Energy Efficiency Vitality */}
-            <Card className="p-6 bg-[#F8FAFC] border-none flex flex-col items-center text-center shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
-              <h3 className="text-[10px] font-bold text-secondary tracking-widest uppercase mb-6">Energy Efficiency Vitality</h3>
-
-              <div className="relative w-32 h-32 mb-6">
-                <svg className="w-full h-full transform -rotate-90">
-                  <circle cx="64" cy="64" r="56" fill="transparent" stroke="#E2E8F0" strokeWidth="8" />
-                  <circle cx="64" cy="64" r="56" fill="transparent" stroke="#0A2612" strokeWidth="8" strokeDasharray="351.858" strokeDashoffset="70.37" strokeLinecap="round" />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-2xl font-heading font-extrabold text-neutral-900 leading-none">80%</span>
-                  <span className="text-[8px] font-bold text-secondary-dark tracking-widest uppercase mt-1">Optimal</span>
-                </div>
-              </div>
-
-              <p className="text-xs text-secondary leading-relaxed px-4">
-                Your automation rules saved enough energy to power a small office for 2 days.
-              </p>
-            </Card>
+            <EfficiencyVitality />
 
           </div>
         </div>

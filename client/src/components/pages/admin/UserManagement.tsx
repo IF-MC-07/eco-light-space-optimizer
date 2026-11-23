@@ -68,7 +68,7 @@ export default function UserManagement() {
         <UserStatCard
           title="Total Users"
           statKey="totalUsers"
-          subtext="+12%"
+          subtext="Total terdaftar"
           statusColor="green"
         />
         <UserStatCard
