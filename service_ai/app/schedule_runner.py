@@ -36,6 +36,8 @@ class ScheduleRunner:
         # Tracking ON trigger timestamps for No-Show Eco check
         # Key: schedule_id -> { "room_id": str, "s_name": str, "timestamp": float, "checked": bool, "date": str }
         self.schedule_on_timestamps = {}
+        self._holiday_cache = {"date": None, "is_holiday": False, "holiday_name": "", "loaded_at": 0.0}
+        self._last_holiday_error_log_time = None
 
     def run(self):
         """
@@ -69,9 +71,87 @@ class ScheduleRunner:
         
         return 0
 
+    def _get_jakarta_date(self, now_dt: datetime) -> str:
+        """
+        Returns YYYY-MM-DD for now_dt in Asia/Jakarta timezone.
+        """
+        try:
+            from zoneinfo import ZoneInfo
+            if now_dt.tzinfo is not None:
+                jakarta_dt = now_dt.astimezone(ZoneInfo("Asia/Jakarta"))
+            else:
+                jakarta_dt = now_dt
+        except Exception:
+            jakarta_dt = now_dt
+        return jakarta_dt.strftime("%Y-%m-%d")
+
+    def _is_holiday_today(self, now_dt: datetime) -> tuple:
+        """
+        Checks if today (in Asia/Jakarta timezone) is in holidays with suspend_rules=True.
+        Caches the result with TTL 60 seconds (keys: date & loaded_at).
+        Returns: (is_holiday, holiday_name)
+        Fail-open: If query fails or table does not exist, returns (False, "")
+        and logs a warning at most once per hour.
+        """
+        today_str = self._get_jakarta_date(now_dt)
+        now_ts = time.time()
+
+        if hasattr(self, "_holiday_cache") and isinstance(self._holiday_cache, dict):
+            cached_date = self._holiday_cache.get("date")
+            loaded_at = self._holiday_cache.get("loaded_at", 0.0)
+            if cached_date == today_str and 0.0 <= (now_ts - loaded_at) < 60.0:
+                return self._holiday_cache.get("is_holiday", False), self._holiday_cache.get("holiday_name", "")
+
+        is_holiday = False
+        holiday_name = ""
+        conn = None
+        try:
+            conn = get_db_connection()
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT name, suspend_rules
+                    FROM holidays
+                    WHERE holiday_date = %s AND suspend_rules = TRUE
+                    LIMIT 1
+                """, (today_str,))
+                row = cur.fetchone()
+                if row and len(row) >= 1:
+                    is_holiday = True
+                    holiday_name = row[0]
+            self._holiday_cache = {
+                "date": today_str,
+                "is_holiday": is_holiday,
+                "holiday_name": holiday_name,
+                "loaded_at": now_ts
+            }
+        except Exception as e:
+            last_err_time = getattr(self, "_last_holiday_error_log_time", None)
+            if last_err_time is None or (now_ts - last_err_time) >= 3600.0:
+                logger.warning(
+                    f"⚠️ [HOLIDAY FAIL-OPEN] Error checking holidays table (failing open): {e}"
+                )
+                self._last_holiday_error_log_time = now_ts
+            is_holiday = False
+            holiday_name = ""
+            self._holiday_cache = {
+                "date": today_str,
+                "is_holiday": False,
+                "holiday_name": "",
+                "loaded_at": now_ts
+            }
+        finally:
+            if conn:
+                try:
+                    from app.zona_loader import release_connection
+                    release_connection(conn)
+                except Exception:
+                    pass
+
+        return is_holiday, holiday_name
+
     def _is_schedule_active_today(self, schedule_days: str, s_name: str, now_dt: datetime) -> bool:
         """
-        Checks if the schedule applies to today.
+        Checks if the schedule applies to today (day of week).
         Priority:
           1. schedule_days column (e.g. 'MON,TUE,WED,THU,FRI') — primary source
           2. Day tags in schedule_name (e.g. '[THU]') — fallback when schedule_days is NULL
@@ -81,7 +161,16 @@ class ScheduleRunner:
         day_map = {
             "MON": 0, "TUE": 1, "WED": 2, "THU": 3, "FRI": 4, "SAT": 5, "SUN": 6
         }
-        current_weekday = now_dt.weekday()  # 0 = Mon, 6 = Sun
+        try:
+            from zoneinfo import ZoneInfo
+            if now_dt.tzinfo is not None:
+                jakarta_dt = now_dt.astimezone(ZoneInfo("Asia/Jakarta"))
+            else:
+                jakarta_dt = now_dt
+        except Exception:
+            jakarta_dt = now_dt
+
+        current_weekday = jakarta_dt.weekday()  # 0 = Mon, 6 = Sun
 
         # --- Priority 1: schedule_days column ---
         if schedule_days:
@@ -172,7 +261,8 @@ class ScheduleRunner:
                 now_seconds = now_dt.hour * 3600 + now_dt.minute * 60 + now_dt.second
 
                 for s in schedules:
-                    schedule_id, room_id, s_name, start_time, end_time, schedule_days = s
+                    schedule_id, room_id, s_name, start_time, end_time = s[:5]
+                    schedule_days = s[5] if len(s) > 5 else ''
                     
                     # Check if this schedule is active today (via schedule_days or name tags)
                     if not self._is_schedule_active_today(schedule_days, s_name, now_dt):
@@ -198,27 +288,36 @@ class ScheduleRunner:
                     # Determine if current time falls within schedule duration
                     if start_seconds <= now_seconds <= end_seconds:
                         # 🟢 TURN ON Trigger
-                        # Verify it hasn't been triggered today
-                        if self.triggered_on.get(schedule_id) != today_str:
-                            logger.info(f"🔔 Triggering schedule '{s_name}' (ID {schedule_id}) ON for Room {room_id}")
-                            self._trigger_room_devices(room_id, "ON")
-                            self.triggered_on[schedule_id] = today_str
-                            
-                            # Record trigger timestamp for No-Show Eco check
-                            self.schedule_on_timestamps[schedule_id] = {
-                                "room_id": room_id,
-                                "s_name": s_name,
-                                "timestamp": time.time(),
-                                "checked": False,
-                                "date": today_str
-                            }
-                            
-                            # Clear OFF trigger for today
-                            if schedule_id in self.triggered_off:
-                                self.triggered_off.pop(schedule_id)
+                        is_holiday, holiday_name = self._is_holiday_today(now_dt)
+                        if is_holiday:
+                            if self.triggered_on.get(schedule_id) != today_str:
+                                logger.info(
+                                    f"🏖️ [HOLIDAY] Skipping ON trigger for schedule '{s_name}' (ID {schedule_id}): "
+                                    f"today ({today_str}) is holiday '{holiday_name}' with suspend_rules=True."
+                                )
+                                self.triggered_on[schedule_id] = today_str
+                        else:
+                            # Verify it hasn't been triggered today
+                            if self.triggered_on.get(schedule_id) != today_str:
+                                logger.info(f"🔔 Triggering schedule '{s_name}' (ID {schedule_id}) ON for Room {room_id}")
+                                self._trigger_room_devices(room_id, "ON")
+                                self.triggered_on[schedule_id] = today_str
+                                
+                                # Record trigger timestamp for No-Show Eco check
+                                self.schedule_on_timestamps[schedule_id] = {
+                                    "room_id": room_id,
+                                    "s_name": s_name,
+                                    "timestamp": time.time(),
+                                    "checked": False,
+                                    "date": today_str
+                                }
+                                
+                                # Clear OFF trigger for today
+                                if schedule_id in self.triggered_off:
+                                    self.triggered_off.pop(schedule_id)
                                 
                     elif 0 <= (now_seconds - end_seconds) <= 120:
-                        # 🔴 TURN OFF Trigger
+                        # 🔴 TURN OFF Trigger - always runs, even on holidays
                         # Verify it hasn't been triggered today
                         if self.triggered_off.get(schedule_id) != today_str:
                             logger.info(f"🔔 Triggering schedule '{s_name}' (ID {schedule_id}) OFF for Room {room_id}")
