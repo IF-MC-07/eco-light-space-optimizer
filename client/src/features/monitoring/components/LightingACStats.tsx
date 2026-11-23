@@ -1,80 +1,108 @@
+"use client";
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '../../../components/ui/Card';
-import { Badge } from '../../../components/ui/Badge';
-import { Lightbulb, Snowflake, Thermometer, Leaf } from 'lucide-react';
+import { Lightbulb, Snowflake, Thermometer } from 'lucide-react';
 import { useMonitoring } from '../../../hooks/useMonitoring';
 
 export function LightingACStats() {
-  const { fetchStats } = useMonitoring();
-  const [stats, setStats] = useState<any>(null);
+  const { fetchDevices } = useMonitoring();
+  const [devices, setDevices] = useState<any[] | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchStats().then(res => {
+    fetchDevices().then(res => {
       if (res.success && res.data) {
-        setStats(res.data);
+        setDevices(res.data);
+      } else {
+        setDevices([]);
       }
+      setLoading(false);
     });
-  }, [fetchStats]);
+  }, [fetchDevices]);
 
-  const activeLights = stats ? `${stats.lights_active} / ${stats.lights_total}` : '12 / 18';
-  const activeAc = stats ? String(stats.ac_units_running).padStart(2, '0') : '02';
-  const avgTemp = stats ? `${stats.avg_temperature}°C` : '21.5°C';
-  const energyMode = stats ? stats.energy_mode : 'ECO';
+  const allLightControls = devices ? devices.flatMap((d: any) => d.light_controls || []) : [];
+  const activeLightsCount = allLightControls.filter((l: any) => ['on', 'active', 'ON', 'ACTIVE'].includes(l.light_status)).length;
+  const totalLightsCount = allLightControls.length;
 
-  const statCards = [
+  const allAcControls = devices ? devices.flatMap((d: any) => d.ac_controls || []) : [];
+  const activeAcCount = allAcControls.filter((a: any) => ['on', 'active', 'ON', 'ACTIVE'].includes(a.ac_status)).length;
+  const totalAcCount = allAcControls.length;
+
+  const setpoints = allAcControls
+    .map((a: any) => parseFloat(a.temperature_setting))
+    .filter((t: number) => !isNaN(t));
+  const avgSetpoint = setpoints.length > 0
+    ? (setpoints.reduce((sum: number, val: number) => sum + val, 0) / setpoints.length).toFixed(1)
+    : null;
+
+  const cards = [
     {
-      title: 'Lights Active',
-      value: activeLights,
-      badgeText: 'HIGH EFFICIENCY',
-      badgeColor: 'bg-[#bbf7d0] text-primary',
+      title: 'Lampu Menyala',
+      value: loading
+        ? '...'
+        : totalLightsCount === 0
+        ? 'Belum ada lampu terdaftar'
+        : `${activeLightsCount} / ${totalLightsCount}`,
+      subtitle: totalLightsCount === 0
+        ? 'Tambahkan lampu di Manajemen Ruangan'
+        : `${activeLightsCount} dari ${totalLightsCount} lampu menyala`,
       icon: Lightbulb,
       iconColor: 'text-primary bg-[#bbf7d0]',
+      isAvailable: true,
+      isTextOnly: totalLightsCount === 0,
     },
     {
-      title: 'AC Units Running',
-      value: activeAc,
-      badgeText: 'OPTIMIZED FLOW',
-      badgeColor: 'bg-blue-100 text-blue-700',
+      title: 'AC Aktif',
+      value: loading
+        ? '...'
+        : totalAcCount === 0
+        ? 'Belum ada AC terdaftar'
+        : String(activeAcCount).padStart(2, '0'),
+      subtitle: totalAcCount === 0
+        ? 'Tambahkan unit AC di Manajemen Ruangan'
+        : 'menurut perintah terakhir',
       icon: Snowflake,
       iconColor: 'text-blue-700 bg-blue-100',
+      isAvailable: true,
+      isTextOnly: totalAcCount === 0,
     },
-    {
-      title: 'Avg. Temperature',
-      value: avgTemp,
-      badgeText: 'COMFORT ZONE',
-      badgeColor: 'bg-primary-dark text-white',
-      icon: Thermometer,
-      iconColor: 'text-white bg-primary-dark',
-    },
-    {
-      title: 'Energy Mode',
-      value: energyMode,
-      badgeText: 'SUSTAINED',
-      badgeColor: 'bg-[#bbf7d0] text-primary',
-      icon: Leaf,
-      iconColor: 'text-primary bg-[#bbf7d0]',
-    }
+    // Setpoint AC rata-rata: hanya bila >= 1 AC terdaftar
+    ...(totalAcCount >= 1
+      ? [
+          {
+            title: 'Setpoint AC rata-rata',
+            value: loading ? '...' : avgSetpoint !== null ? `${avgSetpoint}°C` : '—',
+            subtitle: `dari ${totalAcCount} unit AC terdaftar`,
+            icon: Thermometer,
+            iconColor: 'text-white bg-primary-dark',
+            isAvailable: true,
+            isTextOnly: false,
+          },
+        ]
+      : []),
   ];
 
   return (
-    <div className="grid grid-cols-4 gap-6">
-      {statCards.map((stat, i) => (
+    <div className={`grid grid-cols-1 ${cards.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-6`}>
+      {cards.map((stat, i) => (
         <Card key={i} className="relative overflow-hidden">
           <div className="absolute -top-4 -right-4 opacity-[0.03] pointer-events-none">
             <stat.icon size={120} />
           </div>
-          <CardContent className="p-6 relative z-10 flex flex-col justify-between h-full mt-5">
-            <div className={`w-8 h-8 rounded-md flex items-center justify-center mb-6 ${stat.iconColor}`}>
+          <CardContent className="p-6 relative z-10 flex flex-col justify-between h-full">
+            <div className={`w-8 h-8 rounded-md flex items-center justify-center mb-4 ${stat.iconColor}`}>
               <stat.icon size={16} />
             </div>
             <div>
               <p className="text-xs text-secondary-dark font-semibold mb-1">{stat.title}</p>
-              <div className="flex items-end mb-4">
-                <h3 className="text-3xl font-heading font-bold text-black">{stat.value}</h3>
+              <div className="flex items-end mb-2">
+                <h3 className={`font-heading font-bold text-black ${stat.isTextOnly ? 'text-lg leading-tight' : 'text-3xl'}`}>
+                  {stat.value}
+                </h3>
               </div>
-              <Badge className={`text-[10px] font-bold px-2 py-0.5 uppercase tracking-wide border-transparent mb-6 ${stat.badgeColor}`}>
-                {stat.badgeText}
-              </Badge>
+              <p className="text-[11px] text-secondary font-medium">
+                {stat.subtitle}
+              </p>
             </div>
           </CardContent>
         </Card>
