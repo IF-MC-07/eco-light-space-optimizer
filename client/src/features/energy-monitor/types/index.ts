@@ -1,8 +1,11 @@
 export interface RealtimeSeriesPoint {
   time: string;
-  date: string;
-  actual: number;
-  baseline: number;
+  bucket?: string;
+  actual_kwh: number;
+  baseline_kwh: number | null;
+  // Compat
+  actual?: number;
+  baseline?: number | null;
 }
 
 export interface ChartSeriesPoint {
@@ -12,22 +15,50 @@ export interface ChartSeriesPoint {
   efficiency: number;
 }
 
+export interface RoomEnergyBreakdown {
+  room_id: string;
+  room_name: string;
+  is_simulated?: boolean;
+  actual_kwh: number | null;
+  baseline_kwh: number | null;
+  delta_kwh: number | null;
+  has_sensor: boolean;
+  // Compat
+  total_watts?: number;
+  saved_watts?: number;
+}
+
 export interface EnergySummary {
-  current_consumption: number;
-  today_usage: number;
-  today_saved: number;
-  monthly_usage: number;
-  monthly_saved: number;
-  chart_series?: ChartSeriesPoint[];
+  today_usage_kwh?: number;
+  today_baseline_kwh?: number | null;
+  today_delta_kwh?: number | null;
+  status?: string;
+  coverage?: {
+    days_with_data: number;
+    expected_days: number;
+    ratio: number;
+  };
+  compared_buckets?: number;
+  total_buckets?: number;
   realtime_series?: RealtimeSeriesPoint[];
+  by_room?: RoomEnergyBreakdown[];
+  // Compat
+  today_usage?: number;
+  today_saved?: number;
+  current_consumption?: number;
+  monthly_usage?: number;
+  monthly_saved?: number;
+  chart_series?: ChartSeriesPoint[];
 }
 
 export interface EnergyLogData {
   log_id: string;
   room_id: string;
   date: string;
-  total_watts: number;
-  saved_watts: number;
+  actual_kwh?: number;
+  baseline_kwh?: number | null;
+  total_watts?: number;
+  saved_watts?: number;
   Room?: {
     room_name: string;
   };
@@ -36,8 +67,13 @@ export interface EnergyLogData {
 export interface EnergyBreakdown {
   room_id: string;
   room_name: string;
-  total_watts: number;
-  saved_watts: number;
+  is_simulated?: boolean;
+  actual_kwh?: number | null;
+  baseline_kwh?: number | null;
+  delta_kwh?: number | null;
+  has_sensor?: boolean;
+  total_watts?: number;
+  saved_watts?: number;
 }
 
 export interface PowerSensorData {

@@ -282,20 +282,79 @@ export const updateDevice = async (req, res, next) => {
   }
 };
 
+/**
+ * Helper to get IDs of AcControls belonging to non-simulated rooms
+ */
+const getNonSimulatedAcControlIds = async () => {
+  const acControls = await db.AcControl.findAll({
+    attributes: ['ac_control_id', 'room_id'],
+    raw: true,
+  });
+  const nonSimIds = [];
+  for (const ac of acControls) {
+    if (ac.room_id && !(await isSimulatedRoom(ac.room_id))) {
+      nonSimIds.push(ac.ac_control_id);
+    }
+  }
+  return nonSimIds;
+};
+
+/**
+ * Helper to get IDs of LightControls belonging to non-simulated rooms
+ */
+const getNonSimulatedLightControlIds = async () => {
+  const lightControls = await db.LightControl.findAll({
+    include: [{ model: db.Zone, attributes: ['room_id'] }],
+  });
+  const nonSimIds = [];
+  for (const lc of lightControls) {
+    const roomId = lc.Zone?.room_id;
+    if (roomId && !(await isSimulatedRoom(roomId))) {
+      nonSimIds.push(lc.control_id);
+    }
+  }
+  return nonSimIds;
+};
+
 export const postMasterControl = async (req, res, next) => {
   try {
     const { action } = req.body;
 
     if (action === 'kill_all') {
-      await db.LightControl.update({ light_status: 'off' }, { where: {} });
-      await db.AcControl.update({ ac_status: 'off' }, { where: {} });
-      return responseFormatter.success(res, null, 'All devices powered off' );
+      const [nonSimLcIds, nonSimAcIds] = await Promise.all([
+        getNonSimulatedLightControlIds(),
+        getNonSimulatedAcControlIds(),
+      ]);
+
+      await db.LightControl.update(
+        { light_status: 'off' },
+        { where: { control_id: { [db.Sequelize.Op.in]: nonSimLcIds } } }
+      );
+      await db.AcControl.update(
+        { ac_status: 'off' },
+        { where: { ac_control_id: { [db.Sequelize.Op.in]: nonSimAcIds } } }
+      );
+
+      return responseFormatter.success(
+        res,
+        { note: 'Perintah hanya memperbarui database; tidak dikirim ke perangkat fisik.' },
+        'All devices powered off'
+      );
     } else if (action === 'eco_pulse') {
-      await db.AcControl.update({ temperature_setting: 25.0, ac_status: 'on' }, { where: {} });
-      return responseFormatter.success(res, null, 'Eco Mode Pulse activated (AC set to 25°C)' );
+      const nonSimAcIds = await getNonSimulatedAcControlIds();
+      await db.AcControl.update(
+        { temperature_setting: 25.0, ac_status: 'on' },
+        { where: { ac_control_id: { [db.Sequelize.Op.in]: nonSimAcIds } } }
+      );
+
+      return responseFormatter.success(
+        res,
+        { note: 'Perintah hanya memperbarui database; tidak dikirim ke perangkat fisik.' },
+        'Eco Mode Pulse activated (AC set to 25°C)'
+      );
     }
 
-    return responseFormatter.error(res, 'Invalid master control action' , 400);
+    return responseFormatter.error(res, 'Invalid master control action', 400);
   } catch (error) {
     next(error);
   }
@@ -303,10 +362,16 @@ export const postMasterControl = async (req, res, next) => {
 
 export const getClimate = async (req, res, next) => {
   try {
+    const nonSimAcIds = await getNonSimulatedAcControlIds();
+    const whereClause = nonSimAcIds.length > 0
+      ? { ac_control_id: { [db.Sequelize.Op.in]: nonSimAcIds } }
+      : {};
+
     const result = await db.AcControl.findOne({
       attributes: [
         [db.Sequelize.fn('AVG', db.Sequelize.col('temperature_setting')), 'avg_val']
       ],
+      where: whereClause,
       raw: true
     });
     const avg_temperature = result?.avg_val
@@ -327,12 +392,17 @@ export const updateClimate = async (req, res, next) => {
   try {
     const { target_temperature } = req.body;
     if (target_temperature !== undefined) {
+      const nonSimAcIds = await getNonSimulatedAcControlIds();
       await db.AcControl.update(
         { temperature_setting: target_temperature },
-        { where: {} }
+        { where: { ac_control_id: { [db.Sequelize.Op.in]: nonSimAcIds } } }
       );
     }
-    return responseFormatter.success(res, null, 'Climate settings applied successfully' );
+    return responseFormatter.success(
+      res,
+      { note: 'Perintah hanya memperbarui database; tidak dikirim ke perangkat fisik.' },
+      'Climate settings applied successfully'
+    );
   } catch (error) {
     next(error);
   }

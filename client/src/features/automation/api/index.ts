@@ -1,7 +1,13 @@
 import { serverAPI } from '@/lib/api';
-import type { AutomationSchedule, ApiResponse } from '../types';
+import type { AutomationSchedule, ApiResponse, Holiday } from '../types';
 
 export const automationApi = {
+  getHolidays: async (year?: number): Promise<ApiResponse<Holiday[]>> => {
+    const params = year ? { year } : {};
+    const response = await serverAPI.get('/holidays', { params });
+    return response.data;
+  },
+
   getAll: async (): Promise<ApiResponse<AutomationSchedule[]>> => {
     const response = await serverAPI.get('/automation-schedules');
     return response.data;

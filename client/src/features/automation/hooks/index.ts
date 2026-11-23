@@ -2,6 +2,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { automationApi } from '../api';
 import type { AutomationSchedule } from '../types';
 
+export const useHolidays = (year?: number) => {
+  return useQuery({
+    queryKey: ['holidays', year],
+    queryFn: () => automationApi.getHolidays(year),
+  });
+};
+
 export const useSchedules = () => {
   return useQuery({
     queryKey: ['automation-schedules', 'list'],

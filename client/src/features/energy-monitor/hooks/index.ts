@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { energyApi } from '../api';
 
-export const useEnergySummary = () => {
+export const useEnergySummary = (filters?: any) => {
   return useQuery({
-    queryKey: ['energy', 'summary'],
-    queryFn: () => energyApi.getSummary(),
+    queryKey: ['energy', 'summary', filters],
+    queryFn: () => energyApi.getSummary(filters),
     refetchInterval: 5000, // Poll real-time power every 5s
     refetchIntervalInBackground: true,
     staleTime: 0, 
@@ -18,10 +18,10 @@ export const useEnergyLogs = (filters?: any) => {
   });
 };
 
-export const useEnergyBreakdown = () => {
+export const useEnergyBreakdown = (filters?: any) => {
   return useQuery({
-    queryKey: ['energy', 'breakdown'],
-    queryFn: () => energyApi.getBreakdown(),
+    queryKey: ['energy', 'breakdown', filters],
+    queryFn: () => energyApi.getBreakdown(filters),
   });
 };
 

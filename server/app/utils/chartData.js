@@ -178,6 +178,6 @@ export const buildRealtimeHourlySeries = (rows = []) => {
   return buckets.map((item) => ({
     time: item.time,
     actual: Number((item.actual / 1000).toFixed(2)),
-    baseline: Number(((item.actual || 0) * 0.9 / 1000).toFixed(2)),
+    baseline: null,
   }));
 };

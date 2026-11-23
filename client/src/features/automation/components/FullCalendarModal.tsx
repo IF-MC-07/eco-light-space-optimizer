@@ -1,86 +1,66 @@
-import React, { useState, useEffect } from "react";
-import { X, ChevronLeft, ChevronRight, Bell, Calendar as CalendarIcon, Loader2, RefreshCw } from "lucide-react";
+"use client";
+import React, { useState } from "react";
+import { X, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Loader2, RefreshCw, Info } from "lucide-react";
 import { cn } from "../../../lib/utils";
+import { useHolidays } from "../hooks";
+import type { Holiday } from "../types";
 
 interface FullCalendarModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-interface Holiday {
-  holiday_date: string;
-  holiday_name: string;
-  is_national_holiday: boolean;
-}
-
 export function FullCalendarModal({ isOpen, onClose }: FullCalendarModalProps) {
-  const [currentDate, setCurrentDate] = useState(new Date()); // Use real current date (2026)
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
-  const [isLoadingHolidays, setIsLoadingHolidays] = useState(false);
-
-  useEffect(() => {
-    if (isOpen) {
-      const fetchHolidays = async () => {
-        setIsLoadingHolidays(true);
-        try {
-          // Attempting to fetch from the public API
-          const yearToFetch = currentDate.getFullYear();
-          const response = await fetch(`https://api-harilibur.vercel.app/api?year=${yearToFetch}`, {
-            method: 'GET',
-            mode: 'cors',
-          });
-          
-          if (!response.ok) throw new Error("API Offline");
-          
-          const data = await response.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setHolidays(data);
-          } else {
-            throw new Error("Invalid Data");
-          }
-        } catch (error) {
-          // Comprehensive 2026 Indonesian Holiday Fallback
-          setHolidays([
-            { holiday_date: "2026-01-01", holiday_name: "Tahun Baru 2026 Masehi", is_national_holiday: true },
-            { holiday_date: "2026-01-19", holiday_name: "Isra Mi'raj Nabi Muhammad SAW", is_national_holiday: true },
-            { holiday_date: "2026-02-17", holiday_name: "Tahun Baru Imlek 2577 Kongzili", is_national_holiday: true },
-            { holiday_date: "2026-03-20", holiday_name: "Hari Suci Nyepi Tahun Baru Saka 1948", is_national_holiday: true },
-            { holiday_date: "2026-03-20", holiday_name: "Hari Raya Idul Fitri 1447 Hijriah", is_national_holiday: true },
-            { holiday_date: "2026-03-21", holiday_name: "Hari Raya Idul Fitri 1447 Hijriah", is_national_holiday: true },
-            { holiday_date: "2026-04-03", holiday_name: "Wafat Yesus Kristus", is_national_holiday: true },
-            { holiday_date: "2026-04-05", holiday_name: "Hari Paskah", is_national_holiday: true },
-            { holiday_date: "2026-05-01", holiday_name: "Hari Buruh Internasional", is_national_holiday: true },
-            { holiday_date: "2026-05-14", holiday_name: "Kenaikan Yesus Kristus", is_national_holiday: true },
-            { holiday_date: "2026-05-31", holiday_name: "Hari Raya Waisak 2570 BE", is_national_holiday: true },
-            { holiday_date: "2026-06-01", holiday_name: "Hari Lahir Pancasila", is_national_holiday: true },
-            { holiday_date: "2026-06-27", holiday_name: "Hari Raya Idul Adha 1447 Hijriah", is_national_holiday: true },
-            { holiday_date: "2026-07-17", holiday_name: "Tahun Baru Islam 1448 Hijriah", is_national_holiday: true },
-            { holiday_date: "2026-08-17", holiday_name: "Hari Kemerdekaan Republik Indonesia", is_national_holiday: true },
-            { holiday_date: "2026-09-25", holiday_name: "Maulid Nabi Muhammad SAW", is_national_holiday: true },
-            { holiday_date: "2026-12-25", holiday_name: "Hari Raya Natal", is_national_holiday: true },
-          ]);
-        } finally {
-          setIsLoadingHolidays(false);
-        }
-      };
-      fetchHolidays();
-    }
-  }, [isOpen, currentDate]);
-
-  if (!isOpen) return null;
-
-  const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
-  const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   const month = currentDate.getMonth();
   const year = currentDate.getFullYear();
+
+  const { data: holidaysRes, isLoading: isLoadingHolidays } = useHolidays(year);
+  const holidays = (holidaysRes?.data || []) as Holiday[];
+
+  if (!isOpen) return null;
+
+  const getDaysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate();
+  const getFirstDayOfMonth = (y: number, m: number) => new Date(y, m, 1).getDay();
+
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
-  
-  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
 
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+
+  const getHolidayStyles = (holiday: Holiday) => {
+    switch (holiday.type) {
+      case 'cuti_bersama':
+        return {
+          cellBg: 'bg-[#FFFBEB]/60',
+          text: 'text-amber-600',
+          badge: 'bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]',
+          dot: 'bg-amber-400',
+        };
+      case 'kampus':
+        return {
+          cellBg: 'bg-[#EFF6FF]/60',
+          text: 'text-blue-600',
+          badge: 'bg-[#DBEAFE] text-[#2563EB] border border-[#BFDBFE]',
+          dot: 'bg-blue-400',
+        };
+      case 'nasional':
+      default:
+        return {
+          cellBg: 'bg-[#FFF1F2]/60',
+          text: 'text-[#DC2626]',
+          badge: 'bg-[#FFE4E6] text-[#DC2626] border border-[#FECDD3]',
+          dot: 'bg-red-400',
+        };
+    }
+  };
 
   const days = [];
   // Fill empty slots for previous month
@@ -92,7 +72,8 @@ export function FullCalendarModal({ isOpen, onClose }: FullCalendarModalProps) {
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const holiday = holidays.find(h => h.holiday_date === dateStr);
-    
+    const holidayStyles = holiday ? getHolidayStyles(holiday) : null;
+
     // Real-time "Today" detection
     const now = new Date();
     const isToday = d === now.getDate() && month === now.getMonth() && year === now.getFullYear();
@@ -100,19 +81,29 @@ export function FullCalendarModal({ isOpen, onClose }: FullCalendarModalProps) {
     days.push(
       <div key={d} className={cn(
         "h-32 border border-neutral-border/30 p-2 transition-colors hover:bg-neutral relative overflow-hidden",
-        holiday ? "bg-[#FFF1F2]/50" : "bg-white",
+        holidayStyles ? holidayStyles.cellBg : "bg-white",
         isToday && "ring-2 ring-primary-dark ring-inset"
       )}>
         <div className="flex justify-between items-start mb-2">
           <span className={cn(
             "w-7 h-7 flex items-center justify-center rounded-full text-sm font-bold",
-            isToday ? "bg-primary-dark text-white shadow-sm" : holiday ? "text-[#DC2626]" : "text-secondary-dark"
+            isToday
+              ? "bg-primary-dark text-white shadow-sm"
+              : holidayStyles
+              ? holidayStyles.text
+              : "text-secondary-dark"
           )}>
             {d}
           </span>
-          {holiday && (
-            <span className="text-[8px] font-bold text-[#DC2626] bg-[#FFE4E6] px-1 py-0.5 rounded uppercase leading-tight text-right max-w-[60px]">
-              {holiday.holiday_name}
+          {holiday && holidayStyles && (
+            <span
+              className={cn(
+                "text-[8px] font-bold px-1.5 py-0.5 rounded uppercase leading-tight text-right max-w-[80px] truncate",
+                holidayStyles.badge
+              )}
+              title={`${holiday.name} (${holiday.type})`}
+            >
+              {holiday.name}
             </span>
           )}
         </div>
@@ -180,6 +171,15 @@ export function FullCalendarModal({ isOpen, onClose }: FullCalendarModalProps) {
               </div>
             </div>
           )}
+
+          {/* Info banner jika data libur tahun belum diisi */}
+          {!isLoadingHolidays && holidays.length === 0 && (
+            <div className="mb-4 flex items-center gap-2 p-3 bg-neutral/80 border border-neutral-border rounded-xl text-sm font-semibold text-secondary-dark">
+              <Info size={16} className="text-secondary-light flex-shrink-0" />
+              <span>Data libur tahun {year} belum diisi</span>
+            </div>
+          )}
+
           {/* Day Names */}
           <div className="grid grid-cols-7 gap-0 border-x border-t border-neutral-border/30 rounded-t-xl overflow-hidden">
             {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((day, idx) => (
@@ -199,21 +199,28 @@ export function FullCalendarModal({ isOpen, onClose }: FullCalendarModalProps) {
         </div>
 
         {/* Legend Footer */}
-        <div className="p-6 bg-[#F8FAFC] border-t border-neutral-border flex items-center justify-between">
-          <div className="flex items-center gap-8">
+        <div className="p-6 bg-[#F8FAFC] border-t border-neutral-border flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-6">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-primary-dark rounded-full"></div>
               <span className="text-[10px] font-bold text-secondary-dark uppercase tracking-wider">Active Rule</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-[#FFE4E6] border border-[#FECDD3] rounded-full"></div>
-              <span className="text-[10px] font-bold text-secondary-dark uppercase tracking-wider">National Holiday (ID)</span>
+              <span className="text-[10px] font-bold text-secondary-dark uppercase tracking-wider">National Holiday</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-[#FEF3C7] border border-[#FDE68A] rounded-full"></div>
+              <span className="text-[10px] font-bold text-secondary-dark uppercase tracking-wider">Cuti Bersama</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-[#DBEAFE] border border-[#BFDBFE] rounded-full"></div>
+              <span className="text-[10px] font-bold text-secondary-dark uppercase tracking-wider">Campus Holiday</span>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-xs font-bold text-secondary-light">
-            <Bell className="w-4 h-4" />
-            Rules are automatically suspended during holidays unless overridden.
-          </div>
+          <p className="text-xs text-neutral-body italic">
+            * Rules are automatically suspended during holidays.
+          </p>
         </div>
       </div>
     </div>
