@@ -2,11 +2,22 @@ import db from '../models/index.js';
 import mqttService from './mqttService.js';
 import { isSimulatedRoom } from '../utils/simulationGuard.js';
 
-class AutomationScheduler {
+export function getJakartaDateStr(date = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}
+
+export class AutomationScheduler {
   constructor() {
     this.timer = null;
     this.checkEveryMs = 15000;
     this.lastTriggered = new Set();
+    this.holidayCache = { dateStr: null, isHoliday: false, holidayName: null, loadedAt: 0 };
+    this.lastHolidayErrorLogTime = null;
   }
 
   start() {
@@ -29,8 +40,66 @@ class AutomationScheduler {
     return (h || 0) * 60 + (m || 0);
   }
 
-  async checkAndTrigger(force = false) {
-    const now = new Date();
+  async isHolidayToday(now = new Date()) {
+    const todayStr = getJakartaDateStr(now);
+    const nowMs = now instanceof Date ? now.getTime() : Date.now();
+
+    // Cache TTL 60 detik (kunci tanggal WIB dan loadedAt)
+    if (
+      this.holidayCache.dateStr === todayStr &&
+      this.holidayCache.loadedAt &&
+      (nowMs - this.holidayCache.loadedAt) < 60000 &&
+      (nowMs - this.holidayCache.loadedAt) >= 0
+    ) {
+      return this.holidayCache;
+    }
+
+    try {
+      if (db.Holiday?.findOne) {
+        const holiday = await db.Holiday.findOne({
+          where: {
+            holiday_date: todayStr,
+            suspend_rules: true,
+          },
+        });
+        this.holidayCache = {
+          dateStr: todayStr,
+          isHoliday: Boolean(holiday),
+          holidayName: holiday ? holiday.name : null,
+          loadedAt: nowMs,
+        };
+      } else {
+        this.holidayCache = { dateStr: todayStr, isHoliday: false, holidayName: null, loadedAt: nowMs };
+      }
+    } catch (err) {
+      // Fail-open: rate-limit peringatan 1 kali per jam (3600000 ms)
+      if (!this.lastHolidayErrorLogTime || (nowMs - this.lastHolidayErrorLogTime >= 3600000)) {
+        console.warn(
+          '[AutomationScheduler] Error checking holidays table (failing open):',
+          err?.message || err
+        );
+        this.lastHolidayErrorLogTime = nowMs;
+      }
+      this.holidayCache = { dateStr: todayStr, isHoliday: false, holidayName: null, loadedAt: nowMs };
+      return this.holidayCache;
+    }
+
+    return this.holidayCache;
+  }
+
+  async reloadAll() {
+    this.holidayCache = { dateStr: null, isHoliday: false, holidayName: null, loadedAt: 0 };
+    this.lastHolidayErrorLogTime = 0;
+    this.lastTriggered.clear();
+    return this.checkAndTrigger(true);
+  }
+
+  async checkAndTrigger(force = false, customNow = null) {
+    const now = customNow || new Date();
+
+    // Cek apakah hari ini (Asia/Jakarta) adalah hari libur dengan suspend_rules=true
+    const holidayInfo = await this.isHolidayToday(now);
+
     const schedules = await db.AutomationSchedule.findAll();
 
     for (const schedule of schedules) {
@@ -51,13 +120,20 @@ class AutomationScheduler {
       if (now >= startAt && now < new Date(startAt.getTime() + this.checkEveryMs)) {
         if (force || !this.lastTriggered.has(startKey)) {
           this.lastTriggered.add(startKey);
-          await this.turnOn(schedule.schedule_id);
+          if (holidayInfo.isHoliday) {
+            console.info(
+              `[AutomationScheduler] Skipping ON trigger for schedule ${schedule.schedule_id}: today (${holidayInfo.dateStr}) is holiday '${holidayInfo.holidayName}' with suspend_rules=true`
+            );
+          } else {
+            await this.turnOn(schedule.schedule_id);
+          }
         }
       }
 
       if (now >= endAt && now < new Date(endAt.getTime() + this.checkEveryMs)) {
         if (force || !this.lastTriggered.has(endKey)) {
           this.lastTriggered.add(endKey);
+          // Turn-OFF selalu dieksekusi, termasuk pada hari libur
           await this.turnOff(schedule.schedule_id);
         }
       }
