@@ -14,6 +14,7 @@ import detectionLogModel from "./detection_log.js";
 import lightControlModel from "./light_control.js";
 import acControlModel from "./ac_control.js";
 import activityLogModel from "./activity_log.js";
+import holidayModel from "./holiday.js";
 
 // Inisialisasi model
 const db = {
@@ -29,6 +30,7 @@ const db = {
   LightControl: lightControlModel(sequelize, DataTypes),
   AcControl: acControlModel(sequelize, DataTypes),
   ActivityLog: activityLogModel(sequelize, DataTypes),
+  Holiday: holidayModel(sequelize, DataTypes),
 };
 
 // Jalankan asosiasi model jika ada
