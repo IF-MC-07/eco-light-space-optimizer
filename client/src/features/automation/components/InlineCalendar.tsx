@@ -1,15 +1,10 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Plus, X, Clock, RefreshCw, Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronLeft, ChevronRight, Plus, X, Clock, RefreshCw, Loader2, Info } from 'lucide-react';
 import { cn } from '../../../lib/utils';
-import { useCreateSchedule, useSchedules } from '../hooks';
+import { useCreateSchedule, useSchedules, useHolidays } from '../hooks';
 import { useRooms } from '../../rooms/hooks';
-
-interface Holiday {
-  holiday_date: string;
-  holiday_name: string;
-  is_national_holiday: boolean;
-}
+import type { Holiday } from '../types';
 
 interface NewScheduleForm {
   name: string;
@@ -27,60 +22,23 @@ const DAY_LABELS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 export function InlineCalendar() {
   const today = new Date();
   const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
-  const [isLoadingHolidays, setIsLoadingHolidays] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<NewScheduleForm>({ name: '', startTime: '06:00', endTime: '23:00' });
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const month = viewDate.getMonth();
+  const year = viewDate.getFullYear();
+
+  const { data: holidaysRes, isLoading: isLoadingHolidays } = useHolidays(year);
+  const holidays = (holidaysRes?.data || []) as Holiday[];
+
   const { mutateAsync: createSchedule } = useCreateSchedule();
   const { data: schedulesRes } = useSchedules();
   const { data: roomsRes } = useRooms();
   const schedules = schedulesRes?.data || [];
   const rooms = (roomsRes?.data || []) as any[];
-
-  const month = viewDate.getMonth();
-  const year = viewDate.getFullYear();
-
-  useEffect(() => {
-    const fetchHolidays = async () => {
-      setIsLoadingHolidays(true);
-      try {
-        const res = await fetch(`https://api-harilibur.vercel.app/api?year=${year}`, {
-          signal: AbortSignal.timeout(4000),
-        });
-        if (!res.ok) throw new Error('API offline');
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          setHolidays(data);
-        } else throw new Error('Invalid data');
-      } catch {
-        // Comprehensive 2026 fallback
-        setHolidays([
-          { holiday_date: '2026-01-01', holiday_name: 'Tahun Baru 2026', is_national_holiday: true },
-          { holiday_date: '2026-01-19', holiday_name: "Isra Mi'raj", is_national_holiday: true },
-          { holiday_date: '2026-02-17', holiday_name: 'Tahun Baru Imlek', is_national_holiday: true },
-          { holiday_date: '2026-03-20', holiday_name: 'Hari Raya Idul Fitri', is_national_holiday: true },
-          { holiday_date: '2026-03-21', holiday_name: 'Idul Fitri Hari Kedua', is_national_holiday: true },
-          { holiday_date: '2026-04-03', holiday_name: 'Wafat Yesus Kristus', is_national_holiday: true },
-          { holiday_date: '2026-05-01', holiday_name: 'Hari Buruh Internasional', is_national_holiday: true },
-          { holiday_date: '2026-05-14', holiday_name: 'Kenaikan Yesus Kristus', is_national_holiday: true },
-          { holiday_date: '2026-05-31', holiday_name: 'Hari Raya Waisak', is_national_holiday: true },
-          { holiday_date: '2026-06-01', holiday_name: 'Hari Lahir Pancasila', is_national_holiday: true },
-          { holiday_date: '2026-06-27', holiday_name: 'Idul Adha', is_national_holiday: true },
-          { holiday_date: '2026-07-17', holiday_name: 'Tahun Baru Islam', is_national_holiday: true },
-          { holiday_date: '2026-08-17', holiday_name: 'Hari Kemerdekaan RI', is_national_holiday: true },
-          { holiday_date: '2026-09-25', holiday_name: 'Maulid Nabi Muhammad SAW', is_national_holiday: true },
-          { holiday_date: '2026-12-25', holiday_name: 'Hari Raya Natal', is_national_holiday: true },
-        ]);
-      } finally {
-        setIsLoadingHolidays(false);
-      }
-    };
-    fetchHolidays();
-  }, [year]);
 
   const prevMonth = () => setViewDate(new Date(year, month - 1, 1));
   const nextMonth = () => setViewDate(new Date(year, month + 1, 1));
@@ -92,10 +50,37 @@ export function InlineCalendar() {
   const getDateStr = (d: number) =>
     `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
-  const getHoliday = (dateStr: string) => holidays.find(h => h.holiday_date === dateStr);
+  const getHoliday = (dateStr: string) =>
+    holidays.find((h) => h.holiday_date === dateStr);
+
+  const getHolidayStyles = (holiday: Holiday) => {
+    switch (holiday.type) {
+      case 'cuti_bersama':
+        return {
+          cellBg: 'bg-amber-50/60',
+          text: 'text-amber-600',
+          dot: 'bg-amber-400',
+          badgeBg: 'bg-amber-50 border-amber-200 text-amber-700',
+        };
+      case 'kampus':
+        return {
+          cellBg: 'bg-blue-50/60',
+          text: 'text-blue-600',
+          dot: 'bg-blue-400',
+          badgeBg: 'bg-blue-50 border-blue-200 text-blue-700',
+        };
+      case 'nasional':
+      default:
+        return {
+          cellBg: 'bg-red-50/60',
+          text: 'text-red-600',
+          dot: 'bg-red-400',
+          badgeBg: 'bg-red-50 border-red-200 text-red-700',
+        };
+    }
+  };
 
   const getSchedulesForDate = (dateStr: string) => {
-    // Map day-of-week abbreviation from dateStr
     const dow = new Date(dateStr).getDay();
     const dowStr = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][dow];
     return (schedules as any[]).filter((s: any) => {
@@ -176,6 +161,14 @@ export function InlineCalendar() {
         </div>
       </div>
 
+      {/* Info banner jika data libur tahun ini belum diisi */}
+      {!isLoadingHolidays && holidays.length === 0 && (
+        <div className="flex items-center gap-2 p-2.5 bg-neutral/80 border border-neutral-border rounded-xl text-xs font-semibold text-secondary-dark">
+          <Info size={14} className="text-secondary-light flex-shrink-0" />
+          <span>Data libur tahun {year} belum diisi</span>
+        </div>
+      )}
+
       {/* Calendar Grid */}
       <div className="bg-white rounded-2xl border border-neutral-border/60 overflow-hidden shadow-sm">
         {/* Day labels */}
@@ -201,6 +194,7 @@ export function InlineCalendar() {
             }
             const ds = getDateStr(d);
             const holiday = getHoliday(ds);
+            const holidayStyles = holiday ? getHolidayStyles(holiday) : null;
             const daySchedules = getSchedulesForDate(ds);
             const isToday =
               d === today.getDate() && month === today.getMonth() && year === today.getFullYear();
@@ -214,7 +208,7 @@ export function InlineCalendar() {
                 onClick={() => handleDayClick(d)}
                 className={cn(
                   'h-20 border-r border-b border-neutral-border/20 p-1.5 cursor-pointer transition-all relative overflow-hidden group',
-                  holiday ? 'bg-red-50/60' : isWeekend ? 'bg-[#FAFAFA]' : 'bg-white',
+                  holidayStyles ? holidayStyles.cellBg : isWeekend ? 'bg-[#FAFAFA]' : 'bg-white',
                   isSelected && 'ring-2 ring-inset ring-primary-dark',
                   isPast && !isToday && 'opacity-55',
                   'hover:bg-primary-dark/5',
@@ -226,8 +220,8 @@ export function InlineCalendar() {
                       'w-6 h-6 flex items-center justify-center rounded-full text-[11px] font-black',
                       isToday
                         ? 'bg-primary-dark text-white'
-                        : holiday
-                        ? 'text-red-600'
+                        : holidayStyles
+                        ? holidayStyles.text
                         : isWeekend
                         ? 'text-red-400'
                         : 'text-secondary-dark',
@@ -235,8 +229,11 @@ export function InlineCalendar() {
                   >
                     {d}
                   </span>
-                  {holiday && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-red-400 mt-1 flex-shrink-0" title={holiday.holiday_name} />
+                  {holiday && holidayStyles && (
+                    <div
+                      className={cn('w-1.5 h-1.5 rounded-full mt-1 flex-shrink-0', holidayStyles.dot)}
+                      title={`${holiday.name} (${holiday.type})`}
+                    />
                   )}
                 </div>
 
@@ -268,7 +265,7 @@ export function InlineCalendar() {
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 text-[9px] font-bold text-secondary-light uppercase tracking-widest">
+      <div className="flex flex-wrap items-center gap-4 text-[9px] font-bold text-secondary-light uppercase tracking-widest">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-full bg-primary-dark" />
           Today / Schedule
@@ -276,6 +273,14 @@ export function InlineCalendar() {
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-full bg-red-400" />
           National Holiday
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-amber-400" />
+          Cuti Bersama
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-blue-400" />
+          Campus Holiday
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-full bg-neutral border border-neutral-border" />
@@ -316,12 +321,16 @@ export function InlineCalendar() {
           {(() => {
             const ds = getSchedulesForDate(selectedDate);
             const holiday = getHoliday(selectedDate);
+            const holidayStyles = holiday ? getHolidayStyles(holiday) : null;
             return (
               <div className="px-5 py-3 space-y-2">
-                {holiday && (
-                  <div className="flex items-center gap-2 p-2 bg-red-50 border border-red-100 rounded-xl">
-                    <div className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0" />
-                    <p className="text-[11px] font-bold text-red-700">{holiday.holiday_name}</p>
+                {holiday && holidayStyles && (
+                  <div className={cn('flex items-center gap-2 p-2 border rounded-xl', holidayStyles.badgeBg)}>
+                    <div className={cn('w-2 h-2 rounded-full flex-shrink-0', holidayStyles.dot)} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-bold">{holiday.name}</p>
+                      <p className="text-[9px] uppercase tracking-wider opacity-75">{holiday.type.replace('_', ' ')}</p>
+                    </div>
                   </div>
                 )}
                 {ds.length === 0 && !showForm && (

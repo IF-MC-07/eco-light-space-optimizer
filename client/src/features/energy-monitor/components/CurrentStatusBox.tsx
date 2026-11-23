@@ -8,8 +8,8 @@ export function CurrentStatusBox() {
   const { data: response, isLoading, isError, refetch } = useEnergySummary();
   const summary = response;
 
-  const hasData = summary && summary.current_consumption !== null && summary.current_consumption !== undefined;
-  const kwDraw = hasData ? (summary.current_consumption / 1000).toFixed(2) : null;
+  const hasData = summary && typeof summary.current_consumption === 'number';
+  const kwDraw = hasData && summary.current_consumption !== undefined ? (summary.current_consumption / 1000).toFixed(2) : null;
 
   return (
     <Card className="border-transparent shadow-sm mb-6">

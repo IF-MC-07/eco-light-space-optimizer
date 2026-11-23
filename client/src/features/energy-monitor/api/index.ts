@@ -2,8 +2,8 @@ import { serverAPI } from '@/lib/api';
 import type { ApiResponse, EnergySummary, EnergyLogData, EnergyBreakdown, PowerSensorData } from '../types';
 
 export const energyApi = {
-  getSummary: async (): Promise<EnergySummary> => {
-    const response = await serverAPI.get('/energy/summary');
+  getSummary: async (filters?: any): Promise<EnergySummary> => {
+    const response = await serverAPI.get('/energy/summary', { params: filters });
     return response.data.data || response.data;
   },
 
@@ -12,8 +12,8 @@ export const energyApi = {
     return response.data.data || response.data;
   },
 
-  getBreakdown: async (): Promise<EnergyBreakdown[]> => {
-    const response = await serverAPI.get('/energy/breakdown');
+  getBreakdown: async (filters?: any): Promise<EnergyBreakdown[]> => {
+    const response = await serverAPI.get('/energy/breakdown', { params: filters });
     return response.data.data || response.data;
   },
 

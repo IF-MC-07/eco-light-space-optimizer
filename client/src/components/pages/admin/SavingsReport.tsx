@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Switch } from '../../ui/Switch';
 import { SavingsHeader } from '../../../features/savings/components/SavingsHeader';
 import { SavingsTrendChart } from '../../../features/savings/components/SavingsTrendChart';
 import { SavingsBreakdownTable } from '../../../features/savings/components/SavingsBreakdownTable';
@@ -11,17 +12,19 @@ export default function SavingsReport() {
   const [activeTab, setActiveTab] = useState('Monthly');
   const [startDate, setStartDate] = useState('2026-07-10');
   const [endDate, setEndDate] = useState('2026-07-16');
+  const [showSimulated, setShowSimulated] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const filters = {
     range_type: activeTab.toLowerCase(),
     start_date: startDate,
     end_date: endDate,
+    include_simulated: showSimulated,
   };
 
   const { data: yoy } = useSavingsYoY(filters);
 
-  const dateRangeLabel = yoy?.current_period 
+  const dateRangeLabel = yoy?.current_period?.start && yoy?.current_period?.end
     ? `${new Date(yoy.current_period.start).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })} - ${new Date(yoy.current_period.end).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`
     : 'Loading dates...';
 
@@ -38,6 +41,18 @@ export default function SavingsReport() {
         dateRangeLabel={dateRangeLabel}
         onExport={() => setIsExportModalOpen(true)}
       />
+
+      {/* Simulation Toggle */}
+      <div className="flex items-center justify-end space-x-2 py-1">
+        <label htmlFor="toggle-simulated-savings" className="text-sm font-medium text-slate-700 cursor-pointer">
+          Tampilkan ruangan simulasi
+        </label>
+        <Switch
+          id="toggle-simulated-savings"
+          checked={showSimulated}
+          onCheckedChange={setShowSimulated}
+        />
+      </div>
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-3 gap-6">
