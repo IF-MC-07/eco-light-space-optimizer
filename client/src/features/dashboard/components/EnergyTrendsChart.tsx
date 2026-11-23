@@ -12,7 +12,7 @@ export function EnergyTrendsChart() {
   const chartData = useMemo(() => {
     return source.map((item: any) => ({
       time: item.label || item.date || item.time || 'N/A',
-      value: Number(item.usage ?? item.total_watts ?? item.value ?? 0),
+      value: Number(item.actual_kwh ?? item.usage ?? item.value ?? 0),
     }));
   }, [source]);
 

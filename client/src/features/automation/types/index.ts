@@ -1,3 +1,14 @@
+export interface Holiday {
+  holiday_id?: string;
+  holiday_date: string;
+  name: string;
+  holiday_name?: string; // compat
+  type: 'nasional' | 'cuti_bersama' | 'kampus';
+  is_national_holiday?: boolean; // compat
+  suspend_rules?: boolean;
+  source_ref?: string;
+}
+
 export interface AutomationSchedule {
   schedule_id: string;
   room_id: string;

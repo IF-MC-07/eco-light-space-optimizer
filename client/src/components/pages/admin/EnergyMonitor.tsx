@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Switch } from '../../ui/Switch';
 import { MonitorStats } from '../../../features/energy-monitor/components/MonitorStats';
 import { RealTimeChart } from '../../../features/energy-monitor/components/RealTimeChart';
 import { BuildingConsumption } from '../../../features/energy-monitor/components/BuildingConsumption';
@@ -9,6 +10,7 @@ import { Button } from '../../ui/Button';
 import { ExportReportModal } from '../../../features/dashboard/components/ExportReportModal';
 
 export default function EnergyMonitor() {
+  const [showSimulated, setShowSimulated] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   return (
@@ -17,7 +19,17 @@ export default function EnergyMonitor() {
         <div>
           <h1 className="text-3xl font-heading font-bold text-black tracking-tight mb-1">Energy Monitor</h1>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center space-x-2">
+            <label htmlFor="toggle-simulated-energy" className="text-sm font-medium text-slate-700 cursor-pointer">
+              Tampilkan ruangan simulasi
+            </label>
+            <Switch
+              id="toggle-simulated-energy"
+              checked={showSimulated}
+              onCheckedChange={setShowSimulated}
+            />
+          </div>
           <Button variant="secondary" className="bg-neutral border-none text-secondary-dark font-bold hover:bg-neutral-border/40 px-4">
             Last 24 Hours
           </Button>
@@ -35,7 +47,7 @@ export default function EnergyMonitor() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 flex flex-col">
           <RealTimeChart />
-          <BuildingConsumption />
+          <BuildingConsumption filters={{ include_simulated: showSimulated }} />
         </div>
         <div className="lg:col-span-1 flex flex-col">
           <CurrentStatusBox />
