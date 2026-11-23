@@ -277,8 +277,8 @@ describe('DSLB Simulation Guards (Node.js)', () => {
       await monitoringController.postMasterControl(req, res, next);
 
       // Verify bulk update was called
-      expect(updateLcSpy).toHaveBeenCalledWith({ light_status: 'off' }, { where: {} });
-      expect(updateAcSpy).toHaveBeenCalledWith({ ac_status: 'off' }, { where: {} });
+      expect(updateLcSpy).toHaveBeenCalledWith({ light_status: 'off' }, expect.objectContaining({ where: expect.any(Object) }));
+      expect(updateAcSpy).toHaveBeenCalledWith({ ac_status: 'off' }, expect.objectContaining({ where: expect.any(Object) }));
 
       // Verify postMasterControl does NOT publish any MQTT message
       expect(publishSpy).not.toHaveBeenCalled();

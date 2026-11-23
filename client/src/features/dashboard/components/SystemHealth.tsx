@@ -1,61 +1,92 @@
+"use client";
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
-import { Progress } from '../../../components/ui/Progress';
-import { useDashboard } from '../../../hooks/useDashboard';
+import { useSystemHealthStatus, type HealthStatusType } from '../hooks/useSystemHealth';
+import { Skeleton } from '../../../components/ui/StateFeedback';
+import { Video, Eye, Cpu, Zap } from 'lucide-react';
+
+function getBadgeStyle(status: HealthStatusType) {
+  switch (status) {
+    case 'normal':
+      return 'bg-[#dcfce7] text-[#166534] border-[#bbf7d0]';
+    case 'warning':
+      return 'bg-[#fef3c7] text-[#92400e] border-[#fde68a]';
+    case 'error':
+      return 'bg-[#fee2e2] text-[#991b1b] border-[#fecaca]';
+    case 'no_data':
+    default:
+      return 'bg-[#f1f5f9] text-[#475569] border-[#e2e8f0]';
+  }
+}
+
+function getComponentIcon(id: string) {
+  switch (id) {
+    case 'cameras':
+      return <Video className="w-4 h-4 text-secondary-dark" />;
+    case 'detection':
+      return <Eye className="w-4 h-4 text-secondary-dark" />;
+    case 'esp32':
+      return <Cpu className="w-4 h-4 text-secondary-dark" />;
+    case 'sensors':
+      return <Zap className="w-4 h-4 text-secondary-dark" />;
+    default:
+      return <Cpu className="w-4 h-4 text-secondary-dark" />;
+  }
+}
 
 export function SystemHealth() {
-  const { data } = useDashboard();
-
-  const lightsTotal = data?.lights_total || 0;
-  const lightsActive = data?.lights_active || 0;
-  const acTotal = data?.ac_total || 0;
-  const acRunning = data?.ac_units_running || 0;
-  const avgTemp = data?.avg_temperature || 24;
-
-  // AC Efficiency: High when temperature is near optimal (22-25°C) and AC usage is balanced
-  const acEfficiency = acTotal > 0 
-    ? Math.min(100, Math.max(60, Math.round(98 - (acRunning / acTotal) * 10 - Math.abs(avgTemp - 23) * 2)))
-    : 94;
-
-  // Light Optimization: High efficiency rate when smart lighting rules are active
-  const lightOptimization = lightsTotal > 0 
-    ? Math.min(100, Math.max(60, Math.round(96 - (lightsActive / lightsTotal) * 15))) 
-    : 90;
-
-  // Grid / Network Stability based on active sensors and devices
-  const gridStability = data?.total_devices && data.total_devices > 0
-    ? Math.min(100, Math.max(85, Math.round(95 + (data?.latest_sensors?.length ? 4 : 0))))
-    : 98;
+  const { components, isLoading } = useSystemHealthStatus();
 
   return (
-    <Card className="min-h-full border-transparent shadow-sm">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-[11px] text-secondary font-bold uppercase tracking-widest ">System Health</CardTitle>
+    <Card className="h-full border-transparent shadow-sm flex flex-col justify-between">
+      <CardHeader className="pb-3 pt-5 px-6">
+        <CardTitle className="text-[11px] text-secondary font-bold uppercase tracking-widest">
+          System Health
+        </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div>
-          <div className="flex justify-between items-end mb-2">
-            <span className="text-xs font-bold text-black">AC Efficiency</span>
-            <span className="text-xs font-bold text-black">{acEfficiency}%</span>
+      <CardContent className="px-6 pb-6 pt-1 flex-1 flex flex-col justify-around space-y-4">
+        {isLoading ? (
+          <div className="space-y-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex justify-between items-center py-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+            ))}
           </div>
-          <Progress value={acEfficiency} indicatorColor="bg-primary-dark" className="h-2 bg-neutral-border" />
-        </div>
-        
-        <div>
-          <div className="flex justify-between items-end mb-2">
-            <span className="text-xs font-bold text-black">Light Optimization</span>
-            <span className="text-xs font-bold text-black">{lightOptimization}%</span>
-          </div>
-          <Progress value={lightOptimization} indicatorColor="bg-primary-dark" className="h-2 bg-neutral-border" />
-        </div>
-
-        <div>
-          <div className="flex justify-between items-end mb-2">
-            <span className="text-xs font-bold text-black">Grid Stability</span>
-            <span className="text-xs font-bold text-black">{gridStability}%</span>
-          </div>
-          <Progress value={gridStability} indicatorColor="bg-primary-dark" className="h-2 bg-neutral-border" />
-        </div>
+        ) : (
+          components.map((comp) => {
+            const badgeCls = getBadgeStyle(comp.status);
+            return (
+              <div
+                key={comp.id}
+                className="flex items-center justify-between py-2 border-b border-neutral-border/40 last:border-b-0"
+              >
+                <div className="flex items-center gap-3 min-w-0 pr-2">
+                  <div className="p-1.5 rounded-md bg-neutral-light/70 shrink-0">
+                    {getComponentIcon(comp.id)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-black truncate">{comp.name}</p>
+                    <p className="text-[11px] text-secondary-light truncate mt-0.5">
+                      {comp.lastSeenText}
+                    </p>
+                    {comp.helpText && (
+                      <p className="text-[10px] text-slate-400 truncate mt-0.5">
+                        {comp.helpText}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <span
+                  className={`px-2.5 py-0.5 text-[10px] font-bold rounded-md border shrink-0 uppercase tracking-wider ${badgeCls}`}
+                >
+                  {comp.statusLabel}
+                </span>
+              </div>
+            );
+          })
+        )}
       </CardContent>
     </Card>
   );

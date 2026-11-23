@@ -1,17 +1,18 @@
+"use client";
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
-import { Progress } from '../../../components/ui/Progress';
 import { SlidersHorizontal, Lock, Plus, Minus } from 'lucide-react';
 import { useMonitoring } from '../../../hooks/useMonitoring';
 import { useMe } from '../../../features/auth/hooks';
 
+// Menunggu firmware subscribe topic AC dan integrasi IR oleh rekan IoT
+export const FEATURE_AC_MASTER_ENABLED = false;
+
 export function TargetClimate() {
   const { fetchClimate, updateClimate } = useMonitoring();
   const { data: userData } = useMe();
-  const [temp, setTemp] = useState(22);
-  const [humidity, setHumidity] = useState(45);
-  const [airPurity, setAirPurity] = useState('OPTIMAL');
+  const [temp, setTemp] = useState(24);
 
   const role = userData?.user?.role;
   const isAdmin = role === 'admin';
@@ -19,9 +20,7 @@ export function TargetClimate() {
   useEffect(() => {
     fetchClimate().then(res => {
       if (res.success && res.data) {
-        setTemp(Math.round(res.data.target_temperature || 22));
-        setHumidity(res.data.humidity || 45);
-        setAirPurity(res.data.air_purity || 'OPTIMAL');
+        setTemp(Math.round(res.data.target_temperature || 24));
       }
     });
   }, [fetchClimate]);
@@ -30,6 +29,11 @@ export function TargetClimate() {
     if (!isAdmin) return;
     await updateClimate(temp);
   };
+
+  // Seluruh panel disembunyikan sampai fitur didukung oleh firmware IoT
+  if (!FEATURE_AC_MASTER_ENABLED) {
+    return null;
+  }
 
   return (
     <Card>
@@ -67,28 +71,9 @@ export function TargetClimate() {
           </div>
         </div>
 
-        {/* Controls */}
-        <div className="w-full space-y-6">
-          <div>
-            <div className="flex justify-between items-end mb-2">
-              <span className="text-[10px] font-bold text-secondary uppercase tracking-wider">Humidity Control</span>
-              <span className="text-xs font-bold text-black">{humidity}%</span>
-            </div>
-            <Progress value={humidity} indicatorColor="bg-primary-dark" className="h-2" />
-          </div>
-          
-          <div>
-            <div className="flex justify-between items-end mb-2">
-              <span className="text-[10px] font-bold text-secondary uppercase tracking-wider">Air Purity</span>
-              <span className="text-xs font-bold text-black">{airPurity}</span>
-            </div>
-            <Progress value={85} indicatorColor="bg-primary-dark" className="h-2" />
-          </div>
-        </div>
-
         {/* Action Button */}
         {isAdmin && (
-          <div className="w-full mt-8">
+          <div className="w-full mt-4">
             <Button 
               onClick={handleApply}
               variant="primary" 

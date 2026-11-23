@@ -4,6 +4,8 @@ const { ActivityLog } = db;
 
 // ─── Module-level constants (parsed once on startup, not per-request) ─────────
 
+const SENSITIVE_KEY_PATTERN = /pass|pwd|secret|token|authorization|jwt|otp|credential|api[-_]?key|cookie|session/i;
+
 const SENSITIVE_FIELDS = (() => {
   const defaults = [
     'password', 'confirmPassword', 'avatar', 'image',
@@ -15,36 +17,54 @@ const SENSITIVE_FIELDS = (() => {
   return [...new Set([...defaults, ...fromEnv])];
 })();
 
+const isSensitiveKey = (key) => {
+  if (typeof key !== 'string') return false;
+  return SENSITIVE_FIELDS.includes(key) || SENSITIVE_KEY_PATTERN.test(key);
+};
+
 const FULL_RESPONSE_ROUTES = process.env.LOG_FULL_RESPONSE_ROUTES
   ? process.env.LOG_FULL_RESPONSE_ROUTES.split(',').map(s => s.trim()).filter(Boolean)
-  : ['/api/auth/login'];
+  : []; // /api/auth/login dihapus dari full response
 
-const MAX_LENGTH = parseInt(process.env.LOG_MAX_LENGTH, 50) || 51200;
+const MAX_LENGTH = parseInt(process.env.LOG_MAX_LENGTH, 10) || 2048; // Batas default 2 KB
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const base64Regex = /^data:[a-z]+\/[a-z]+;base64,/i;
 
-const sanitizePayload = (payload) => {
+export const sanitizePayload = (payload) => {
   if (!payload || typeof payload !== 'object') return payload;
 
-  const sanitized = Array.isArray(payload) ? [...payload] : { ...payload };
+  if (Array.isArray(payload)) {
+    return payload.map(item => sanitizePayload(item));
+  }
 
-  for (const key in sanitized) {
-    if (!Object.prototype.hasOwnProperty.call(sanitized, key)) continue;
+  const sanitized = {};
 
-    const value = sanitized[key];
+  for (const key of Object.keys(payload)) {
+    const value = payload[key];
 
-    if (SENSITIVE_FIELDS.includes(key)) {
+    if (isSensitiveKey(key)) {
       sanitized[key] = '[REDACTED]';
     } else if (typeof value === 'string' && base64Regex.test(value)) {
       sanitized[key] = '[BASE64_DATA]';
     } else if (typeof value === 'object' && value !== null) {
       sanitized[key] = sanitizePayload(value);
+    } else {
+      sanitized[key] = value;
     }
   }
 
   return sanitized;
+};
+
+/**
+ * Checks if a route is under /api/auth
+ */
+export const isAuthRoute = (urlWithQuery) => {
+  if (!urlWithQuery) return false;
+  const path = urlWithQuery.split('?')[0];
+  return path === '/api/auth' || path.startsWith('/api/auth/');
 };
 
 /**
@@ -59,24 +79,25 @@ const matchesRoute = (urlWithQuery, route) => {
 /**
  * Safe truncation: keeps detailsObj as valid JSON by re-serialising
  * a reduced version instead of cutting raw string mid-character.
+ * When still exceeding maxLength, truncates with a clear marker.
  */
-const safeTruncate = (detailsObj, maxLength) => {
-  const full = JSON.stringify(detailsObj);
+export const safeTruncate = (detailsObj, maxLength = MAX_LENGTH) => {
+  const full = typeof detailsObj === 'string' ? detailsObj : JSON.stringify(detailsObj);
   if (full.length <= maxLength) return full;
 
   const truncated = JSON.stringify({
     ...detailsObj,
     body: '[OMITTED_OVERFLOW]',
+    response: '[OMITTED_OVERFLOW]',
     _truncated: true,
   });
 
-  // If even the truncated version is somehow still too large, hard-cap as last resort
-  // and mark it explicitly as non-JSON so consumers don't try to parse it.
-  if (truncated.length > maxLength) {
-    return truncated.substring(0, maxLength - 20) + '"_overflow":true}';
-  }
+  if (truncated.length <= maxLength) return truncated;
 
-  return truncated;
+  // Jika tetap melebihi batas, potong dengan penanda
+  const marker = '... [TRUNCATED]';
+  const sliceLen = Math.max(0, maxLength - marker.length);
+  return full.slice(0, sliceLen) + marker;
 };
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
@@ -97,6 +118,9 @@ export const activityLogger = (req, res, next) => {
 
       if (isLoginRoute && isSuccess && user_id === null) {
         user_id =
+          data?.data?.user?.user_id ??
+          data?.data?.user?.id ??
+          data?.data?.user_id ??
           data?.user?.user_id ??
           data?.user?.id ??
           data?.user_id ??
@@ -111,22 +135,25 @@ export const activityLogger = (req, res, next) => {
       }
 
       // ── details object ───────────────────────────────────────────────────
-      const detailsObj = {
-        body: sanitizePayload(req.body),
-        params: sanitizePayload(req.params),
-        query: sanitizePayload(req.query),
-      };
+      const isAuth = isAuthRoute(req.originalUrl);
+      let detailsObj;
 
-      const shouldLogFullResponse = FULL_RESPONSE_ROUTES.some(
-        route => matchesRoute(req.originalUrl, route)
-      );
+      if (isAuth) {
+        // Untuk rute /api/auth/: tanpa body, params, query, atau response
+        detailsObj = {};
+      } else {
+        const shouldLogFullResponse = FULL_RESPONSE_ROUTES.some(
+          route => matchesRoute(req.originalUrl, route)
+        );
 
-      detailsObj.response = shouldLogFullResponse
-        ? sanitizePayload(data)
-        : '[RESPONSE_OMITTED]';
-
-      if (isLoginRoute && !isSuccess) {
-        detailsObj.note = 'Failed login attempt';
+        detailsObj = {
+          body: sanitizePayload(req.body),
+          params: sanitizePayload(req.params),
+          query: sanitizePayload(req.query),
+          response: shouldLogFullResponse
+            ? sanitizePayload(data)
+            : '[RESPONSE_OMITTED]',
+        };
       }
 
       // ── truncate (valid JSON preserved) ──────────────────────────────────

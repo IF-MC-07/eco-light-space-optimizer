@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { RoomHeader } from '../../../features/rooms/components/RoomHeader';
 import { OccupancyGrid } from '../../../features/occupancy/components/OccupancyGrid';
+import { OccupancySummary } from '../../../features/occupancy/components/OccupancySummary';
 import { Calendar } from 'lucide-react';
 import { AddRoomModal } from '../../../features/rooms/components/AddRoomModal';
 import { RoomSummaryModal } from '../../../features/rooms/components/RoomSummaryModal';
@@ -20,7 +21,7 @@ export default function RoomAvailability() {
   const isAdmin = role === 'admin';
 
   const [roomToDelete, setRoomToDelete] = useState<{ room_id: string; room_name: string } | null>(null);
-  const [selectedOccupancy, setSelectedOccupancy] = useState<RoomOccupancy | null>(null);
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string>('');
 
   const queryClient = useQueryClient();
@@ -40,6 +41,7 @@ export default function RoomAvailability() {
       deleteRoom(roomToDelete.room_id, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: occupancyQueryKeys.all });
+          queryClient.invalidateQueries({ queryKey: ['rooms'] });
         },
       });
       setRoomToDelete(null);
@@ -58,24 +60,12 @@ export default function RoomAvailability() {
     }));
   }, [occupancyList]);
 
-  // Adaptasi item occupancy terpilih ke tipe Room untuk RoomSummaryModal
-  const selectedRoom: Room | null = useMemo(() => {
-    if (!selectedOccupancy) return null;
-    return {
-      room_id: selectedOccupancy.room_id,
-      room_name: selectedOccupancy.room_name,
-      location: selectedOccupancy.location || (selectedOccupancy.building ? `${selectedOccupancy.building} · Lantai ${selectedOccupancy.floor ?? '-'}` : 'Gedung belum diatur'),
-      capacity: selectedOccupancy.capacity ?? 0,
-      status: RoomStatus.ACTIVE,
-      availability: selectedOccupancy.status === 'Padat' ? 'occupied' : 'available',
-    };
-  }, [selectedOccupancy]);
-
   return (
     <div className="flex flex-col space-y-6 w-full max-w-6xl mx-auto h-full min-h-full">
       <RoomHeader 
         rooms={roomsAdapter}
         {...(isAdmin ? { onAddRoom: () => setIsAddRoomOpen(true) } : {})}
+        statsSlot={<OccupancySummary items={occupancyList} />}
       />
       
       <div className="flex-1 mt-4">
@@ -86,8 +76,8 @@ export default function RoomAvailability() {
           onRetry={() => refetch()}
           showSimulated={showSimulated}
           onToggleSimulated={setShowSimulated}
-          onSelectRoom={(occ) => setSelectedOccupancy(occ)}
-          {...(isAdmin ? { onDeleteRoom: (occ) => setRoomToDelete({ room_id: occ.room_id, room_name: occ.room_name }) } : {})}
+          onSelectRoom={(roomId) => setSelectedRoomId(roomId)}
+          isAdmin={isAdmin}
         />
       </div>
 
@@ -96,26 +86,26 @@ export default function RoomAvailability() {
         onClose={() => setIsAddRoomOpen(false)} 
       />
 
-      {selectedRoom && (
-        <RoomSummaryModal
-          isOpen={true}
-          onClose={() => setSelectedOccupancy(null)}
-          room={selectedRoom}
-        />
-      )}
+      <RoomSummaryModal
+        roomId={selectedRoomId}
+        occupancyList={occupancyList}
+        onClose={() => setSelectedRoomId(null)}
+        onNavigateRoom={(id) => setSelectedRoomId(id)}
+        {...(isAdmin ? { onDeleteRoom: (room) => setRoomToDelete(room) } : {})}
+      />
 
       <AlertDialog 
         isOpen={!!roomToDelete}
         onClose={() => setRoomToDelete(null)}
         onConfirm={handleConfirmDelete}
-        title="Delete Room?"
+        title="Hapus Ruangan?"
         description={
           <span>
-            Are you sure you want to delete <strong>{roomToDelete?.room_name}</strong>? This action is <strong>irreversible</strong>.
+            Apakah Anda yakin ingin menghapus ruangan <strong>{roomToDelete?.room_name}</strong>? Tindakan ini <strong>tidak dapat dibatalkan</strong>.
           </span>
         }
-        confirmText="Delete Room"
-        cancelText="Cancel"
+        confirmText="Hapus"
+        cancelText="Batal"
       />
 
       <footer className="mt-8 pt-4 border-t border-neutral-border flex items-center justify-between text-xs font-semibold text-secondary pb-4">
