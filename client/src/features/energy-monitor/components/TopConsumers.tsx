@@ -38,7 +38,7 @@ export function TopConsumers() {
     <Card className="border-transparent shadow-sm mb-6">
       <CardHeader className="pb-4 pt-6 px-6">
         <CardTitle className="text-[11px] font-bold text-black uppercase tracking-widest">
-          Ruangan dengan daya tertinggi
+          Rooms with highest power usage
         </CardTitle>
       </CardHeader>
       <CardContent className="px-6 pb-6 space-y-5">
@@ -49,9 +49,9 @@ export function TopConsumers() {
             <Skeleton className="h-4 w-4/6" />
           </div>
         ) : isError ? (
-          <ErrorState message="Gagal memuat data konsumsi ruangan" onRetry={() => refetch()} />
+          <ErrorState message="Failed to load room consumption data" onRetry={() => refetch()} />
         ) : consumers.length === 0 ? (
-          <EmptyState message="Tidak ada data ruangan" description="Belum ada data sensor daya per ruangan yang tercatat." />
+          <EmptyState message="No room data" description="No room power sensor data recorded yet." />
         ) : (
           consumers.map((item, idx) => (
             <div key={idx} className="space-y-2">

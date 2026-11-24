@@ -22,7 +22,7 @@ export function SavingsBreakdownTable({ filters }: SavingsBreakdownTableProps) {
     <Card className="border-transparent shadow-sm">
       <CardHeader className="pb-4 pt-6 px-6">
         <CardTitle className="text-lg text-black font-heading font-bold">
-          Rincian Energi per Ruangan
+          Energy Breakdown per Room
         </CardTitle>
       </CardHeader>
       <CardContent className="px-6 pb-6">
@@ -34,11 +34,11 @@ export function SavingsBreakdownTable({ filters }: SavingsBreakdownTableProps) {
             <Skeleton className="h-10 w-full" />
           </div>
         ) : isError ? (
-          <ErrorState message="Gagal memuat rincian energi ruangan" onRetry={() => refetch()} />
+          <ErrorState message="Failed to load room energy breakdown" onRetry={() => refetch()} />
         ) : breakdown.length === 0 ? (
           <EmptyState
-            message="Tidak ada data rincian energi"
-            description="Belum ada data sensor daya per ruangan pada rentang waktu ini."
+            message="No energy breakdown data"
+            description="No room power sensor data available for this time range."
           />
         ) : (
           <div className="overflow-x-auto">
@@ -48,8 +48,8 @@ export function SavingsBreakdownTable({ filters }: SavingsBreakdownTableProps) {
                   <th className="pb-3 px-3">Room</th>
                   <th className="pb-3 px-3">Total Energy</th>
                   <th className="pb-3 px-3">Baseline</th>
-                  <th className="pb-3 px-3">Selisih terhadap baseline</th>
-                  <th className="pb-3 px-3 text-right">Rasio</th>
+                  <th className="pb-3 px-3">Difference vs Baseline</th>
+                  <th className="pb-3 px-3 text-right">Ratio</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-border/50">
@@ -62,14 +62,14 @@ export function SavingsBreakdownTable({ filters }: SavingsBreakdownTableProps) {
                           <span>{row.room_name}</span>
                           {row.is_simulated && (
                             <Badge variant="outline" className="ml-2 text-[10px] uppercase font-bold tracking-wider text-amber-700 bg-amber-50 border-amber-200">
-                              Simulasi
+                              SIMULATED
                             </Badge>
                           )}
                         </td>
-                        <td className="py-4 px-3 text-secondary-light italic">Belum ada sensor</td>
-                        <td className="py-4 px-3 text-secondary-light italic">Belum ada sensor</td>
-                        <td className="py-4 px-3 text-secondary-light italic">Belum ada sensor</td>
-                        <td className="py-4 px-3 text-right text-secondary-light italic">Belum ada sensor</td>
+                        <td className="py-4 px-3 text-secondary-light italic">No sensor</td>
+                        <td className="py-4 px-3 text-secondary-light italic">No sensor</td>
+                        <td className="py-4 px-3 text-secondary-light italic">No sensor</td>
+                        <td className="py-4 px-3 text-right text-secondary-light italic">No sensor</td>
                       </tr>
                     );
                   }
@@ -107,7 +107,7 @@ export function SavingsBreakdownTable({ filters }: SavingsBreakdownTableProps) {
                         <span>{row.room_name}</span>
                         {row.is_simulated && (
                           <Badge variant="outline" className="ml-2 text-[10px] uppercase font-bold tracking-wider text-amber-700 bg-amber-50 border-amber-200">
-                            Simulasi
+                            SIMULATED
                           </Badge>
                         )}
                       </td>

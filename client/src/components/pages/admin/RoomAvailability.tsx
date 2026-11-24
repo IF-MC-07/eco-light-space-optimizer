@@ -53,7 +53,7 @@ export default function RoomAvailability() {
     return occupancyList.map((item) => ({
       room_id: item.room_id,
       room_name: item.room_name,
-      location: item.location || (item.building ? `${item.building} · Lantai ${item.floor ?? '-'}` : ''),
+      location: item.location || (item.building ? `${item.building} · Floor ${item.floor ?? '-'}` : ''),
       capacity: item.capacity ?? 0,
       status: RoomStatus.ACTIVE,
       availability: item.status === 'Padat' ? 'occupied' : 'available',
@@ -98,14 +98,14 @@ export default function RoomAvailability() {
         isOpen={!!roomToDelete}
         onClose={() => setRoomToDelete(null)}
         onConfirm={handleConfirmDelete}
-        title="Hapus Ruangan?"
+        title="Delete Room?"
         description={
           <span>
-            Apakah Anda yakin ingin menghapus ruangan <strong>{roomToDelete?.room_name}</strong>? Tindakan ini <strong>tidak dapat dibatalkan</strong>.
+            Are you sure you want to delete room <strong>{roomToDelete?.room_name}</strong>? This action <strong>cannot be undone</strong>.
           </span>
         }
-        confirmText="Hapus"
-        cancelText="Batal"
+        confirmText="Delete"
+        cancelText="Cancel"
       />
 
       <footer className="mt-8 pt-4 border-t border-neutral-border flex items-center justify-between text-xs font-semibold text-secondary pb-4">

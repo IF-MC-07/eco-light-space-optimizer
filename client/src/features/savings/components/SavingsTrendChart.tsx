@@ -54,17 +54,17 @@ export function SavingsTrendChart({ filters }: SavingsTrendChartProps) {
       <CardHeader className="pb-2 flex flex-row items-center justify-between px-6 pt-6">
         <div>
           <CardTitle className="text-lg text-black font-heading font-bold">
-            Tren Konsumsi Energi & Baseline
+            Energy Consumption Trend & Baseline
           </CardTitle>
           <p className="text-xs text-secondary-light font-semibold mt-1">
-            Perbandingan energi aktual terhadap histori baseline pada rentang waktu yang dipilih
+            Comparison of actual energy vs historical baseline over the selected time range
           </p>
         </div>
         {trendData.length > 0 && !isLoading && !isError && (
           <div className="flex items-center space-x-4 text-[10px] font-bold text-secondary uppercase tracking-widest">
             <div className="flex items-center">
               <span className="w-2.5 h-2.5 rounded-full bg-primary-dark mr-1.5"></span>
-              Konsumsi Aktual
+              Actual Consumption
             </div>
             {hasBaseline && (
               <div className="flex items-center">
@@ -82,13 +82,13 @@ export function SavingsTrendChart({ filters }: SavingsTrendChartProps) {
           </div>
         ) : isError ? (
           <ErrorState
-            message="Gagal memuat grafik konsumsi energi"
+            message="Failed to load energy consumption chart"
             onRetry={() => refetch()}
           />
         ) : trendData.length === 0 ? (
           <EmptyState
-            message="Tidak ada data konsumsi energi untuk periode ini"
-            description="Belum ada pembacaan energi yang tercatat pada rentang tanggal yang dipilih."
+            message="No energy consumption data for this period"
+            description="No energy readings recorded for the selected date range."
           />
         ) : (
           <div className="h-[280px] w-full">
@@ -123,7 +123,7 @@ export function SavingsTrendChart({ filters }: SavingsTrendChartProps) {
                   }}
                   formatter={(value: any, name: string) => {
                     if (value === null || value === undefined) return ['—', name];
-                    const label = name === 'actual_kwh' ? 'Konsumsi Aktual' : 'Baseline';
+                    const label = name === 'actual_kwh' ? 'Actual Consumption' : 'Baseline';
                     return [`${Number(value).toFixed(3)} kWh`, label];
                   }}
                 />

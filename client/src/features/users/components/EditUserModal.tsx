@@ -167,7 +167,7 @@ export function EditUserModal({ isOpen, onClose, userId }: EditUserModalProps) {
                   <div className="w-10 h-10 rounded-lg bg-[#BFDBFE] text-primary-dark flex items-center justify-center mb-4">
                     <Eye className="w-5 h-5" />
                   </div>
-                  <h4 className="font-bold text-secondary-dark mb-1">Mahasiswa</h4>
+                  <h4 className="font-bold text-secondary-dark mb-1">Student</h4>
                   <p className="text-[11px] text-secondary-light leading-relaxed">Read-only access to dashboard and monitoring.</p>
                   {role === UserRole.MAHASISWA && (
                     <CheckCircle2 className="w-5 h-5 text-primary-dark absolute top-4 right-4 fill-primary-dark/20" />

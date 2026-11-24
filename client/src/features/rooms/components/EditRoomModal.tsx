@@ -57,7 +57,7 @@ export function EditRoomModal({ isOpen, onClose, room }: EditRoomModalProps) {
 
     const trimmedName = roomName.trim();
     if (!trimmedName) {
-      toast.error("Nama ruangan tidak boleh kosong");
+      toast.error("Room name cannot be empty");
       return;
     }
 
@@ -73,7 +73,7 @@ export function EditRoomModal({ isOpen, onClose, room }: EditRoomModalProps) {
     if (trimmedCap !== "") {
       const parsed = parseInt(trimmedCap, 10);
       if (isNaN(parsed) || parsed < 1) {
-        toast.error("Kapasitas harus berupa bilangan bulat minimal 1");
+        toast.error("Capacity must be an integer of at least 1");
         return;
       }
       payload.capacity = parsed;
@@ -90,7 +90,7 @@ export function EditRoomModal({ isOpen, onClose, room }: EditRoomModalProps) {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["occupancy"] });
           queryClient.invalidateQueries({ queryKey: ["rooms"] });
-          toast.success("Perubahan akan terlihat pada siklus berikutnya (maksimal 15 detik)");
+          toast.success("Changes will take effect in the next cycle (up to 15 seconds)");
           onClose();
         },
       }
@@ -196,7 +196,7 @@ export function EditRoomModal({ isOpen, onClose, room }: EditRoomModalProps) {
                   onChange={(e) => setBuilding(e.target.value)}
                   maxLength={100}
                   list="edit-room-building-list"
-                  placeholder="mis. Gedung Utama"
+                  placeholder="e.g. Main Building"
                   className="w-full bg-[#F1F5F9] border-none rounded-xl text-base font-semibold text-secondary-dark placeholder:text-secondary-light/50 focus:outline-none focus:ring-2 focus:ring-primary/50 px-5 py-4 transition-all"
                 />
                 <datalist id="edit-room-building-list">
@@ -244,7 +244,7 @@ export function EditRoomModal({ isOpen, onClose, room }: EditRoomModalProps) {
             {/* Read-only simulation indicator */}
             {room.is_simulated && (
               <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-3">
-                Ruangan ini merupakan data simulasi (read-only).
+                This room is simulated data (read-only).
               </div>
             )}
 

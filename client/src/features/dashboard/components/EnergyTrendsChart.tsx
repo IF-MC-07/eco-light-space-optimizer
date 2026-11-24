@@ -31,13 +31,13 @@ export function EnergyTrendsChart() {
           </div>
         ) : isError ? (
           <ErrorState
-            message="Gagal memuat tren penggunaan energi"
+            message="Failed to load energy usage trends"
             onRetry={() => refetch()}
           />
         ) : chartData.length === 0 ? (
           <EmptyState
-            message="Tidak ada data tren energi hari ini"
-            description="Belum ada pembacaan konsumsi energi yang tercatat untuk hari ini."
+            message="No energy trend data today"
+            description="No energy consumption readings recorded for today."
           />
         ) : (
           <div className="h-[280px] w-full">

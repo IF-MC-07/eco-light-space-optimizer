@@ -19,6 +19,8 @@ function getBadgeStyle(status: HealthStatusType) {
   }
 }
 
+
+
 function getComponentIcon(id: string) {
   switch (id) {
     case 'cameras':

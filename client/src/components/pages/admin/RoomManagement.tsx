@@ -163,7 +163,7 @@ export default function RoomManagement({ roomId }: RoomManagementProps) {
         />
         <RoomStatCard
           title="Climate Control"
-          value="Tidak ada data"
+          value="No data"
           icon={<Thermometer className="w-4 h-4" />}
           iconBgClass="bg-[#EDE9FE]"
           iconColorClass="text-[#7C3AED]"
@@ -171,7 +171,7 @@ export default function RoomManagement({ roomId }: RoomManagementProps) {
         />
         <RoomStatCard
           title="Device Health"
-          value="Tidak ada data"
+          value="No data"
           icon={<ShieldCheck className="w-4 h-4" />}
           iconBgClass="bg-[#F1F5F9]"
           iconColorClass="text-[#0F172A]"
@@ -188,10 +188,10 @@ export default function RoomManagement({ roomId }: RoomManagementProps) {
             </div>
             <div>
               <h3 className="text-xl font-bold text-secondary-dark leading-tight">
-                Belum Ada Kamera
+                No Camera Available
               </h3>
               <p className="text-secondary-light text-sm">
-                Kamera belum dikonfigurasi untuk ruangan ini.
+                Camera is not configured for this room.
               </p>
             </div>
           </div>
@@ -215,7 +215,7 @@ export default function RoomManagement({ roomId }: RoomManagementProps) {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="text-xl font-bold text-secondary-dark leading-tight">
-                      {isCamActive ? "Vision System Aktif" : "Vision System Offline"}
+                      {isCamActive ? "Vision System Active" : "Vision System Offline"}
                     </h3>
                     <span
                       className={`px-2 py-0.5 text-[10px] font-bold rounded-md border uppercase tracking-wider ${
@@ -224,13 +224,13 @@ export default function RoomManagement({ roomId }: RoomManagementProps) {
                           : "bg-[#fee2e2] text-[#991b1b] border-[#fecaca]"
                       }`}
                     >
-                      {isCamActive ? "Aktif" : "Offline"}
+                      {isCamActive ? "Active" : "Offline"}
                     </span>
                   </div>
                   <p className="text-secondary-light text-sm mt-0.5">
                     {isCamActive
-                      ? "Pemantauan okupansi dan optimasi zona ruangan berjalan secara real-time."
-                      : "Kamera pengawas terputus atau dinonaktifkan."}
+                      ? "Occupancy monitoring and space zone optimization are running in real-time."
+                      : "Surveillance camera is disconnected or disabled."}
                   </p>
                 </div>
               </div>

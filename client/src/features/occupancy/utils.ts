@@ -1,7 +1,7 @@
 import type { OccupancyStatus } from './types';
 
 export interface StatusMetaItem {
-  label: OccupancyStatus;
+  label: string;
   badgeClass: string;
   dotClass: string;
   barClass: string;
@@ -10,42 +10,42 @@ export interface StatusMetaItem {
 
 export const statusMeta: Record<OccupancyStatus, StatusMetaItem> = {
   Padat: {
-    label: 'Padat',
+    label: 'Crowded',
     badgeClass: 'bg-tertiary/10 text-tertiary border-tertiary/30',
     dotClass: 'bg-tertiary',
     barClass: 'bg-tertiary',
     textClass: 'text-tertiary',
   },
   Sedang: {
-    label: 'Sedang',
+    label: 'Moderate',
     badgeClass: 'bg-amber-100 text-amber-800 border-amber-300',
     dotClass: 'bg-amber-500',
     barClass: 'bg-amber-500',
     textClass: 'text-amber-700',
   },
   Rendah: {
-    label: 'Rendah',
+    label: 'Low',
     badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
     dotClass: 'bg-emerald-500',
     barClass: 'bg-emerald-500',
     textClass: 'text-emerald-700',
   },
   Kosong: {
-    label: 'Kosong',
+    label: 'Empty',
     badgeClass: 'bg-[#bbf7d0] text-primary border-primary/20',
     dotClass: 'bg-primary',
     barClass: 'bg-primary',
     textClass: 'text-primary',
   },
   'Tidak tersedia': {
-    label: 'Tidak tersedia',
+    label: 'Unavailable',
     badgeClass: 'bg-neutral-muted/20 text-secondary border-neutral-border',
     dotClass: 'bg-secondary-light',
     barClass: 'bg-secondary-light',
     textClass: 'text-secondary',
   },
   'Kapasitas belum dikonfigurasi': {
-    label: 'Kapasitas belum dikonfigurasi',
+    label: 'Capacity not configured',
     badgeClass: 'bg-secondary/10 text-secondary-dark border-secondary/20',
     dotClass: 'bg-secondary',
     barClass: 'bg-secondary',
@@ -81,19 +81,19 @@ export const formatSeats = (availableSeats: number | null): string => {
   if (availableSeats === null || availableSeats === undefined) {
     return '-';
   }
-  return `${availableSeats} kursi`;
+  return `${availableSeats} ${availableSeats === 1 ? 'seat' : 'seats'}`;
 };
 
 export const formatAge = (ageSeconds: number | null): string => {
   if (ageSeconds === null || ageSeconds === undefined) {
-    return 'tidak diketahui';
+    return 'unknown';
   }
   if (ageSeconds < 15) {
-    return 'baru saja';
+    return 'just now';
   }
   if (ageSeconds < 60) {
-    return `${Math.floor(ageSeconds)} dtk lalu`;
+    return `${Math.floor(ageSeconds)}s ago`;
   }
-  return `${Math.floor(ageSeconds / 60)} mnt lalu`;
+  return `${Math.floor(ageSeconds / 60)}m ago`;
 };
 

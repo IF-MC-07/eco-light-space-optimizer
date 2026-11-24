@@ -45,7 +45,7 @@ function compareLowestOccupancy(a: RoomOccupancy, b: RoomOccupancy): number {
   if (aSpecial && !bSpecial) return 1;
   if (!aSpecial && bSpecial) return -1;
   if (aSpecial && bSpecial) {
-    const nameCmp = a.room_name.localeCompare(b.room_name, 'id', { numeric: true });
+    const nameCmp = a.room_name.localeCompare(b.room_name, 'en', { numeric: true });
     if (nameCmp !== 0) return nameCmp;
     return a.room_id.localeCompare(b.room_id);
   }
@@ -56,7 +56,7 @@ function compareLowestOccupancy(a: RoomOccupancy, b: RoomOccupancy): number {
     return pctA - pctB;
   }
 
-  const nameCmp = a.room_name.localeCompare(b.room_name, 'id', { numeric: true });
+  const nameCmp = a.room_name.localeCompare(b.room_name, 'en', { numeric: true });
   if (nameCmp !== 0) return nameCmp;
   return a.room_id.localeCompare(b.room_id);
 }
@@ -75,13 +75,13 @@ function compareBusyFirst(a: RoomOccupancy, b: RoomOccupancy): number {
     return pctB - pctA;
   }
 
-  const nameCmp = a.room_name.localeCompare(b.room_name, 'id', { numeric: true });
+  const nameCmp = a.room_name.localeCompare(b.room_name, 'en', { numeric: true });
   if (nameCmp !== 0) return nameCmp;
   return a.room_id.localeCompare(b.room_id);
 }
 
 function compareNameAsc(a: RoomOccupancy, b: RoomOccupancy): number {
-  const nameCmp = a.room_name.localeCompare(b.room_name, 'id', { numeric: true });
+  const nameCmp = a.room_name.localeCompare(b.room_name, 'en', { numeric: true });
   if (nameCmp !== 0) return nameCmp;
   return a.room_id.localeCompare(b.room_id);
 }
@@ -205,7 +205,7 @@ export function OccupancyGrid({
           <AlertCircle size={24} />
         </div>
         <h3 className="font-heading font-bold text-lg text-secondary-dark mb-1">
-          Gagal Memuat Ketersediaan Ruangan
+          Failed to Load Room Availability
         </h3>
         <p className="text-sm text-secondary mb-5 max-w-md">
           Terjadi kendala saat menyinkronkan data ketersediaan dengan sistem. Silakan coba beberapa saat lagi.
@@ -216,7 +216,7 @@ export function OccupancyGrid({
             className="bg-primary-dark hover:bg-primary text-white flex items-center gap-2"
           >
             <RefreshCw size={14} />
-            <span>Coba Lagi</span>
+            <span>Try Again</span>
           </Button>
         )}
       </div>
@@ -239,7 +239,7 @@ export function OccupancyGrid({
                 : 'bg-neutral text-secondary border-neutral-border hover:bg-neutral-border/50'
             }`}
           >
-            Semua ({counts.all})
+            All ({counts.all})
           </button>
 
           {/* Padat (n) */}
@@ -256,7 +256,7 @@ export function OccupancyGrid({
             }`}
           >
             <span className="w-2 h-2 rounded-full bg-tertiary shrink-0" />
-            <span>Padat</span>
+            <span>Crowded</span>
             <span className="text-[11px] opacity-75">({counts.padat})</span>
           </button>
 
@@ -274,7 +274,7 @@ export function OccupancyGrid({
             }`}
           >
             <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-            <span>Tersedia</span>
+            <span>Available</span>
             <span className="text-[11px] opacity-75">({counts.tersedia})</span>
           </button>
 
@@ -315,9 +315,9 @@ export function OccupancyGrid({
               onChange={(e) => setUserSortOption(e.target.value as SortOption)}
               className="bg-neutral text-secondary-dark border border-neutral-border text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
             >
-              <option value="lowest_occupancy">Okupansi terendah</option>
-              <option value="busy_first">Padat dulu</option>
-              <option value="name_asc">Nama (A-Z)</option>
+              <option value="lowest_occupancy">Lowest occupancy</option>
+              <option value="busy_first">Busy first</option>
+              <option value="name_asc">Name (A-Z)</option>
             </select>
           </div>
 
@@ -327,7 +327,7 @@ export function OccupancyGrid({
               htmlFor="toggle-simulated"
               className="text-xs font-semibold text-secondary-dark cursor-pointer select-none"
             >
-              Tampilkan ruangan simulasi
+              Show simulated rooms
             </label>
             <Switch
               id="toggle-simulated"
@@ -341,7 +341,7 @@ export function OccupancyGrid({
       {/* Grid Kartu Ruangan */}
       {displayedList.length === 0 ? (
         <div className="w-full py-16 text-center bg-white rounded-xl border border-neutral-border text-secondary">
-          <p className="text-sm font-medium">Tidak ada ruangan yang sesuai dengan filter.</p>
+          <p className="text-sm font-medium">No rooms match the selected filter.</p>
           {filterCategory !== 'all' && (
             <button
               type="button"

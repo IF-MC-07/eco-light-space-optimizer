@@ -24,7 +24,7 @@ export function EfficiencyVitality() {
     return (
       <Card className="bg-[#F8FAFC]">
         <CardContent className="p-6">
-          <ErrorState message="Gagal memuat efisiensi otomasi" onRetry={() => refetch()} />
+          <ErrorState message="Failed to load automation efficiency" onRetry={() => refetch()} />
         </CardContent>
       </Card>
     );
@@ -35,8 +35,8 @@ export function EfficiencyVitality() {
       <Card className="bg-[#F8FAFC]">
         <CardContent className="p-6">
           <EmptyState
-            title="Belum ada data otomasi"
-            description="Konfigurasikan jadwal otomasi untuk mengaktifkan pemantauan efisiensi."
+            title="No automation data yet"
+            description="Configure automation schedules to enable efficiency monitoring."
           />
         </CardContent>
       </Card>
@@ -85,8 +85,8 @@ export function EfficiencyVitality() {
 
         <p className="text-[11px] leading-relaxed text-secondary-dark px-2">
           {stats.active_schedules > 0
-            ? `${stats.active_schedules} dari ${stats.total_schedules} aturan otomasi aktif mengontrol perangkat.`
-            : 'Belum ada aturan otomasi yang aktif.'}
+            ? `${stats.active_schedules} of ${stats.total_schedules} automation ${stats.total_schedules === 1 ? 'rule' : 'rules'} actively controlling devices.`
+            : 'No active automation rules.'}
         </p>
       </CardContent>
     </Card>

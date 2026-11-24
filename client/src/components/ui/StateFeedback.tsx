@@ -58,7 +58,7 @@ export interface ErrorStateProps {
 }
 
 export function ErrorState({
-  message = 'Terjadi kesalahan saat memuat data',
+  message = 'An error occurred while loading data',
   onRetry,
   className,
 }: ErrorStateProps) {
@@ -81,7 +81,7 @@ export function ErrorState({
           className="text-xs font-bold gap-2 py-1 px-3"
         >
           <RefreshCw className="w-3.5 h-3.5" />
-          Coba lagi
+          Try again
         </Button>
       )}
     </div>
@@ -99,7 +99,7 @@ export interface EmptyStateProps {
 
 export function EmptyState({
   title,
-  message = 'Tidak ada data',
+  message = 'No data',
   description,
   icon,
   className,

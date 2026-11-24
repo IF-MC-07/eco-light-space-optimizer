@@ -12,37 +12,37 @@ export default function LandingPage() {
         <div className="lg:w-1/2 space-y-8">
           <div className="inline-flex items-center space-x-2 bg-primary-light/10 text-primary-dark px-3 py-1 rounded-full text-sm font-semibold border border-primary-light/20">
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-            <span>Sistem Otomatisasi Terbaru</span>
+            <span>Latest Automation System</span>
           </div>
           <h1 className="font-heading text-5xl lg:text-6xl font-bold leading-tight">
-            Sistem Otomatis Pemantauan Ruang & <span className="text-primary">Efisiensi Energi</span> Kampus
+            Automated Space Monitoring & <span className="text-primary">Campus Energy Efficiency</span> System
           </h1>
           <p className="text-secondary-light text-lg max-w-lg leading-relaxed">
-            Transformasikan operasional kampus Anda menjadi lebih cerdas. Solusi terintegrasi untuk pemantauan, hemat energi, dan kenyamanan secara real-time.
+            Transform your campus operations with smart intelligence. Integrated real-time solution for monitoring, energy savings, and comfort.
           </p>
           <div className="flex flex-col sm:flex-row items-center gap-4">
             <Button className="w-full sm:w-auto text-lg px-8 py-6 flex items-center justify-center space-x-2 bg-primary hover:bg-primary-dark text-white rounded-md transition-colors">
-              <span>Mulai Sekarang</span>
+              <span>Get Started</span>
               <ArrowRight className="w-5 h-5" />
             </Button>
             <Button variant="outlined" className="w-full sm:w-auto text-lg px-8 py-6 border-secondary-light text-secondary-dark hover:bg-white rounded-md flex items-center justify-center space-x-2 transition-colors">
               <Play className="w-5 h-5 text-secondary" />
-              <span>Lihat Demo</span>
+              <span>View Demo</span>
             </Button>
           </div>
           
           <div className="grid grid-cols-3 gap-6 pt-8 border-t border-neutral-border">
             <div>
               <p className="font-heading text-2xl font-bold text-primary-dark">20+</p>
-              <p className="text-sm text-secondary-light">Ruang Terhubung</p>
+              <p className="text-sm text-secondary-light">Connected Rooms</p>
             </div>
             <div>
               <p className="font-heading text-2xl font-bold text-primary-dark">Real-Time</p>
-              <p className="text-sm text-secondary-light">Pemantauan</p>
+              <p className="text-sm text-secondary-light">Monitoring</p>
             </div>
             <div>
               <p className="font-heading text-2xl font-bold text-primary-dark">40%</p>
-              <p className="text-sm text-secondary-light">Hemat Energi</p>
+              <p className="text-sm text-secondary-light">Energy Savings</p>
             </div>
           </div>
         </div>
@@ -57,9 +57,9 @@ export default function LandingPage() {
       {/* Features Section */}
       <section id="fitur" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-8 text-center">
-          <h2 className="font-heading text-3xl md:text-4xl font-bold mb-4">Fitur Utama</h2>
+          <h2 className="font-heading text-3xl md:text-4xl font-bold mb-4">Key Features</h2>
           <p className="text-secondary-light max-w-2xl mx-auto mb-16">
-            Teknologi inovatif yang dirancang untuk mengoptimalkan operasional dan menciptakan lingkungan kampus modern.
+            Innovative technology designed to optimize operations and create a modern campus environment.
           </p>
 
           <div className="grid md:grid-cols-3 gap-8 text-left">
@@ -68,9 +68,9 @@ export default function LandingPage() {
                 <div className="w-12 h-12 bg-primary-light/20 rounded-xl flex items-center justify-center text-primary-dark">
                   <Eye className="w-6 h-6" />
                 </div>
-                <h3 className="font-bold text-lg font-heading">Deteksi Kehadiran Presisi</h3>
+                <h3 className="font-bold text-lg font-heading">Precision Presence Detection</h3>
                 <p className="text-sm text-secondary-light leading-relaxed">
-                  Sensor inframerah dan radar yang mendeteksi aktivitas, menyesuaikan pencahayaan & AC secara dinamis untuk kenyamanan pengguna.
+                  Infrared and radar sensors detect activity, dynamically adjusting lighting & AC for occupant comfort.
                 </p>
               </CardContent>
             </Card>
@@ -80,9 +80,9 @@ export default function LandingPage() {
                 <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-700">
                   <Cpu className="w-6 h-6" />
                 </div>
-                <h3 className="font-bold text-lg font-heading">Automatisasi Pintar</h3>
+                <h3 className="font-bold text-lg font-heading">Smart Automation</h3>
                 <p className="text-sm text-secondary-light leading-relaxed">
-                  Sistem beroperasi tanpa intervensi manual, mengoptimalkan daya sesuai kondisi suhu luar & cahaya alami ruangan.
+                  Operates without manual intervention, optimizing power based on outdoor temperature and natural daylight.
                 </p>
               </CardContent>
             </Card>
@@ -92,9 +92,9 @@ export default function LandingPage() {
                 <div className="w-12 h-12 bg-tertiary/10 rounded-xl flex items-center justify-center text-tertiary">
                   <Calendar className="w-6 h-6" />
                 </div>
-                <h3 className="font-bold text-lg font-heading">Efisiensi Jadwal Cerdas</h3>
+                <h3 className="font-bold text-lg font-heading">Smart Schedule Efficiency</h3>
                 <p className="text-sm text-secondary-light leading-relaxed">
-                  Sinkronisasi langsung dengan jadwal kuliah sistem akademik, menghindari pemborosan listrik di ruang kosong.
+                  Direct synchronization with academic course schedules, eliminating power waste in vacant rooms.
                 </p>
               </CardContent>
             </Card>
@@ -117,9 +117,9 @@ export default function LandingPage() {
 
           <div className="lg:w-1/2 space-y-10">
             <div>
-              <h2 className="font-heading text-3xl md:text-4xl font-bold mb-4">Cara Kerja Sistem</h2>
+              <h2 className="font-heading text-3xl md:text-4xl font-bold mb-4">How The System Works</h2>
               <p className="text-secondary-light">
-                Infrastruktur cerdas kami mengintegrasikan teknologi cloud dan sensor hardware untuk eksekusi tanpa jeda.
+                Our smart infrastructure integrates cloud technology and hardware sensors for seamless execution.
               </p>
             </div>
 
@@ -128,7 +128,7 @@ export default function LandingPage() {
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-white font-bold flex items-center justify-center text-sm">1</div>
                 <div>
                   <h4 className="font-bold text-lg mb-1">Data Collection</h4>
-                  <p className="text-sm text-secondary-light">Sensor IoT di setiap ruangan mengumpulkan data okupansi dan kondisi lingkungan secara terus menerus.</p>
+                  <p className="text-sm text-secondary-light">IoT sensors in every room continuously collect occupancy and environmental data.</p>
                 </div>
               </div>
 
@@ -136,7 +136,7 @@ export default function LandingPage() {
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-white font-bold flex items-center justify-center text-sm">2</div>
                 <div>
                   <h4 className="font-bold text-lg mb-1">Cloud Processing</h4>
-                  <p className="text-sm text-secondary-light">Algoritma AI menganalisa pola dan membedakan profil energi setiap zona, mengkalkulasi output terbaik.</p>
+                  <p className="text-sm text-secondary-light">AI algorithms analyze patterns and differentiate energy profiles across zones, calculating optimal output.</p>
                 </div>
               </div>
 
@@ -144,7 +144,7 @@ export default function LandingPage() {
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-white font-bold flex items-center justify-center text-sm">3</div>
                 <div>
                   <h4 className="font-bold text-lg mb-1">Automated Execution</h4>
-                  <p className="text-sm text-secondary-light">Sistem mengirimkan perintah relay presisi untuk menyesuaikan perangkat keras AC dan lampu seketika itu juga.</p>
+                  <p className="text-sm text-secondary-light">The system sends precision relay commands to instantly adjust AC and lighting hardware.</p>
                 </div>
               </div>
             </div>
@@ -156,22 +156,22 @@ export default function LandingPage() {
       <section className="py-20 px-8">
         <div className="max-w-7xl mx-auto bg-primary-dark rounded-3xl overflow-hidden shadow-xl flex flex-col md:flex-row items-center p-12 gap-12">
           <div className="md:w-1/2 space-y-6 text-white">
-            <h2 className="font-heading text-3xl font-bold">Teknologi Terdepan</h2>
+            <h2 className="font-heading text-3xl font-bold">Cutting-Edge Technology</h2>
             <p className="text-primary-light text-sm leading-relaxed max-w-md">
-              Menggunakan arsitektur terkini untuk memastikan skalabilitas, keamanan tingkat tinggi, dan reliabilitas jangka panjang.
+              Leveraging modern architecture to ensure scalability, enterprise-grade security, and long-term reliability.
             </p>
             <ul className="space-y-3">
               <li className="flex items-center space-x-3 text-sm">
                 <CheckCircle2 className="w-5 h-5 text-primary-light" />
-                <span>MQTT WebSockets protokol pengiriman</span>
+                <span>MQTT WebSockets transmission protocol</span>
               </li>
               <li className="flex items-center space-x-3 text-sm">
                 <CheckCircle2 className="w-5 h-5 text-primary-light" />
-                <span>PostgreSQL database terenkripsi</span>
+                <span>Encrypted PostgreSQL database</span>
               </li>
               <li className="flex items-center space-x-3 text-sm">
                 <CheckCircle2 className="w-5 h-5 text-primary-light" />
-                <span>React.js dengan UI/UX Modern (SPA)</span>
+                <span>React.js with Modern UI/UX (SPA)</span>
               </li>
             </ul>
           </div>
@@ -200,9 +200,9 @@ export default function LandingPage() {
       {/* Team Section */}
       <section id="tim" className="py-24 bg-neutral">
         <div className="max-w-7xl mx-auto px-8 text-center">
-          <h2 className="font-heading text-3xl font-bold mb-4">Tim Pengembang</h2>
+          <h2 className="font-heading text-3xl font-bold mb-4">Development Team</h2>
           <p className="text-secondary-light max-w-2xl mx-auto mb-16">
-            Pakar di balik inovasi kami, menggabungkan keahlian teknik elektro dan rekayasa perangkat lunak.
+            The experts behind our innovation, combining electrical engineering and software engineering expertise.
           </p>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
@@ -227,17 +227,17 @@ export default function LandingPage() {
       {/* CTA Section */}
       <section className="py-20 bg-white">
         <div className="max-w-3xl mx-auto px-8 text-center">
-          <h2 className="font-heading text-3xl font-bold mb-4">Siap Memulai Efisiensi?</h2>
+          <h2 className="font-heading text-3xl font-bold mb-4">Ready to Maximize Efficiency?</h2>
           <p className="text-secondary-light mb-8">
-            Hubungi tim kami untuk konsultasi gratis mengenai implementasi sistem Eco-Light di kampus Anda.
+            Contact our team for a free consultation on implementing Eco-Light across your campus.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-lg mx-auto">
             <div className="relative w-full">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-light w-5 h-5" />
-              <Input type="email" placeholder="Email institusi Anda" className="pl-10 h-12 w-full bg-[#F1F5F9] border-none shadow-sm" />
+              <Input type="email" placeholder="Your institutional email" className="pl-10 h-12 w-full bg-[#F1F5F9] border-none shadow-sm" />
             </div>
             <Button className="w-full sm:w-auto h-12 px-8 bg-primary hover:bg-primary-dark text-white rounded-md whitespace-nowrap">
-              Jadwalkan Demo
+              Schedule a Demo
             </Button>
           </div>
         </div>
@@ -252,31 +252,31 @@ export default function LandingPage() {
               <span className="font-heading font-bold text-xl text-primary">Eco-Light</span>
             </div>
             <p className="text-sm text-secondary-light max-w-sm">
-              Mewujudkan kampus hijau dan efisien energi melalui teknologi pintar dan manajemen otomatisasi terpadu.
+              Building a green and energy-efficient campus through smart technology and integrated automation management.
             </p>
           </div>
           <div>
-            <h5 className="font-bold mb-4 text-secondary-dark">Tautan Cepat</h5>
+            <h5 className="font-bold mb-4 text-secondary-dark">Quick Links</h5>
             <ul className="space-y-2 text-sm text-secondary-light">
-              <li><a href="#" className="hover:text-primary transition-colors">Tentang Kami</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Studi Kasus</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Dokumentasi API</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Kontak</a></li>
+              <li><a href="#" className="hover:text-primary transition-colors">About Us</a></li>
+              <li><a href="#" className="hover:text-primary transition-colors">Case Studies</a></li>
+              <li><a href="#" className="hover:text-primary transition-colors">API Documentation</a></li>
+              <li><a href="#" className="hover:text-primary transition-colors">Contact</a></li>
             </ul>
           </div>
           <div>
-            <h5 className="font-bold mb-4 text-secondary-dark">Hubungi Kami</h5>
+            <h5 className="font-bold mb-4 text-secondary-dark">Contact Us</h5>
             <ul className="space-y-2 text-sm text-secondary-light">
               <li>hello@eco-light.id</li>
-              <li>Kampus Digital, Jalan Sudirman Jakarta</li>
+              <li>Digital Campus, Sudirman Street, Jakarta</li>
             </ul>
           </div>
         </div>
         <div className="max-w-7xl mx-auto px-8 pt-8 border-t border-neutral-border flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-secondary-light">
-          <p>&copy; 2026 Eco-Light & Space Optimizer. Hak Cipta Dilindungi.</p>
+          <p>&copy; 2026 Eco-Light & Space Optimizer. All Rights Reserved.</p>
           <div className="flex items-center space-x-4">
-            <a href="#" className="hover:text-primary">Kebijakan Privasi</a>
-            <a href="#" className="hover:text-primary">Syarat & Ketentuan</a>
+            <a href="#" className="hover:text-primary">Privacy Policy</a>
+            <a href="#" className="hover:text-primary">Terms & Conditions</a>
           </div>
         </div>
       </footer>

@@ -9,17 +9,17 @@ function formatRelativeTime(dateString: string) {
   const date = new Date(dateString);
   const diffMs = now.getTime() - date.getTime();
 
-  if (isNaN(diffMs) || diffMs < 0) return 'Baru saja';
+  if (isNaN(diffMs) || diffMs < 0) return 'Just now';
 
   const diffMins = Math.floor(diffMs / 60000);
-  if (diffMins < 1) return 'Baru saja';
-  if (diffMins < 60) return `${diffMins} mnt lalu`;
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
 
   const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours} jam lalu`;
+  if (diffHours < 24) return `${diffHours}h ago`;
 
   const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays} hari lalu`;
+  return `${diffDays}d ago`;
 }
 
 function isJsonString(str: string): boolean {
@@ -45,8 +45,8 @@ function getActivityDetails(log: any) {
   // Peristiwa Khusus Perangkat
   if (action === 'DEVICE_ONLINE') {
     return {
-      title: 'Perangkat Terhubung',
-      description: cleanDetails || `${userName} menghubungkan perangkat IoT`,
+      title: 'Device Connected',
+      description: cleanDetails || `${userName} connected an IoT device`,
       icon: <Activity className="w-4 h-4 text-emerald-600" />,
       bgClass: 'bg-emerald-50',
     };
@@ -54,8 +54,8 @@ function getActivityDetails(log: any) {
 
   if (action === 'DEVICE_OFFLINE') {
     return {
-      title: 'Perangkat Terputus',
-      description: cleanDetails || `${userName} memutuskan perangkat IoT`,
+      title: 'Device Disconnected',
+      description: cleanDetails || `${userName} disconnected an IoT device`,
       icon: <Activity className="w-4 h-4 text-slate-500" />,
       bgClass: 'bg-slate-100',
     };
@@ -71,8 +71,8 @@ function getActivityDetails(log: any) {
   ) {
     if (lowerAction.includes('login') || action.includes('/login')) {
       return {
-        title: 'Login Berhasil',
-        description: `${userName} berhasil masuk ke sistem`,
+        title: 'Login Successful',
+        description: `${userName} logged in successfully`,
         icon: <LogIn className="w-4 h-4 text-blue-600" />,
         bgClass: 'bg-blue-50',
       };
@@ -80,7 +80,7 @@ function getActivityDetails(log: any) {
     if (lowerAction.includes('logout') || action.includes('/logout')) {
       return {
         title: 'Logout',
-        description: `${userName} keluar dari sistem`,
+        description: `${userName} logged out of the system`,
         icon: <LogOut className="w-4 h-4 text-slate-600" />,
         bgClass: 'bg-slate-100',
       };
@@ -94,7 +94,7 @@ function getActivityDetails(log: any) {
       };
     }
     return {
-      title: 'Autentikasi Pengguna',
+      title: 'User Authentication',
       description: cleanDetails || `Sesi autentikasi oleh ${userName}`,
       icon: <Shield className="w-4 h-4 text-blue-600" />,
       bgClass: 'bg-blue-50',
@@ -111,12 +111,12 @@ function getActivityDetails(log: any) {
     const resourceSegment = (rawSegments[0] === 'api' ? rawSegments[1] : rawSegments[0]) || 'sistem';
     const methodVerb =
       method === 'POST'
-        ? 'Tambah'
+        ? 'Add'
         : method === 'PUT' || method === 'PATCH'
         ? 'Perbarui'
         : method === 'DELETE'
-        ? 'Hapus'
-        : 'Akses';
+        ? 'Delete'
+        : 'Access';
 
     return {
       title: `${methodVerb} ${resourceSegment}`,
@@ -128,7 +128,7 @@ function getActivityDetails(log: any) {
 
   // Entri tak dikenali: "Aktivitas sistem"
   return {
-    title: 'Aktivitas sistem',
+    title: 'System activity',
     description: cleanDetails || `${action ? `${action} oleh ` : ''}${userName}`,
     icon: <Activity className="w-4 h-4 text-slate-600" />,
     bgClass: 'bg-slate-100',
@@ -141,16 +141,16 @@ export function ActivityFeed() {
   return (
     <Card className="border-transparent shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between pb-4 pt-6 px-6">
-        <CardTitle className="text-sm font-bold text-black">Aktivitas Terbaru</CardTitle>
+        <CardTitle className="text-sm font-bold text-black">Recent Activity</CardTitle>
       </CardHeader>
       <CardContent className="px-6 pb-6">
         {isLoading ? (
           <div className="py-6 text-center text-sm text-secondary">
-            Memuat aktivitas terbaru...
+            Loading recent activity...
           </div>
         ) : !activityLogs || activityLogs.length === 0 ? (
           <div className="py-6 text-center text-sm text-secondary">
-            Belum ada log aktivitas.
+            No activity logs yet.
           </div>
         ) : (
           <div className="space-y-5 max-h-80 overflow-y-auto pr-1">

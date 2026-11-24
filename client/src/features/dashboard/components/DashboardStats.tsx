@@ -51,9 +51,9 @@ export function DashboardStats() {
           <div className="mt-2">
             <h3 className="text-3xl font-heading font-bold text-black mb-1">{totalRooms}</h3>
             {unconfiguredCount > 0 ? (
-              <p className="text-xs text-amber-600 font-medium">{unconfiguredCount} belum diatur kapasitasnya</p>
+              <p className="text-xs text-amber-600 font-medium">{unconfiguredCount} {unconfiguredCount === 1 ? 'room lacks capacity config' : 'rooms lack capacity config'}</p>
             ) : (
-              <p className="text-xs text-secondary font-medium">Semua kapasitas terkonfigurasi</p>
+              <p className="text-xs text-secondary font-medium">All room capacities configured</p>
             )}
           </div>
         </CardContent>
@@ -66,14 +66,14 @@ export function DashboardStats() {
             <div className="p-2 bg-[#bbf7d0] text-primary rounded-md">
               <Users className="w-5 h-5" />
             </div>
-            <p className="text-[10px] font-bold text-secondary uppercase tracking-wider mt-1">Orang saat ini</p>
+            <p className="text-[10px] font-bold text-secondary uppercase tracking-wider mt-1">Current occupants</p>
           </div>
           <div className="mt-2">
             <h3 className="text-3xl font-heading font-bold text-black mb-1">
               {hasFreshData ? totalFreshPersons : '—'}
             </h3>
             <p className="text-xs text-secondary font-medium">
-              {hasFreshData ? `dari ${freshRooms.length} ruangan dengan data segar` : 'Tidak ada data segar'}
+              {hasFreshData ? `from ${freshRooms.length} ${freshRooms.length === 1 ? 'room' : 'rooms'} with fresh data` : 'No fresh data'}
             </p>
           </div>
         </CardContent>
@@ -90,9 +90,9 @@ export function DashboardStats() {
           </div>
           <div className="mt-2">
             <div className="flex items-baseline mb-1">
-              <h3 className="text-2xl font-heading font-bold text-black">Belum tersedia</h3>
+              <h3 className="text-2xl font-heading font-bold text-black">Not available yet</h3>
             </div>
-            <p className="text-xs text-secondary font-medium">Menunggu perhitungan baseline</p>
+            <p className="text-xs text-secondary font-medium">Awaiting baseline calculation</p>
           </div>
         </CardContent>
       </Card>
@@ -109,7 +109,7 @@ export function DashboardStats() {
           <div className="mt-2">
             <h3 className="text-3xl font-heading font-bold text-black mb-1">{activeAlertsCount}</h3>
             <p className={`text-xs font-bold ${activeAlertsCount > 0 ? 'text-tertiary' : 'text-secondary-light'}`}>
-              {activeAlertsCount > 0 ? 'Perlu tindakan' : 'Tidak ada peringatan'}
+              {activeAlertsCount > 0 ? 'Action required' : 'No alerts'}
             </p>
           </div>
         </CardContent>

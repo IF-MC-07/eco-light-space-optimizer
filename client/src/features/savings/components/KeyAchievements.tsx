@@ -26,7 +26,7 @@ function InsightEvidenceDisclosure({ evidence }: { evidence: Record<string, any>
         className="text-[11px] font-bold text-primary-dark hover:underline flex items-center gap-1"
       >
         <span>{open ? '▾' : '▸'}</span>
-        <span>Lihat dasar perhitungan</span>
+        <span>View calculation basis</span>
       </button>
 
       {open && (
@@ -37,12 +37,12 @@ function InsightEvidenceDisclosure({ evidence }: { evidence: Record<string, any>
           </div>
           {evidence.threshold !== undefined && (
             <div className="flex justify-between border-b border-neutral-border/40 pb-1">
-              <span className="text-secondary font-sans font-semibold">Ambang yang dipakai:</span>
+              <span className="text-secondary font-sans font-semibold">Threshold Applied:</span>
               <span className="font-bold text-black">{String(evidence.threshold)}</span>
             </div>
           )}
           <div className="pt-1">
-            <span className="text-secondary font-sans font-semibold block mb-1">Bukti Data (Evidence):</span>
+            <span className="text-secondary font-sans font-semibold block mb-1">Evidence:</span>
             <pre className="bg-white p-2 rounded border border-neutral-border/50 text-[10px] overflow-x-auto text-black">
               {JSON.stringify(evidence, null, 2)}
             </pre>
@@ -79,7 +79,7 @@ export function KeyAchievements({ filters }: KeyAchievementsProps) {
           <CardTitle className="text-lg text-black font-heading font-bold">Key Insights</CardTitle>
         </CardHeader>
         <CardContent className="px-6 pb-6">
-          <ErrorState message="Gagal memuat wawasan penghematan" onRetry={() => refetch()} />
+          <ErrorState message="Failed to load savings insights" onRetry={() => refetch()} />
         </CardContent>
       </Card>
     );
@@ -95,7 +95,7 @@ export function KeyAchievements({ filters }: KeyAchievementsProps) {
       <CardContent className="px-6 pb-6">
         {insights.length === 0 ? (
           <p className="text-xs text-secondary-light italic">
-            Belum ada wawasan analitik yang terpicu untuk periode ini.
+            No analytical insights triggered for this period.
           </p>
         ) : (
           <ul className="space-y-5">
