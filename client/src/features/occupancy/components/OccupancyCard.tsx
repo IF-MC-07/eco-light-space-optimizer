@@ -12,8 +12,8 @@ interface OccupancyCardProps {
 export function OccupancyCard({ room, onClick }: OccupancyCardProps) {
   const meta = statusMeta[room.status] || statusMeta['Tidak tersedia'];
   const locationText = room.building
-    ? `${room.building} · Lantai ${room.floor ?? '-'}`
-    : 'Gedung belum diatur';
+    ? `${room.building} · Floor ${room.floor ?? '-'}`
+    : 'Building not configured';
 
   const isSpecialStatus =
     room.status === 'Tidak tersedia' || room.status === 'Kapasitas belum dikonfigurasi';
@@ -41,7 +41,7 @@ export function OccupancyCard({ room, onClick }: OccupancyCardProps) {
                 variant="outline"
                 className="text-[10px] font-semibold px-2 py-0.5 border-amber-400 text-amber-700 bg-amber-50 shrink-0"
               >
-                Simulasi
+                SIMULATED
               </Badge>
             )}
           </div>
@@ -57,15 +57,15 @@ export function OccupancyCard({ room, onClick }: OccupancyCardProps) {
 
         {/* Baris 3: Data okupansi atau pesan khusus */}
         {room.status === 'Tidak tersedia' ? (
-          <p className="text-xs text-secondary mb-3">Data tidak tersedia</p>
+          <p className="text-xs text-secondary mb-3">Data unavailable</p>
         ) : room.status === 'Kapasitas belum dikonfigurasi' ? (
-          <p className="text-xs text-secondary mb-3">Kapasitas belum diatur</p>
+          <p className="text-xs text-secondary mb-3">Capacity not configured</p>
         ) : (
           <div className="mb-3 space-y-1.5">
             <div className="flex items-center justify-between text-xs">
               <span className="text-secondary font-medium">
                 {room.person_count !== null ? room.person_count : '-'} /{' '}
-                {room.capacity !== null ? room.capacity : '-'} orang
+                {room.capacity !== null ? `${room.capacity} ${room.capacity === 1 ? 'person' : 'people'}` : '- people'}
               </span>
               <span className="font-bold text-secondary-dark">{progressPct}%</span>
             </div>
@@ -83,11 +83,11 @@ export function OccupancyCard({ room, onClick }: OccupancyCardProps) {
           <div className="text-xs text-secondary mb-3 flex items-center gap-1">
             {recCount > 0 ? (
               <>
-                <span className="font-medium">{recCount} ruangan alternatif</span>
+                <span className="font-medium">{recCount} {recCount === 1 ? 'alternative room' : 'alternative rooms'}</span>
                 <ArrowRight size={12} className="text-secondary-light" />
               </>
             ) : (
-              <span>Tidak ada alternatif</span>
+              <span>No alternatives</span>
             )}
           </div>
         )}
@@ -96,7 +96,7 @@ export function OccupancyCard({ room, onClick }: OccupancyCardProps) {
         <div className="mt-auto pt-2 flex items-center justify-between text-[11px] text-secondary">
           <div className="flex items-center gap-1">
             <Clock size={11} className="text-secondary-light" />
-            <span>Diperbarui {formatAge(room.age_seconds)}</span>
+            <span>Updated {formatAge(room.age_seconds)}</span>
           </div>
 
           {room.is_stale && (

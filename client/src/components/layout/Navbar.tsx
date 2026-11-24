@@ -127,16 +127,16 @@ export function Navbar({
         <>
           <nav className="hidden md:flex items-center space-x-8">
             <a href="#" className="text-sm font-semibold text-primary border-b-2 border-primary pb-1">Home</a>
-            <a href="#fitur" className="text-sm font-medium text-secondary hover:text-primary transition-colors">Fitur Utama</a>
-            <a href="#carakerja" className="text-sm font-medium text-secondary hover:text-primary transition-colors">Cara Kerja</a>
-            <a href="#tim" className="text-sm font-medium text-secondary hover:text-primary transition-colors">Tim</a>
+            <a href="#fitur" className="text-sm font-medium text-secondary hover:text-primary transition-colors">Features</a>
+            <a href="#carakerja" className="text-sm font-medium text-secondary hover:text-primary transition-colors">How It Works</a>
+            <a href="#tim" className="text-sm font-medium text-secondary hover:text-primary transition-colors">Team</a>
           </nav>
           <div className="flex items-center gap-4">
             <Link href="/login" className="text-sm font-medium text-primary hover:text-primary-dark transition-colors">
-              Masuk
+              Login
             </Link>
             <Link href="/register" className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors">
-              Daftar
+              Register
             </Link>
           </div>
         </>

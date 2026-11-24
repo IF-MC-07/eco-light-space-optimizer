@@ -22,7 +22,7 @@ export default function EnergyMonitor() {
         <div className="flex items-center gap-4">
           <div className="flex items-center space-x-2">
             <label htmlFor="toggle-simulated-energy" className="text-sm font-medium text-slate-700 cursor-pointer">
-              Tampilkan ruangan simulasi
+              Show simulated rooms
             </label>
             <Switch
               id="toggle-simulated-energy"

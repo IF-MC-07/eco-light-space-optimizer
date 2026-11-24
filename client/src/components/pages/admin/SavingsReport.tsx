@@ -45,7 +45,7 @@ export default function SavingsReport() {
       {/* Simulation Toggle */}
       <div className="flex items-center justify-end space-x-2 py-1">
         <label htmlFor="toggle-simulated-savings" className="text-sm font-medium text-slate-700 cursor-pointer">
-          Tampilkan ruangan simulasi
+          Show simulated rooms
         </label>
         <Switch
           id="toggle-simulated-savings"

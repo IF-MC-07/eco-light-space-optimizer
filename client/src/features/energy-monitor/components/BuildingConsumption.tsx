@@ -33,11 +33,11 @@ export function BuildingConsumption({ filters }: BuildingConsumptionProps = {}) 
             <Skeleton className="h-6 w-full" />
           </div>
         ) : isError ? (
-          <ErrorState message="Gagal memuat konsumsi energi per ruangan" onRetry={() => refetch()} />
+          <ErrorState message="Failed to load energy consumption per room" onRetry={() => refetch()} />
         ) : rawBreakdown.length === 0 ? (
           <EmptyState
-            message="Tidak ada data konsumsi ruangan"
-            description="Belum ada data sensor energi per ruangan untuk hari ini."
+            message="No room consumption data"
+            description="No room energy sensor data recorded for today."
           />
         ) : (
           rawBreakdown.map((row: any, idx: number) => {
@@ -57,12 +57,12 @@ export function BuildingConsumption({ filters }: BuildingConsumptionProps = {}) 
                     <span className="text-sm font-bold text-black">{row.room_name}</span>
                     {row.is_simulated && (
                       <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider text-amber-700 bg-amber-50 border-amber-200">
-                        Simulasi
+                        SIMULATED
                       </Badge>
                     )}
                   </div>
                   <span className="text-xs font-bold text-black">
-                    {hasSensor && valKwh !== null ? `${valKwh} kWh` : 'Belum ada sensor'}
+                    {hasSensor && valKwh !== null ? `${valKwh} kWh` : 'No sensor'}
                   </span>
                 </div>
                 {hasSensor && valKwh !== null ? (

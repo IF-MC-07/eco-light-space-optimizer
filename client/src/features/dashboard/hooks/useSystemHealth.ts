@@ -6,7 +6,7 @@ import { usePowerSensors } from '../../energy-monitor/hooks';
 import { DETECTION_STALE_MINUTES, SENSOR_STALE_MINUTES } from '../constants';
 
 export type HealthStatusType = 'normal' | 'warning' | 'error' | 'no_data';
-export type HealthStatusLabel = 'Normal' | 'Perhatian' | 'Mati' | 'Tidak ada data';
+export type HealthStatusLabel = 'Normal' | 'Warning' | 'Offline' | 'No data';
 
 export interface HealthComponentItem {
   id: string;
@@ -19,18 +19,18 @@ export interface HealthComponentItem {
 }
 
 function formatRelativeTime(dateString?: string | null): string {
-  if (!dateString) return 'Tidak ada data';
+  if (!dateString) return 'No data';
   const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
-  if (isNaN(diffMs) || diffMs < 0) return 'Baru saja';
+  if (isNaN(diffMs) || diffMs < 0) return 'Just now';
   const diffMins = Math.floor(diffMs / 60000);
-  if (diffMins < 1) return 'Baru saja';
-  if (diffMins < 60) return `${diffMins} mnt lalu`;
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
   const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours} jam lalu`;
+  if (diffHours < 24) return `${diffHours}h ago`;
   const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays} hari lalu`;
+  return `${diffDays}d ago`;
 }
 
 export function useSystemHealthStatus() {
@@ -53,10 +53,10 @@ export function useSystemHealthStatus() {
     if (cameras.length === 0) {
       camComponent = {
         id: 'cameras',
-        name: 'Kamera Pengawas',
+        name: 'Surveillance Cameras',
         status: 'no_data',
-        statusLabel: 'Tidak ada data',
-        lastSeenText: 'Belum ada kamera terdaftar',
+        statusLabel: 'No data',
+        lastSeenText: 'No cameras registered',
         isIssue: false,
       };
     } else {
@@ -69,10 +69,10 @@ export function useSystemHealthStatus() {
         // Kamera nonaktif -> Mati
         camComponent = {
           id: 'cameras',
-          name: 'Kamera Pengawas',
+          name: 'Surveillance Cameras',
           status: 'error',
-          statusLabel: 'Mati',
-          lastSeenText: `${inactive.length} dari ${cameras.length} kamera mati`,
+          statusLabel: 'Offline',
+          lastSeenText: `${inactive.length} of ${cameras.length} cameras offline`,
           isIssue: true,
         };
       } else {
@@ -87,10 +87,10 @@ export function useSystemHealthStatus() {
         if (timestamps.length === 0) {
           camComponent = {
             id: 'cameras',
-            name: 'Kamera Pengawas',
+            name: 'Surveillance Cameras',
             status: 'warning',
-            statusLabel: 'Perhatian',
-            lastSeenText: 'kamera aktif, belum ada data deteksi',
+            statusLabel: 'Warning',
+            lastSeenText: 'cameras active, no detection data yet',
             isIssue: true,
           };
         } else {
@@ -103,20 +103,20 @@ export function useSystemHealthStatus() {
             const relativeText = formatRelativeTime(new Date(latestTimestamp).toISOString());
             camComponent = {
               id: 'cameras',
-              name: 'Kamera Pengawas',
+              name: 'Surveillance Cameras',
               status: 'warning',
-              statusLabel: 'Perhatian',
-              lastSeenText: `data deteksi ${relativeText}`,
+              statusLabel: 'Warning',
+              lastSeenText: `detection data ${relativeText}`,
               isIssue: true,
             };
           } else {
             // Normal hanya bila aktif DAN deteksi ruangannya segar
             camComponent = {
               id: 'cameras',
-              name: 'Kamera Pengawas',
+              name: 'Surveillance Cameras',
               status: 'normal',
               statusLabel: 'Normal',
-              lastSeenText: `${cameras.length} kamera aktif · deteksi segar`,
+              lastSeenText: `${cameras.length} cameras active · fresh detection`,
               isIssue: false,
             };
           }
@@ -129,10 +129,10 @@ export function useSystemHealthStatus() {
     if (rooms.length === 0) {
       detComponent = {
         id: 'detection',
-        name: 'Layanan Deteksi Okupansi',
+        name: 'Occupancy Detection Service',
         status: 'no_data',
-        statusLabel: 'Tidak ada data',
-        lastSeenText: 'Belum ada ruangan non-simulasi',
+        statusLabel: 'No data',
+        lastSeenText: 'No non-simulated rooms',
         isIssue: false,
       };
     } else {
@@ -143,10 +143,10 @@ export function useSystemHealthStatus() {
       if (timestamps.length === 0) {
         detComponent = {
           id: 'detection',
-          name: 'Layanan Deteksi Okupansi',
+          name: 'Occupancy Detection Service',
           status: 'no_data',
-          statusLabel: 'Tidak ada data',
-          lastSeenText: 'Belum ada telemetri deteksi',
+          statusLabel: 'No data',
+          lastSeenText: 'No detection telemetry',
           isIssue: false,
         };
       } else {
@@ -156,10 +156,10 @@ export function useSystemHealthStatus() {
         const isStale = ageMinutes > DETECTION_STALE_MINUTES;
         detComponent = {
           id: 'detection',
-          name: 'Layanan Deteksi Okupansi',
+          name: 'Occupancy Detection Service',
           status: isStale ? 'warning' : 'normal',
-          statusLabel: isStale ? 'Perhatian' : 'Normal',
-          lastSeenText: `terakhir terlihat ${relativeText}`,
+          statusLabel: isStale ? 'Warning' : 'Normal',
+          lastSeenText: `Last seen ${relativeText}`,
           isIssue: isStale,
         };
       }
@@ -173,11 +173,11 @@ export function useSystemHealthStatus() {
     if (esp32Devices.length === 0) {
       espComponent = {
         id: 'esp32',
-        name: 'Kontroler ESP32',
+        name: 'ESP32 Controller',
         status: 'no_data',
-        statusLabel: 'Tidak ada data',
-        lastSeenText: 'Belum ada kontroler terdaftar',
-        helpText: 'berdasarkan pesan status terakhir',
+        statusLabel: 'No data',
+        lastSeenText: 'No controllers registered',
+        helpText: 'based on last status message',
         isIssue: false,
       };
     } else {
@@ -209,7 +209,7 @@ export function useSystemHealthStatus() {
         ? validStatuses.reduce((prev, curr) => (curr.time > prev.time ? curr : prev))
         : null;
 
-      let lastSeenText = 'Belum pernah terhubung';
+      let lastSeenText = 'Never connected';
       let isStale = true;
 
       if (latestStatus && latestStatus.time > 0) {
@@ -218,16 +218,16 @@ export function useSystemHealthStatus() {
         const relativeText = formatRelativeTime(new Date(latestStatus.time).toISOString());
 
         if (latestStatus.isPowerReading) {
-          lastSeenText = `pembacaan daya terakhir ${relativeText}`;
+          lastSeenText = `Last power reading ${relativeText}`;
         } else {
-          lastSeenText = `Kontroler terakhir terhubung ${relativeText}`;
+          lastSeenText = `Last controller connection ${relativeText}`;
         }
       }
 
       // Jangan menyiratkan kontroler online bila hanya last_seen yang lama
       const isIssue = offline.length > 0 || isStale;
       const status: HealthStatusType = offline.length > 0 ? 'error' : isStale ? 'warning' : 'normal';
-      const statusLabel: HealthStatusLabel = offline.length > 0 ? 'Mati' : isStale ? 'Perhatian' : 'Normal';
+      const statusLabel: HealthStatusLabel = offline.length > 0 ? 'Offline' : isStale ? 'Warning' : 'Normal';
 
       if (offline.length > 0) {
         lastSeenText = `${offline.length} offline · ${lastSeenText}`;
@@ -235,11 +235,11 @@ export function useSystemHealthStatus() {
 
       espComponent = {
         id: 'esp32',
-        name: 'Kontroler ESP32',
+        name: 'ESP32 Controller',
         status,
         statusLabel,
         lastSeenText,
-        helpText: 'berdasarkan pesan status terakhir',
+        helpText: 'based on last status message',
         isIssue,
       };
     }
@@ -250,10 +250,10 @@ export function useSystemHealthStatus() {
     if (sensors.length === 0) {
       sensorComponent = {
         id: 'sensors',
-        name: 'Sensor Daya (PZEM)',
+        name: 'Power Sensors (PZEM)',
         status: 'no_data',
-        statusLabel: 'Tidak ada data',
-        lastSeenText: 'Belum ada pembacaan sensor',
+        statusLabel: 'No data',
+        lastSeenText: 'No sensor readings',
         isIssue: false,
       };
     } else {
@@ -264,10 +264,10 @@ export function useSystemHealthStatus() {
       if (timestamps.length === 0) {
         sensorComponent = {
           id: 'sensors',
-          name: 'Sensor Daya (PZEM)',
+          name: 'Power Sensors (PZEM)',
           status: 'no_data',
-          statusLabel: 'Tidak ada data',
-          lastSeenText: 'Belum ada telemetri sensor',
+          statusLabel: 'No data',
+          lastSeenText: 'No sensor telemetry',
           isIssue: false,
         };
       } else {
@@ -277,10 +277,10 @@ export function useSystemHealthStatus() {
         const isStale = ageMinutes > SENSOR_STALE_MINUTES;
         sensorComponent = {
           id: 'sensors',
-          name: 'Sensor Daya (PZEM)',
+          name: 'Power Sensors (PZEM)',
           status: isStale ? 'warning' : 'normal',
-          statusLabel: isStale ? 'Perhatian' : 'Normal',
-          lastSeenText: `terakhir terlihat ${relativeText}`,
+          statusLabel: isStale ? 'Warning' : 'Normal',
+          lastSeenText: `Last seen ${relativeText}`,
           isIssue: isStale,
         };
       }

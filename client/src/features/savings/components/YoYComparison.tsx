@@ -27,7 +27,7 @@ function EvidenceDisclosure({ evidence }: { evidence: Record<string, any> }) {
         className="text-[11px] font-bold text-primary-dark hover:underline flex items-center gap-1"
       >
         <span>{open ? '▾' : '▸'}</span>
-        <span>Lihat dasar perhitungan</span>
+        <span>View calculation basis</span>
       </button>
 
       {open && (
@@ -38,12 +38,12 @@ function EvidenceDisclosure({ evidence }: { evidence: Record<string, any> }) {
           </div>
           {evidence.threshold !== undefined && (
             <div className="flex justify-between border-b border-neutral-border/40 pb-1">
-              <span className="text-secondary font-sans font-semibold">Ambang yang dipakai:</span>
+              <span className="text-secondary font-sans font-semibold">Threshold Applied:</span>
               <span className="font-bold text-black">{String(evidence.threshold)}</span>
             </div>
           )}
           <div className="pt-1">
-            <span className="text-secondary font-sans font-semibold block mb-1">Bukti Data (Evidence):</span>
+            <span className="text-secondary font-sans font-semibold block mb-1">Evidence:</span>
             <pre className="bg-neutral-50 p-2 rounded border border-neutral-border/50 text-[10px] overflow-x-auto text-black">
               {JSON.stringify(evidence, null, 2)}
             </pre>
@@ -79,7 +79,7 @@ export function YoYComparison({ filters }: YoYComparisonProps) {
           <CardTitle className="text-lg text-black font-heading font-bold">Period Comparison</CardTitle>
         </CardHeader>
         <CardContent className="px-6 pb-6">
-          <ErrorState message="Gagal memuat perbandingan periode" onRetry={() => refetch()} />
+          <ErrorState message="Failed to load period comparison" onRetry={() => refetch()} />
         </CardContent>
       </Card>
     );
@@ -108,13 +108,13 @@ export function YoYComparison({ filters }: YoYComparisonProps) {
         return (
           <div className="p-4 bg-green-50 border border-green-200 rounded-xl text-center">
             <span className="text-[10px] font-bold text-green-700 uppercase tracking-widest block mb-1">
-              Hemat Energi
+              Energy Saved
             </span>
             <div className="text-2xl font-black text-green-800">
               {deltaDisplay}
             </div>
             <p className="text-[11px] text-green-700 mt-1 font-semibold">
-              Konsumsi aktual lebih rendah dari baseline ({Math.abs(changePct || 0).toFixed(1)}%)
+              Actual consumption is lower than baseline ({Math.abs(changePct || 0).toFixed(1)}%)
             </p>
           </div>
         );
@@ -129,7 +129,7 @@ export function YoYComparison({ filters }: YoYComparisonProps) {
               {deltaDisplay}
             </div>
             <p className="text-[11px] text-red-700 mt-1 font-semibold">
-              Konsumsi aktual melebihi baseline ({Math.abs(changePct || 0).toFixed(1)}%)
+              Actual consumption exceeds baseline ({Math.abs(changePct || 0).toFixed(1)}%)
             </p>
           </div>
         );
@@ -138,13 +138,13 @@ export function YoYComparison({ filters }: YoYComparisonProps) {
         return (
           <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl text-center">
             <span className="text-[10px] font-bold text-gray-700 uppercase tracking-widest block mb-1">
-              Konsumsi Stabil / Netral
+              Stable / Neutral Consumption
             </span>
             <div className="text-2xl font-black text-gray-800">
               {deltaDisplay}
             </div>
             <p className="text-[11px] text-gray-700 mt-1 font-semibold">
-              Konsumsi berada dalam batas toleransi netral (±5%)
+              Consumption is within neutral tolerance limits (±5%)
             </p>
           </div>
         );
@@ -154,13 +154,13 @@ export function YoYComparison({ filters }: YoYComparisonProps) {
         return (
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-center">
             <span className="text-[10px] font-bold text-blue-700 uppercase tracking-widest block mb-1">
-              Data Belum Cukup
+              Insufficient Data
             </span>
             <div className="text-2xl font-black text-blue-800">
               —
             </div>
             <p className="text-[11px] text-blue-700 mt-1 font-medium">
-              Data riwayat atau rasio kelengkapan belum memenuhi syarat baseline minimum.
+              Historical data or coverage ratio does not meet minimum baseline requirements.
             </p>
           </div>
         );
@@ -171,7 +171,7 @@ export function YoYComparison({ filters }: YoYComparisonProps) {
     if (!insights || insights.length === 0) {
       return (
         <p className="text-xs text-secondary-light italic">
-          Belum ada wawasan analitik untuk periode ini.
+          No analytical insights available for this period.
         </p>
       );
     }
@@ -220,7 +220,7 @@ export function YoYComparison({ filters }: YoYComparisonProps) {
 
               {insight.recommendation && (
                 <div className="mt-2.5 pt-2 border-t border-black/5 font-medium">
-                  <span className="font-bold block text-[11px] mb-0.5 text-black">Rekomendasi Tindakan:</span>
+                  <span className="font-bold block text-[11px] mb-0.5 text-black">Recommended Action:</span>
                   <p className="text-[11px] leading-relaxed text-secondary-dark">{insight.recommendation}</p>
                 </div>
               )}
@@ -244,7 +244,7 @@ export function YoYComparison({ filters }: YoYComparisonProps) {
         <div className="space-y-4 pt-2">
           <div>
             <div className="flex justify-between items-end mb-1 text-xs">
-              <span className="font-semibold text-secondary-dark">Baseline Riwayat</span>
+              <span className="font-semibold text-secondary-dark">Historical Baseline</span>
               <span className="font-bold text-black">
                 {baselineKwh !== null ? `${baselineKwh.toFixed(3)} kWh` : '—'}
               </span>
@@ -258,7 +258,7 @@ export function YoYComparison({ filters }: YoYComparisonProps) {
 
           <div>
             <div className="flex justify-between items-end mb-1 text-xs">
-              <span className="font-semibold text-secondary-dark">Konsumsi Aktual</span>
+              <span className="font-semibold text-secondary-dark">Actual Consumption</span>
               <span className="font-bold text-black">{currentKwh.toFixed(3)} kWh</span>
             </div>
             <Progress
@@ -276,9 +276,9 @@ export function YoYComparison({ filters }: YoYComparisonProps) {
 
           {coverage && (
             <div className="flex justify-between items-center text-[11px] text-secondary-light font-medium pt-1">
-              <span>Kelengkapan Data (Coverage)</span>
+              <span>Data Completeness (Coverage)</span>
               <span>
-                {(coverage.ratio * 100).toFixed(0)}% ({coverage.days_with_data}/{coverage.expected_days} hari)
+                {(coverage.ratio * 100).toFixed(0)}% ({coverage.days_with_data}/{coverage.expected_days} days)
               </span>
             </div>
           )}
@@ -286,7 +286,7 @@ export function YoYComparison({ filters }: YoYComparisonProps) {
 
         <div className="pt-4 border-t border-neutral-border/40">
           <h4 className="text-xs font-bold text-secondary-dark uppercase tracking-wider mb-3">
-            Explainability & Rekomendasi
+            Explainability & Recommendations
           </h4>
           {renderInsights()}
         </div>

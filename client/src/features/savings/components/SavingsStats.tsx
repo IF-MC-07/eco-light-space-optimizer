@@ -15,7 +15,7 @@ export function SavingsStats() {
   const kwhSaved = stats && stats.total_saved_watts !== undefined ? (stats.total_saved_watts / 1000).toFixed(1) : '0';
   const co2ReducedTons = stats && stats.co2_saved_kg !== undefined ? (stats.co2_saved_kg / 1000).toFixed(2) : '0';
   const costSavedFormatted = stats && stats.cost_saved_idr !== undefined
-    ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(stats.cost_saved_idr)
+    ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(stats.cost_saved_idr)
     : 'Rp 0';
 
   const efficiencyScore = powerStats?.efficiency_score ?? 88;

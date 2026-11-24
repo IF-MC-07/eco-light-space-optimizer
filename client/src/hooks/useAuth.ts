@@ -20,7 +20,7 @@ const login = async (email: string, password: string) => {
     
     return { success: true, user };
   } catch (err: any) {
-    setError(err.response?.data?.message || 'Login gagal');
+    setError(err.response?.data?.message || 'Login failed');
     return { success: false, message: err.response?.data?.message };
   } finally {
     setLoading(false);
@@ -33,7 +33,7 @@ const login = async (email: string, password: string) => {
       await api.post('/auth/register', { name, username, email, password });
       return { success: true };
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Registrasi gagal');
+      setError(err.response?.data?.message || 'Registration failed');
       return { success: false, message: err.response?.data?.message };
     } finally {
       setLoading(false);
@@ -47,7 +47,7 @@ const login = async (email: string, password: string) => {
       const res = await api.post('/auth/forgot-password', { email });
       return { success: true, message: res.data.message };
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Gagal mengirim email reset');
+      setError(err.response?.data?.message || 'Failed to send reset email');
       return { success: false, message: err.response?.data?.message };
     } finally {
       setLoading(false);
@@ -61,7 +61,7 @@ const login = async (email: string, password: string) => {
       const res = await api.post(`/auth/reset-password?id=${id}`, { token, password });
       return { success: true, message: res.data.message };
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Gagal reset password');
+      setError(err.response?.data?.message || 'Failed to reset password');
       return { success: false, message: err.response?.data?.message };
     } finally {
       setLoading(false);
@@ -74,9 +74,9 @@ const login = async (email: string, password: string) => {
       window.location.href = '/login';
     } catch (err: any) {
       if (err?.response?.status === 401 || err?.response?.status === 403) {
-        toast.error('Sesi habis. Silakan login kembali.');
+        toast.error('Session expired. Please log in again.');
       } else {
-        toast.error('Gagal memuat data. Silakan coba lagi.');
+        toast.error('Failed to load data. Please try again.');
       }
       // Fallback for client side
       document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';

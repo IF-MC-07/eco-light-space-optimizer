@@ -30,7 +30,7 @@ export function OccupancySummary({ items: propItems }: OccupancySummaryProps) {
           </div>
           <div className="flex flex-col">
             <h3 className="text-2xl font-heading font-bold text-black leading-none">{totalRooms}</h3>
-            <p className="text-[11px] text-secondary font-medium mt-1">Total ruangan</p>
+            <p className="text-[11px] text-secondary font-medium mt-1">Total rooms</p>
           </div>
         </div>
 
@@ -41,7 +41,7 @@ export function OccupancySummary({ items: propItems }: OccupancySummaryProps) {
           </div>
           <div className="flex flex-col">
             <h3 className="text-2xl font-heading font-bold text-black leading-none">{padatRooms}</h3>
-            <p className="text-[11px] text-secondary font-medium mt-1">Padat</p>
+            <p className="text-[11px] text-secondary font-medium mt-1">Crowded</p>
           </div>
         </div>
 
@@ -52,7 +52,7 @@ export function OccupancySummary({ items: propItems }: OccupancySummaryProps) {
           </div>
           <div className="flex flex-col">
             <h3 className="text-2xl font-heading font-bold text-black leading-none">{tersediaRooms}</h3>
-            <p className="text-[11px] text-secondary font-medium mt-1">Tersedia</p>
+            <p className="text-[11px] text-secondary font-medium mt-1">Available</p>
           </div>
         </div>
 
@@ -63,7 +63,7 @@ export function OccupancySummary({ items: propItems }: OccupancySummaryProps) {
           </div>
           <div className="flex flex-col">
             <h3 className="text-2xl font-heading font-bold text-black leading-none">{totalPersons}</h3>
-            <p className="text-[11px] text-secondary font-medium mt-1">Orang saat ini</p>
+            <p className="text-[11px] text-secondary font-medium mt-1">Current occupants</p>
           </div>
         </div>
       </div>

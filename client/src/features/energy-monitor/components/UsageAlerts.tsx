@@ -45,13 +45,13 @@ export function UsageAlerts() {
       const roomName = s.Room?.room_name || s.room_id;
       const readDate = new Date(s.read_at);
       const timeStr = !isNaN(readDate.getTime())
-        ? readDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-        : 'Waktu tidak diketahui';
+        ? readDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+        : 'Unknown time';
 
       alerts.push({
         id: `power-${s.room_id}`,
-        title: 'Lonjakan Daya Terdeteksi',
-        desc: `Daya ${power.toFixed(1)} W melebihi ambang ${POWER_ALERT_THRESHOLD_W} W (${roomName}, ${timeStr})`,
+        title: 'Power Spike Detected',
+        desc: `Power ${power.toFixed(1)} W exceeds threshold ${POWER_ALERT_THRESHOLD_W} W (${roomName}, ${timeStr})`,
         time: timeStr,
         isHigh: true,
       });
@@ -64,9 +64,9 @@ export function UsageAlerts() {
     if (diffMinutes > STALE_MINUTES) {
       alerts.push({
         id: 'stale-telemetry',
-        title: 'Telemetri Tertunda',
-        desc: `Tidak ada pembacaan baru selama ${diffMinutes} menit`,
-        time: `${diffMinutes} mnt lalu`,
+        title: 'Delayed Telemetry',
+        desc: `No new readings for ${diffMinutes} minutes`,
+        time: `${diffMinutes}m ago`,
         isHigh: false,
       });
     }
@@ -91,12 +91,12 @@ export function UsageAlerts() {
             <Skeleton className="h-10 w-full" />
           </div>
         ) : isError ? (
-          <ErrorState message="Gagal memuat peringatan penggunaan" onRetry={() => refetch()} />
+          <ErrorState message="Failed to load usage alerts" onRetry={() => refetch()} />
         ) : alerts.length === 0 ? (
           <EmptyState
             icon={<ShieldCheck className="w-6 h-6 text-emerald-500" />}
-            message="Tidak ada peringatan"
-            description="Semua pembacaan sensor berada dalam ambang normal dan data tersinkronisasi."
+            message="No alerts"
+            description="All sensor readings are within normal thresholds and data is synchronized."
           />
         ) : (
           <div className="space-y-4">

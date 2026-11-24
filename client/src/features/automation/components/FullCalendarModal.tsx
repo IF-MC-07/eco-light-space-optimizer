@@ -176,7 +176,7 @@ export function FullCalendarModal({ isOpen, onClose }: FullCalendarModalProps) {
           {!isLoadingHolidays && holidays.length === 0 && (
             <div className="mb-4 flex items-center gap-2 p-3 bg-neutral/80 border border-neutral-border rounded-xl text-sm font-semibold text-secondary-dark">
               <Info size={16} className="text-secondary-light flex-shrink-0" />
-              <span>Data libur tahun {year} belum diisi</span>
+              <span>Holiday data for {year} has not been configured</span>
             </div>
           )}
 

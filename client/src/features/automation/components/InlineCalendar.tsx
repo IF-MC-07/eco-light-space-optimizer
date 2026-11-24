@@ -165,7 +165,7 @@ export function InlineCalendar() {
       {!isLoadingHolidays && holidays.length === 0 && (
         <div className="flex items-center gap-2 p-2.5 bg-neutral/80 border border-neutral-border rounded-xl text-xs font-semibold text-secondary-dark">
           <Info size={14} className="text-secondary-light flex-shrink-0" />
-          <span>Data libur tahun {year} belum diisi</span>
+          <span>Holiday data for {year} has not been configured</span>
         </div>
       )}
 

@@ -8,18 +8,18 @@ import { useMe } from '../../../features/auth/hooks';
 import { serverAPI } from '../../../lib/api';
 
 function formatRelativeTime(dateString?: string | null): string {
-  if (!dateString) return 'Tidak ada data';
+  if (!dateString) return 'No data';
   const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
-  if (isNaN(diffMs) || diffMs < 0) return 'Baru saja';
+  if (isNaN(diffMs) || diffMs < 0) return 'Just now';
   const diffMins = Math.floor(diffMs / 60000);
-  if (diffMins < 1) return 'Baru saja';
-  if (diffMins < 60) return `${diffMins} mnt lalu`;
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
   const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours} jam lalu`;
+  if (diffHours < 24) return `${diffHours}h ago`;
   const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays} hari lalu`;
+  return `${diffDays}d ago`;
 }
 
 const StatusBadge = ({ status }: { status: string }) => {
@@ -221,12 +221,12 @@ export function DeviceStatusTable() {
               <Cpu size={12} className={showWarning ? 'text-amber-600' : 'text-slate-600'} />
               <span>
                 {latestStatus.isPowerReading
-                  ? `Pembacaan daya terakhir ${formatRelativeTime(new Date(latestStatus.time).toISOString())}`
-                  : `Kontroler terakhir terhubung ${formatRelativeTime(new Date(latestStatus.time).toISOString())}`}
+                  ? `Last power reading ${formatRelativeTime(new Date(latestStatus.time).toISOString())}`
+                  : `Last controller connection ${formatRelativeTime(new Date(latestStatus.time).toISOString())}`}
               </span>
             </div>
             <span className="text-[10px] text-slate-400 pr-2">
-              berdasarkan pesan status terakhir
+              based on last status message
             </span>
           </div>
         )}
@@ -253,7 +253,7 @@ export function DeviceStatusTable() {
                   (c) => String(c.deviceId) === String(device.device_id) || (device.room_id && String(c.roomId) === String(device.room_id))
                 );
                 const rowTimingText = rowStatus && rowStatus.time > 0
-                  ? `${rowStatus.isPowerReading ? 'Pembacaan daya terakhir' : 'Terakhir terhubung'} ${formatRelativeTime(new Date(rowStatus.time).toISOString())}`
+                  ? `${rowStatus.isPowerReading ? 'Last power reading' : 'Last connected'} ${formatRelativeTime(new Date(rowStatus.time).toISOString())}`
                   : null;
 
                 return (
@@ -374,7 +374,7 @@ export function DeviceStatusTable() {
               {devices.length === 0 && (
                 <tr>
                   <td colSpan={5} className="py-10 text-center text-slate-400 font-semibold">
-                    Belum ada perangkat terdaftar. Tambahkan lewat halaman Manajemen Ruangan.
+                    No devices registered. Add devices via the Room Management page.
                   </td>
                 </tr>
               )}

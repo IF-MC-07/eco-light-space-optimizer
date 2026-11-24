@@ -11,7 +11,7 @@ export function RecommendationList({ recommendations }: RecommendationListProps)
   if (!recommendations || recommendations.length === 0) {
     return (
       <div className="mt-3 p-3 bg-neutral rounded-lg border border-neutral-border text-xs text-secondary text-center">
-        Tidak ada ruangan lain yang tersedia saat ini.
+        No other rooms are currently available.
       </div>
     );
   }
@@ -19,14 +19,14 @@ export function RecommendationList({ recommendations }: RecommendationListProps)
   return (
     <div className="mt-3 pt-3 border-t border-neutral-border space-y-2">
       <div className="text-[11px] font-bold text-secondary-dark uppercase tracking-wider">
-        Rekomendasi ruangan lain
+        Other room recommendations
       </div>
       <div className="space-y-2">
         {recommendations.map((rec) => {
           const meta = statusMeta[rec.status as keyof typeof statusMeta];
           const locationText = rec.building
-            ? `${rec.building} · Lantai ${rec.floor ?? '-'}`
-            : 'Gedung belum diatur';
+            ? `${rec.building} · Floor ${rec.floor ?? '-'}`
+            : 'Building not configured';
 
           return (
             <div
@@ -38,13 +38,13 @@ export function RecommendationList({ recommendations }: RecommendationListProps)
                   <span className="truncate">{rec.room_name || rec.room_id}</span>
                   {rec.is_simulated && (
                     <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-amber-400 text-amber-700 bg-amber-50">
-                      Simulasi
+                      SIMULATED
                     </Badge>
                   )}
                 </div>
                 {meta && (
                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${meta.badgeClass}`}>
-                    {rec.status}
+                    {meta.label || rec.status}
                   </span>
                 )}
               </div>

@@ -64,8 +64,8 @@ export function MasterControls() {
           roomName: room.room_name,
           success: true,
           hasAc: false,
-          statusText: 'Perintah terkirim',
-          message: 'Tidak ada perangkat aktif',
+          statusText: 'Command sent',
+          message: 'No active devices',
         });
         continue;
       }
@@ -82,19 +82,19 @@ export function MasterControls() {
           const res = await updateDevice(dev.device_id, { device_status: 'nonaktif' });
           if (!res?.success) {
             roomSuccess = false;
-            failureReason = res?.message || 'Gagal merespons';
+            failureReason = res?.message || 'Failed to respond';
           }
         } catch (err: any) {
           roomSuccess = false;
-          failureReason = err?.message || 'Koneksi terputus';
+          failureReason = err?.message || 'Connection lost';
         }
       }
 
       const statusText = !roomSuccess
-        ? 'Gagal'
+        ? 'Failed'
         : hasAcDevice
-        ? 'Perintah terkirim, tanpa konfirmasi perangkat'
-        : 'Perintah terkirim';
+        ? 'Command sent, unconfirmed by device'
+        : 'Command sent';
 
       results.push({
         roomId: room.room_id,
@@ -103,7 +103,7 @@ export function MasterControls() {
         hasAc: hasAcDevice,
         statusText,
         message: roomSuccess
-          ? (hasAcDevice ? 'Perintah matikan daya dikirim (AC tanpa konfirmasi)' : 'Perintah matikan relay dikirim ke broker')
+          ? (hasAcDevice ? 'Power kill command sent (AC unconfirmed)' : 'Relay kill command sent to broker')
           : failureReason,
       });
     }
@@ -130,7 +130,7 @@ export function MasterControls() {
             type="button"
             disabled
             className="w-full flex items-center justify-between p-3 bg-white/70 rounded-lg border border-neutral-border opacity-50 cursor-not-allowed shadow-none"
-            title="Belum tersambung ke backend"
+            title="Not connected to backend"
           >
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-md bg-slate-100 text-slate-400 flex items-center justify-center">
@@ -138,7 +138,7 @@ export function MasterControls() {
               </div>
               <div className="text-left">
                 <span className="text-sm font-bold text-slate-500 block">Turn On All The Device</span>
-                <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Belum tersambung</span>
+                <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">NOT CONNECTED</span>
               </div>
             </div>
             <ChevronRight size={18} className="text-slate-300" />
@@ -159,7 +159,7 @@ export function MasterControls() {
                   Kill All Power
                 </span>
                 <span className="text-[11px] text-secondary">
-                  {nonSimRooms.length} ruangan non-simulasi
+                  {nonSimRooms.length} non-simulated {nonSimRooms.length === 1 ? 'room' : 'rooms'}
                 </span>
               </div>
             </div>
@@ -177,24 +177,24 @@ export function MasterControls() {
                 <AlertTriangle size={24} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-black font-heading">Konfirmasi Kill All Power</h3>
+                <h3 className="text-lg font-bold text-black font-heading">Confirm Kill All Power</h3>
                 <p className="text-xs text-red-600 font-semibold mt-1">
-                  Peringatan: Tindakan ini akan mematikan seluruh perangkat lampu dan AC pada semua ruangan non-simulasi.
+                  Warning: This action will turn off all lighting and AC devices in all non-simulated rooms.
                 </p>
                 <p className="text-xs text-slate-600 font-medium mt-1">
-                  Status relay dan AC tidak dikonfirmasi oleh perangkat.
+                  Relay and AC status are not confirmed by the device.
                 </p>
               </div>
             </div>
 
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-6 text-xs text-slate-700 space-y-1">
               <div className="flex justify-between font-medium">
-                <span>Ruangan terdampak:</span>
-                <span className="font-bold text-black">{nonSimRooms.length} ruangan non-simulasi</span>
+                <span>Affected rooms:</span>
+                <span className="font-bold text-black">{nonSimRooms.length} non-simulated {nonSimRooms.length === 1 ? 'room' : 'rooms'}</span>
               </div>
               <div className="flex justify-between font-medium">
-                <span>Perangkat terdampak:</span>
-                <span className="font-bold text-black">{affectedDevices.length} perangkat IoT</span>
+                <span>Affected devices:</span>
+                <span className="font-bold text-black">{affectedDevices.length} IoT {affectedDevices.length === 1 ? 'device' : 'devices'}</span>
               </div>
             </div>
 
@@ -205,7 +205,7 @@ export function MasterControls() {
                 onClick={() => setShowConfirmModal(false)}
                 className="px-4 py-2 text-xs font-bold text-secondary-dark hover:bg-slate-100 rounded-xl transition-colors disabled:opacity-50"
               >
-                Batal
+                Cancel
               </button>
               <button
                 type="button"
@@ -213,7 +213,7 @@ export function MasterControls() {
                 onClick={handleKillAllExecute}
                 className="px-5 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
               >
-                {isExecuting ? 'Memproses...' : 'Ya, Matikan Semua Daya'}
+                {isExecuting ? 'Processing...' : 'Yes, Kill All Power'}
               </button>
             </div>
           </div>
@@ -225,7 +225,7 @@ export function MasterControls() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-neutral-border animate-in fade-in zoom-in duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-neutral-border mb-4">
-              <h3 className="text-base font-bold text-black font-heading">Hasil Eksekusi Kill All Power</h3>
+              <h3 className="text-base font-bold text-black font-heading">Kill All Power Execution Results</h3>
               <button
                 type="button"
                 onClick={() => setExecutionResults(null)}
@@ -271,7 +271,7 @@ export function MasterControls() {
                 onClick={() => setExecutionResults(null)}
                 className="px-5 py-2 text-xs font-bold text-white bg-primary-dark hover:bg-primary rounded-xl transition-colors shadow-sm"
               >
-                Tutup
+                Close
               </button>
             </div>
           </div>

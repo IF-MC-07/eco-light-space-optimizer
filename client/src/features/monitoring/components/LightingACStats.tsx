@@ -37,30 +37,30 @@ export function LightingACStats() {
 
   const cards = [
     {
-      title: 'Lampu Menyala',
+      title: 'Lights On',
       value: loading
         ? '...'
         : totalLightsCount === 0
-        ? 'Belum ada lampu terdaftar'
+        ? 'No lights registered'
         : `${activeLightsCount} / ${totalLightsCount}`,
       subtitle: totalLightsCount === 0
-        ? 'Tambahkan lampu di Manajemen Ruangan'
-        : `${activeLightsCount} dari ${totalLightsCount} lampu menyala`,
+        ? 'Add lights in Room Management'
+        : `${activeLightsCount} of ${totalLightsCount} lights on`,
       icon: Lightbulb,
       iconColor: 'text-primary bg-[#bbf7d0]',
       isAvailable: true,
       isTextOnly: totalLightsCount === 0,
     },
     {
-      title: 'AC Aktif',
+      title: 'Active AC',
       value: loading
         ? '...'
         : totalAcCount === 0
-        ? 'Belum ada AC terdaftar'
+        ? 'No AC registered'
         : String(activeAcCount).padStart(2, '0'),
       subtitle: totalAcCount === 0
-        ? 'Tambahkan unit AC di Manajemen Ruangan'
-        : 'menurut perintah terakhir',
+        ? 'Add AC units in Room Management'
+        : 'according to last command',
       icon: Snowflake,
       iconColor: 'text-blue-700 bg-blue-100',
       isAvailable: true,
@@ -72,7 +72,7 @@ export function LightingACStats() {
           {
             title: 'Setpoint AC rata-rata',
             value: loading ? '...' : avgSetpoint !== null ? `${avgSetpoint}°C` : '—',
-            subtitle: `dari ${totalAcCount} unit AC terdaftar`,
+            subtitle: `of ${totalAcCount} AC ${totalAcCount === 1 ? 'unit' : 'units'} registered`,
             icon: Thermometer,
             iconColor: 'text-white bg-primary-dark',
             isAvailable: true,

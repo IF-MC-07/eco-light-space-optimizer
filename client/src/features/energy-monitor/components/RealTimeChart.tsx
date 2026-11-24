@@ -42,7 +42,7 @@ export function RealTimeChart() {
             Konsumsi Energi Real-Time (kWh)
           </CardTitle>
           <p className="text-xs text-secondary-light font-medium">
-            Pembacaan energi per jam hari ini vs baseline historis
+            Hourly energy readings today vs historical baseline
           </p>
         </div>
         {series.length > 0 && !isLoading && !isError && (
@@ -67,13 +67,13 @@ export function RealTimeChart() {
           </div>
         ) : isError ? (
           <ErrorState
-            message="Gagal memuat grafik konsumsi real-time"
+            message="Failed to load real-time consumption chart"
             onRetry={() => refetch()}
           />
         ) : series.length === 0 ? (
           <EmptyState
-            message="Tidak ada data konsumsi energi real-time"
-            description="Belum ada pembacaan sensor energi yang tercatat untuk hari ini."
+            message="No real-time energy consumption data"
+            description="No energy sensor readings recorded for today."
           />
         ) : (
           <div className="h-[200px] w-full">

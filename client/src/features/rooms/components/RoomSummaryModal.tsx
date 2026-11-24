@@ -105,8 +105,8 @@ export function RoomSummaryModal({
 
   const meta = statusMeta[room.status] || statusMeta["Tidak tersedia"];
   const locationText = room.building
-    ? `${room.building} · Lantai ${room.floor ?? "-"}`
-    : "Gedung belum diatur";
+    ? `${room.building} · Floor ${room.floor ?? "-"}`
+    : "Building not configured";
 
   const isSpecialStatus =
     room.status === "Tidak tersedia" ||
@@ -159,7 +159,7 @@ export function RoomSummaryModal({
               type="button"
               onClick={onClose}
               className="w-8 h-8 rounded-lg bg-[#F1F5F9] flex items-center justify-center text-secondary-dark hover:bg-[#E2E8F0] transition-all shrink-0"
-              aria-label="Tutup"
+              aria-label="Close"
             >
               <X size={16} />
             </button>
@@ -175,21 +175,21 @@ export function RoomSummaryModal({
               <div className="flex items-center gap-1.5 mb-2">
                 <Users size={14} className="text-secondary-light" />
                 <span className="text-[10px] font-bold text-secondary-dark uppercase tracking-wider">
-                  Okupansi
+                  Occupancy
                 </span>
               </div>
               {isSpecialStatus ? (
                 <p className="text-xs text-secondary font-medium">
                   {room.status === "Tidak tersedia"
-                    ? "Data tidak tersedia"
-                    : "Kapasitas belum diatur"}
+                    ? "Data unavailable"
+                    : "Capacity not configured"}
                 </p>
               ) : (
                 <>
                   <p className="font-heading text-lg font-bold text-secondary-dark leading-tight">
                     {room.person_count !== null ? room.person_count : "-"} /{" "}
                     {room.capacity !== null ? room.capacity : "-"}{" "}
-                    <span className="text-xs font-medium text-secondary">kursi</span>
+                    <span className="text-xs font-medium text-secondary">seats</span>
                   </p>
                   <div className="flex items-center gap-2 mt-1.5">
                     <span className="text-sm font-bold text-secondary-dark">{progressPct}%</span>
@@ -208,14 +208,14 @@ export function RoomSummaryModal({
               <div className="flex items-center gap-1.5 mb-2">
                 <Armchair size={14} className="text-secondary-light" />
                 <span className="text-[10px] font-bold text-secondary-dark uppercase tracking-wider">
-                  Sisa kursi
+                  Remaining seats
                 </span>
               </div>
               {isSpecialStatus ? (
                 <p className="text-xs text-secondary font-medium">
                   {room.status === "Tidak tersedia"
-                    ? "Data tidak tersedia"
-                    : "Kapasitas belum diatur"}
+                    ? "Data unavailable"
+                    : "Capacity not configured"}
                 </p>
               ) : (
                 <p className="font-heading text-2xl font-bold text-secondary-dark leading-tight">
@@ -229,12 +229,12 @@ export function RoomSummaryModal({
           <div className="flex items-center justify-between text-[11px] text-secondary mb-5">
             <div className="flex items-center gap-1">
               <Clock size={12} className="text-secondary-light" />
-              <span>Diperbarui {formatAge(room.age_seconds)}</span>
+              <span>Updated {formatAge(room.age_seconds)}</span>
             </div>
             {room.is_stale && (
               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-300">
                 <AlertTriangle size={10} />
-                Data basi
+                Stale data
               </span>
             )}
           </div>
@@ -243,11 +243,11 @@ export function RoomSummaryModal({
           {room.status === "Padat" && (
             <div className="mb-4">
               <h3 className="text-[11px] font-bold text-secondary-dark uppercase tracking-wider mb-2">
-                Rekomendasi ruangan lain
+                Other room recommendations
               </h3>
               {recommendations.length === 0 ? (
                 <p className="text-xs text-secondary py-3 text-center bg-[#F8FAFC] rounded-lg border border-neutral-border">
-                  Tidak ada ruangan alternatif yang tersedia saat ini.
+                  No alternative rooms are currently available.
                 </p>
               ) : (
                 <div className="space-y-2">
@@ -287,7 +287,7 @@ export function RoomSummaryModal({
                 className="w-full py-2.5 rounded-xl text-xs font-semibold text-tertiary hover:bg-tertiary/10 transition-colors flex items-center justify-center gap-1.5"
               >
                 <Trash2 size={13} />
-                Hapus ruangan
+                Delete room
               </button>
             )}
           </div>
@@ -307,8 +307,8 @@ function RecommendationItem({
 }) {
   const meta = statusMeta[rec.status as keyof typeof statusMeta];
   const locText = rec.building
-    ? `${rec.building} · Lantai ${rec.floor ?? "-"}`
-    : "Gedung belum diatur";
+    ? `${rec.building} · Floor ${rec.floor ?? "-"}`
+    : "Building not configured";
 
   return (
     <div className="p-3 bg-white rounded-lg border border-neutral-border shadow-xs flex flex-col gap-1.5 text-xs">
@@ -322,13 +322,13 @@ function RecommendationItem({
               variant="outline"
               className="text-[9px] px-1.5 py-0 border-amber-400 text-amber-700 bg-amber-50 shrink-0"
             >
-              Simulasi
+              SIMULATED
             </Badge>
           )}
         </div>
         {meta && (
           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border shrink-0 ${meta.badgeClass}`}>
-            {rec.status}
+            {meta.label || rec.status}
           </span>
         )}
       </div>

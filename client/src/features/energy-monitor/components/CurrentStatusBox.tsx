@@ -20,9 +20,9 @@ export function CurrentStatusBox() {
             <Skeleton className="h-32 w-3/4 rounded-xl" />
           </div>
         ) : isError ? (
-          <ErrorState message="Gagal memuat status daya terkini" onRetry={() => refetch()} />
+          <ErrorState message="Failed to load current power status" onRetry={() => refetch()} />
         ) : !hasData || kwDraw === null ? (
-          <EmptyState message="Tidak ada data" description="Belum ada pembacaan daya terkini dari sensor." />
+          <EmptyState message="No data" description="No current power readings from sensors." />
         ) : (
           <div className="flex flex-col items-center justify-center py-6">
             <div className="bg-white rounded-xl shadow-sm border border-neutral-border p-8 mb-2 text-center w-3/4">
