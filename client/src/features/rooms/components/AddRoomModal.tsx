@@ -1,9 +1,12 @@
 "use client";
-import React, { useState } from "react";
-import { X, MapPin, Users, DoorOpen } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { X, MapPin, Users, DoorOpen, Building2, Layers } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
 import { useCreateRoom } from "../hooks";
-import { RoomStatus } from "../types";
+import { RoomStatus, type Room } from "../types";
+import { useOccupancy } from "@/features/occupancy/hooks";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface AddRoomModalProps {
   isOpen: boolean;
@@ -13,29 +16,78 @@ interface AddRoomModalProps {
 export function AddRoomModal({ isOpen, onClose }: AddRoomModalProps) {
   const [roomName, setRoomName] = useState("");
   const [location, setLocation] = useState("");
-  const [capacity, setCapacity] = useState("30");
+  const [building, setBuilding] = useState("");
+  const [floor, setFloor] = useState("");
+  const [capacity, setCapacity] = useState("");
   const [status, setStatus] = useState<RoomStatus>(RoomStatus.ACTIVE);
 
+  const queryClient = useQueryClient();
+  const { data: occupancyRes } = useOccupancy();
   const { mutate: createRoom, isPending } = useCreateRoom();
+
+  const buildingOptions = useMemo(() => {
+    const list = occupancyRes?.data || [];
+    const set = new Set<string>();
+    for (const item of list) {
+      if (item.building && item.building.trim()) {
+        set.add(item.building.trim());
+      }
+    }
+    return Array.from(set).sort();
+  }, [occupancyRes]);
+
+  const resetForm = () => {
+    setRoomName("");
+    setLocation("");
+    setBuilding("");
+    setFloor("");
+    setCapacity("");
+    setStatus(RoomStatus.ACTIVE);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const trimmedName = roomName.trim();
+    if (!trimmedName) {
+      toast.error("Room name cannot be empty");
+      return;
+    }
+
+    const payload: Partial<Room> = {
+      room_name: trimmedName,
+      location: location.trim(),
+      status,
+      building: building.trim() || null,
+      floor: floor.trim() || null,
+    };
+
+    const trimmedCap = capacity.trim();
+    if (trimmedCap !== "") {
+      const parsed = parseInt(trimmedCap, 10);
+      if (isNaN(parsed) || parsed < 1) {
+        toast.error("Capacity must be an integer of at least 1");
+        return;
+      }
+      payload.capacity = parsed;
+    }
+
     createRoom(
-      { 
-        room_name: roomName, 
-        location, 
-        capacity: parseInt(capacity),
-        status
-      },
+      payload as Omit<Room, "room_id">,
       {
         onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ["occupancy"] });
+          queryClient.invalidateQueries({ queryKey: ["rooms"] });
+          toast.success("Changes will take effect in the next cycle (up to 15 seconds)");
+          resetForm();
           onClose();
-          setRoomName("");
-          setLocation("");
-          setCapacity("30");
-          setStatus(RoomStatus.ACTIVE);
         },
       }
     );
@@ -55,12 +107,13 @@ export function AddRoomModal({ isOpen, onClose }: AddRoomModalProps) {
                 <DoorOpen className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-2xl font-heading text-bold text-secondary-dark tracking-tight">Add New Room</h2>
+                <h2 className="text-2xl font-heading font-bold text-secondary-dark tracking-tight">Add New Room</h2>
                 <p className="text-secondary-light text-sm">Provision a new smart workspace</p>
               </div>
             </div>
             <button 
-              onClick={onClose}
+              type="button"
+              onClick={handleClose}
               className="w-10 h-10 rounded-xl bg-[#F1F5F9] flex items-center justify-center text-secondary-dark hover:bg-[#E2E8F0] transition-all"
             >
               <X className="w-5 h-5" />
@@ -101,6 +154,44 @@ export function AddRoomModal({ isOpen, onClose }: AddRoomModalProps) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest flex items-center gap-2">
+                  <Building2 className="w-3 h-3" />
+                  Building
+                </label>
+                <input 
+                  type="text" 
+                  value={building}
+                  onChange={(e) => setBuilding(e.target.value)}
+                  maxLength={100}
+                  list="add-room-building-list"
+                  placeholder="e.g. Main Building"
+                  className="w-full bg-[#F1F5F9] border-none rounded-xl text-base font-semibold text-secondary-dark placeholder:text-secondary-light/50 focus:outline-none focus:ring-2 focus:ring-primary/50 px-5 py-4 transition-all"
+                />
+                <datalist id="add-room-building-list">
+                  {buildingOptions.map((b) => (
+                    <option key={b} value={b} />
+                  ))}
+                </datalist>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest flex items-center gap-2">
+                  <Layers className="w-3 h-3" />
+                  Floor
+                </label>
+                <input 
+                  type="text" 
+                  value={floor}
+                  onChange={(e) => setFloor(e.target.value)}
+                  maxLength={20}
+                  placeholder="mis. 3"
+                  className="w-full bg-[#F1F5F9] border-none rounded-xl text-base font-semibold text-secondary-dark placeholder:text-secondary-light/50 focus:outline-none focus:ring-2 focus:ring-primary/50 px-5 py-4 transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest flex items-center gap-2">
                   <Users className="w-3 h-3" />
                   Capacity
                 </label>
@@ -108,9 +199,9 @@ export function AddRoomModal({ isOpen, onClose }: AddRoomModalProps) {
                   type="number" 
                   value={capacity}
                   onChange={(e) => setCapacity(e.target.value)}
-                  className="w-full bg-[#F1F5F9] border-none rounded-xl text-base font-semibold text-secondary-dark focus:outline-none focus:ring-2 focus:ring-primary/50 px-5 py-4"
+                  placeholder="mis. 30"
+                  className="w-full bg-[#F1F5F9] border-none rounded-xl text-base font-semibold text-secondary-dark placeholder:text-secondary-light/50 focus:outline-none focus:ring-2 focus:ring-primary/50 px-5 py-4"
                   min="1"
-                  required
                 />
               </div>
 
@@ -143,7 +234,7 @@ export function AddRoomModal({ isOpen, onClose }: AddRoomModalProps) {
               </Button>
               <button 
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className="text-sm font-bold text-secondary hover:text-secondary-dark transition-colors py-2"
               >
                 Cancel

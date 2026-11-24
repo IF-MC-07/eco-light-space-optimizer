@@ -1,11 +1,14 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { X, MapPin, Users, DoorOpen, Activity } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { X, MapPin, Users, DoorOpen, Activity, Building2, Layers } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
 import { useUpdateRoom } from "../hooks";
 import type { Room } from "../types";
 import { RoomStatus } from "../types";
 import { cn } from "../../../lib/utils";
+import { useOccupancy } from "@/features/occupancy/hooks";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface EditRoomModalProps {
   isOpen: boolean;
@@ -16,16 +19,33 @@ interface EditRoomModalProps {
 export function EditRoomModal({ isOpen, onClose, room }: EditRoomModalProps) {
   const [roomName, setRoomName] = useState("");
   const [location, setLocation] = useState("");
-  const [capacity, setCapacity] = useState("30");
+  const [building, setBuilding] = useState("");
+  const [floor, setFloor] = useState("");
+  const [capacity, setCapacity] = useState("");
   const [status, setStatus] = useState<RoomStatus>(RoomStatus.ACTIVE);
 
+  const queryClient = useQueryClient();
+  const { data: occupancyRes } = useOccupancy();
   const { mutate: updateRoom, isPending } = useUpdateRoom();
+
+  const buildingOptions = useMemo(() => {
+    const list = occupancyRes?.data || [];
+    const set = new Set<string>();
+    for (const item of list) {
+      if (item.building && item.building.trim()) {
+        set.add(item.building.trim());
+      }
+    }
+    return Array.from(set).sort();
+  }, [occupancyRes]);
 
   useEffect(() => {
     if (room) {
-      setRoomName(room.room_name);
-      setLocation(room.location);
-      setCapacity(room.capacity?.toString() || "30");
+      setRoomName(room.room_name || "");
+      setLocation(room.location || "");
+      setBuilding(room.building || "");
+      setFloor(room.floor !== null && room.floor !== undefined ? String(room.floor) : "");
+      setCapacity(room.capacity !== null && room.capacity !== undefined ? String(room.capacity) : "");
       setStatus(room.status);
     }
   }, [room, isOpen]);
@@ -34,18 +54,43 @@ export function EditRoomModal({ isOpen, onClose, room }: EditRoomModalProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const trimmedName = roomName.trim();
+    if (!trimmedName) {
+      toast.error("Room name cannot be empty");
+      return;
+    }
+
+    const payload: Partial<Room> = {
+      room_name: trimmedName,
+      location: location.trim(),
+      status,
+      building: building.trim() || null,
+      floor: floor.trim() || null,
+    };
+
+    const trimmedCap = capacity.trim();
+    if (trimmedCap !== "") {
+      const parsed = parseInt(trimmedCap, 10);
+      if (isNaN(parsed) || parsed < 1) {
+        toast.error("Capacity must be an integer of at least 1");
+        return;
+      }
+      payload.capacity = parsed;
+    }
+
+    // Do NOT send is_simulated
+
     updateRoom(
       { 
         id: room.room_id,
-        payload: {
-          room_name: roomName, 
-          location, 
-          capacity: parseInt(capacity),
-          status
-        }
+        payload
       },
       {
         onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ["occupancy"] });
+          queryClient.invalidateQueries({ queryKey: ["rooms"] });
+          toast.success("Changes will take effect in the next cycle (up to 15 seconds)");
           onClose();
         },
       }
@@ -72,6 +117,7 @@ export function EditRoomModal({ isOpen, onClose, room }: EditRoomModalProps) {
               </div>
             </div>
             <button 
+              type="button"
               onClick={onClose}
               className="w-10 h-10 rounded-xl bg-[#F1F5F9] flex items-center justify-center text-secondary-dark hover:bg-[#E2E8F0] transition-all"
             >
@@ -137,6 +183,45 @@ export function EditRoomModal({ isOpen, onClose, room }: EditRoomModalProps) {
               />
             </div>
 
+            {/* Building & Floor */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest flex items-center gap-2">
+                  <Building2 className="w-3 h-3" />
+                  Building
+                </label>
+                <input 
+                  type="text" 
+                  value={building}
+                  onChange={(e) => setBuilding(e.target.value)}
+                  maxLength={100}
+                  list="edit-room-building-list"
+                  placeholder="e.g. Main Building"
+                  className="w-full bg-[#F1F5F9] border-none rounded-xl text-base font-semibold text-secondary-dark placeholder:text-secondary-light/50 focus:outline-none focus:ring-2 focus:ring-primary/50 px-5 py-4 transition-all"
+                />
+                <datalist id="edit-room-building-list">
+                  {buildingOptions.map((b) => (
+                    <option key={b} value={b} />
+                  ))}
+                </datalist>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest flex items-center gap-2">
+                  <Layers className="w-3 h-3" />
+                  Floor
+                </label>
+                <input 
+                  type="text" 
+                  value={floor}
+                  onChange={(e) => setFloor(e.target.value)}
+                  maxLength={20}
+                  placeholder="mis. 3"
+                  className="w-full bg-[#F1F5F9] border-none rounded-xl text-base font-semibold text-secondary-dark placeholder:text-secondary-light/50 focus:outline-none focus:ring-2 focus:ring-primary/50 px-5 py-4 transition-all"
+                />
+              </div>
+            </div>
+
             {/* Capacity */}
             <div className="space-y-2">
               <label className="text-[11px] font-bold text-secondary-dark uppercase tracking-widest flex items-center gap-2">
@@ -148,13 +233,20 @@ export function EditRoomModal({ isOpen, onClose, room }: EditRoomModalProps) {
                   type="number" 
                   value={capacity}
                   onChange={(e) => setCapacity(e.target.value)}
-                  className="w-full bg-[#F1F5F9] border-none rounded-xl text-base font-semibold text-secondary-dark focus:outline-none focus:ring-2 focus:ring-primary/50 px-5 py-4"
+                  placeholder="mis. 30"
+                  className="w-full bg-[#F1F5F9] border-none rounded-xl text-base font-semibold text-secondary-dark placeholder:text-secondary-light/50 focus:outline-none focus:ring-2 focus:ring-primary/50 px-5 py-4"
                   min="1"
-                  required
                 />
                 <span className="absolute right-5 top-1/2 -translate-y-1/2 text-secondary-light text-xs font-bold uppercase">People</span>
               </div>
             </div>
+
+            {/* Read-only simulation indicator */}
+            {room.is_simulated && (
+              <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                This room is simulated data (read-only).
+              </div>
+            )}
 
             {/* Actions */}
             <div className="pt-4 flex flex-col gap-3">

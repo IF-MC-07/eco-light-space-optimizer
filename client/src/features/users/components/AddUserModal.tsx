@@ -177,7 +177,7 @@ export function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
             >
               <div className="flex items-center space-x-2 mb-2">
                 <Eye className="w-5 h-5" />
-                <h4 className="font-bold">Mahasiswa</h4>
+                <h4 className="font-bold">Student</h4>
               </div>
               <p className={cn("text-[10px]", role === UserRole.MAHASISWA ? "text-white/80" : "text-secondary-light")}>Read-only access to dashboard and monitoring.</p>
             </div>

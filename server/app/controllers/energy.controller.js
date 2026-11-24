@@ -1,107 +1,55 @@
 import responseFormatter from '../utils/response.js';
-import db from '../models/index.js';
-import { buildEnergyRangeSeries, buildRealtimeHourlySeries } from '../utils/chartData.js';
-
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+import dayjs from 'dayjs';
+import { getEnergySummary, getWIBStartOfDay, getWIBEndOfDay } from '../services/energySummary.service.js';
 
 export const getSummary = async (req, res, next) => {
   try {
-    const { room_id } = req.query;
+    const { room_id, include_simulated, include_partial } = req.query;
+    const now = new Date();
+    const from = getWIBStartOfDay(now);
+    const to = getWIBEndOfDay(now);
 
-    const summaryUrl = room_id
-      ? `${AI_SERVICE_URL}/energy/summary?room_id=${room_id}`
-      : `${AI_SERVICE_URL}/energy/summary`;
+    const summary = await getEnergySummary({
+      from,
+      to,
+      granularity: 'hour',
+      roomId: room_id || null,
+      includeSimulated: include_simulated === 'true',
+      includePartial: include_partial === 'true',
+    });
 
-    const realtimeUrl = room_id
-      ? `${AI_SERVICE_URL}/stats/realtime?room_id=${room_id}`
-      : `${AI_SERVICE_URL}/stats/realtime`;
+    const realtime_series = summary.series.map((s) => ({
+      time: dayjs(s.bucket).format('HH:mm'),
+      bucket: s.bucket,
+      actual_kwh: s.actual_kwh,
+      baseline_kwh: s.baseline_kwh,
+      actual: s.actual_kwh,
+      baseline: s.baseline_kwh,
+      partial: s.partial ?? false,
+    }));
 
-    let summaryData;
-    let realtimeData;
-    try {
-      const [summaryRes, realtimeRes] = await Promise.all([
-        fetch(summaryUrl, { signal: AbortSignal.timeout(5000) }),
-        fetch(realtimeUrl, { signal: AbortSignal.timeout(5000) })
-      ]);
-      if (!summaryRes.ok || !realtimeRes.ok) throw new Error('AI service returned non-OK response');
-      summaryData = await summaryRes.json();
-      realtimeData = await realtimeRes.json();
-    } catch (err) {
-      console.warn('[fallback] AI service unavailable, using DB data');
-      const whereClause = room_id ? { room_id } : {};
-
-      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      const recentSensors = await db.PowerSensor.findAll({
-        where: {
-          ...whereClause,
-          read_at: { [db.Sequelize.Op.gte]: twentyFourHoursAgo }
-        },
-        order: [['read_at', 'DESC']],
-        limit: 5000,
-        raw: true
-      });
-
-      const validPowerReadings = recentSensors.filter(s => (s.power_watts || 0) <= 5000);
-      const currentConsumption = validPowerReadings.length > 0
-        ? validPowerReadings.reduce((sum, s) => sum + (s.power_watts || 0), 0) / validPowerReadings.length
-        : 0;
-      const latestReadingWatts = recentSensors.length > 0 ? (recentSensors[0].power_watts || 0) : 0;
-
-      const todayDateStr = new Date().toISOString().split('T')[0]; // "2026-07-20"
-      const todayLogs = await db.EnergyLog.findAll({
-        where: {
-          ...whereClause,
-          [db.Sequelize.Op.and]: db.Sequelize.where(
-            db.Sequelize.fn('DATE', db.Sequelize.col('date')),
-            db.Sequelize.fn('CURRENT_DATE')
-          )
-        },
-        attributes: [
-          [db.Sequelize.fn('SUM', db.Sequelize.col('total_watts')), 'today_total_watts'],
-          [db.Sequelize.fn('SUM', db.Sequelize.col('saved_watts')), 'today_saved_watts']
-        ],
-        raw: true
-      });
-
-      const todayTotalWatts = todayLogs[0]?.today_total_watts ? parseFloat(todayLogs[0].today_total_watts) : 0;
-      const todaySavedWatts = todayLogs[0]?.today_saved_watts ? parseFloat(todayLogs[0].today_saved_watts) : 0;
-
-      summaryData = {
-        today_total_watts: todayTotalWatts,
-        today_saved_watts: todaySavedWatts,
-        total_consumption_watts: todayTotalWatts,
-        total_saved_watts: todaySavedWatts
-      };
-      realtimeData = {
-        mean_watts: currentConsumption,
-        latest_reading: { power_watts: latestReadingWatts }
-      };
-    }
-
-    return responseFormatter.success(res, {
-      current_consumption: realtimeData.latest_reading?.power_watts ?? realtimeData.mean_watts ?? 0.0,
-      today_usage: summaryData.today_total_watts ?? 0.0,
-      today_saved: summaryData.today_saved_watts ?? 0.0,
-      monthly_usage: summaryData.total_consumption_watts || 0.0,
-      monthly_saved: summaryData.total_saved_watts || 0.0,
-      chart_series: buildEnergyRangeSeries(
-        (await db.EnergyLog.findAll({
-          where: room_id ? { room_id } : {},
-          attributes: ['date', 'total_watts', 'saved_watts'],
-          order: [['date', 'ASC']],
-          raw: true,
-        })) || [],
-        'month'
-      ),
-      realtime_series: buildRealtimeHourlySeries(
-        (await db.PowerSensor.findAll({
-          where: room_id ? { room_id } : {},
-          attributes: ['read_at', 'power_watts'],
-          order: [['read_at', 'ASC']],
-          raw: true,
-        })) || []
-      )
-    }, 'Success');
+    return responseFormatter.success(
+      res,
+      {
+        today_usage_kwh: summary.totals.current_kwh,
+        today_baseline_kwh: summary.totals.baseline_kwh,
+        today_delta_kwh: summary.totals.delta_kwh,
+        status: summary.totals.status,
+        coverage: summary.totals.coverage,
+        compared_buckets: summary.totals.compared_buckets,
+        total_buckets: summary.totals.total_buckets,
+        realtime_series,
+        by_room: summary.by_room,
+        // Properti kompatibilitas mundur
+        today_usage: summary.totals.current_kwh !== null
+          ? Number((summary.totals.current_kwh * 1000).toFixed(2))
+          : 0,
+        today_saved: summary.totals.delta_kwh !== null
+          ? Number((summary.totals.delta_kwh * 1000).toFixed(2))
+          : 0,
+      },
+      'Success'
+    );
   } catch (error) {
     next(error);
   }
@@ -109,59 +57,44 @@ export const getSummary = async (req, res, next) => {
 
 export const getLogs = async (req, res, next) => {
   try {
-    const { room_id, range } = req.query;
+    const { room_id, range, include_simulated, include_partial } = req.query;
     const normalizedRange = ['day', 'week', 'month'].includes(range) ? range : 'month';
+    const now = new Date();
+    let from, granularity;
 
-    const url = `${AI_SERVICE_URL}/energy/trend?days=30`;
-
-    let trendData;
-    try {
-      const response = await fetch(url, { signal: AbortSignal.timeout(3000) });
-      if (!response.ok) throw new Error('AI service returned non-OK response');
-      trendData = await response.json();
-    } catch (err) {
-      console.warn('[fallback] AI service unavailable, using DB data');
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - 30);
-
-      const logs = await db.EnergyLog.findAll({
-        where: {
-          date: {
-            [db.Sequelize.Op.gte]: startDate
-          }
-        },
-        attributes: [
-          'date',
-          [db.Sequelize.fn('SUM', db.Sequelize.col('total_watts')), 'total_watts'],
-          [db.Sequelize.fn('SUM', db.Sequelize.col('saved_watts')), 'saved_watts']
-        ],
-        group: ['date'],
-        order: [['date', 'ASC']],
-        raw: true
-      });
-
-      trendData = logs.map(log => {
-        const tw = parseFloat(log.total_watts || 0);
-        const sw = parseFloat(log.saved_watts || 0);
-        return {
-          date: log.date,
-          total_watts: tw,
-          saved_watts: sw,
-          savings_pct: tw > 0 ? (sw / tw) * 100 : 0
-        };
-      });
+    if (normalizedRange === 'day') {
+      from = getWIBStartOfDay(now);
+      granularity = 'hour';
+    } else if (normalizedRange === 'week') {
+      from = getWIBStartOfDay(new Date(now.getTime() - 6 * 24 * 3600 * 1000));
+      granularity = 'day';
+    } else {
+      from = getWIBStartOfDay(new Date(now.getTime() - 29 * 24 * 3600 * 1000));
+      granularity = 'day';
     }
+    const to = getWIBEndOfDay(now);
 
-    const directLogs = (await db.EnergyLog.findAll({
-      where: room_id ? { room_id } : {},
-      attributes: ['date', 'total_watts', 'saved_watts'],
-      order: [['date', 'ASC']],
-      raw: true,
-    })) || [];
+    const summary = await getEnergySummary({
+      from,
+      to,
+      granularity,
+      roomId: room_id || null,
+      includeSimulated: include_simulated === 'true',
+      includePartial: include_partial === 'true',
+    });
 
-    const formattedTrend = buildEnergyRangeSeries(directLogs, normalizedRange);
+    const isDaily = granularity === 'hour';
+    const formatted = summary.series.map((s) => ({
+      date: s.bucket,
+      label: isDaily ? dayjs(s.bucket).format('HH:00') : dayjs(s.bucket).format('MMM DD'),
+      actual_kwh: s.actual_kwh,
+      baseline_kwh: s.baseline_kwh,
+      usage: s.actual_kwh,
+      value: s.actual_kwh,
+      partial: s.partial ?? false,
+    }));
 
-    return responseFormatter.success(res, formattedTrend, 'Success');
+    return responseFormatter.success(res, formatted, 'Success');
   } catch (error) {
     next(error);
   }
@@ -169,58 +102,30 @@ export const getLogs = async (req, res, next) => {
 
 export const getBreakdown = async (req, res, next) => {
   try {
-    const { room_id } = req.query;
+    const { room_id, include_simulated, include_partial } = req.query;
+    const now = new Date();
+    const from = getWIBStartOfDay(now);
+    const to = getWIBEndOfDay(now);
 
-    const url = room_id
-      ? `${AI_SERVICE_URL}/energy/breakdown?room_id=${room_id}`
-      : `${AI_SERVICE_URL}/energy/breakdown`;
+    const summary = await getEnergySummary({
+      from,
+      to,
+      granularity: 'hour',
+      roomId: room_id || null,
+      includeSimulated: include_simulated === 'true',
+      includePartial: include_partial === 'true',
+    });
 
-    let breakdownData;
-    try {
-      const response = await fetch(url, { signal: AbortSignal.timeout(3000) });
-      if (!response.ok) throw new Error('AI service returned non-OK response');
-      breakdownData = await response.json();
-    } catch (err) {
-      console.warn('[fallback] AI service unavailable, using DB data');
-      const whereClause = room_id ? { room_id } : {};
-      const logs = await db.EnergyLog.findAll({
-        where: whereClause,
-        attributes: [
-          'room_id',
-          [db.Sequelize.fn('SUM', db.Sequelize.col('saved_watts')), 'saved_watts'],
-          [db.Sequelize.fn('SUM', db.Sequelize.col('total_watts')), 'total_watts']
-        ],
-        group: ['room_id', 'Room.room_id'],
-        include: [{ model: db.Room, attributes: ['room_name'] }],
-        raw: true,
-        nest: true
-      });
-
-      breakdownData = logs.map((log, index) => {
-        const sw = parseFloat(log.saved_watts || 0);
-        const tw = parseFloat(log.total_watts || 0);
-        return {
-          room_id: log.room_id,
-          room_name: log.Room ? log.Room.room_name : 'Unknown',
-          total_watts: tw,
-          saved_watts: sw,
-          savings_pct: tw > 0 ? (sw / tw) * 100 : 0,
-          rank: index + 1
-        };
-      }).sort((a, b) => b.total_watts - a.total_watts);
-
-      breakdownData.forEach((item, index) => {
-        item.rank = index + 1;
-      });
-    }
-
-    const formatted = breakdownData.map(item => ({
-      room_id: item.room_id,
-      room_name: item.room_name,
-      total_watts: item.total_watts,
-      saved_watts: item.saved_watts,
-      savings_pct: item.savings_pct,
-      rank: item.rank
+    const formatted = summary.by_room.map((r) => ({
+      room_id: r.room_id,
+      room_name: r.room_name,
+      is_simulated: r.is_simulated ?? false,
+      actual_kwh: r.actual_kwh,
+      baseline_kwh: r.baseline_kwh,
+      delta_kwh: r.delta_kwh,
+      has_sensor: r.has_sensor,
+      total_watts: r.actual_kwh !== null ? Number((r.actual_kwh * 1000).toFixed(2)) : 0,
+      saved_watts: r.delta_kwh !== null ? Number((r.delta_kwh * 1000).toFixed(2)) : 0,
     }));
 
     return responseFormatter.success(res, formatted, 'Success');

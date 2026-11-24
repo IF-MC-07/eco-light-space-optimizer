@@ -7,6 +7,9 @@ CREATE TABLE rooms (
     room_name       CHARACTER VARYING(100) NOT NULL,
     location        CHARACTER VARYING(100),
     capacity        INTEGER,
+    building        CHARACTER VARYING(100),
+    floor           CHARACTER VARYING(20),
+    is_simulated    BOOLEAN NOT NULL DEFAULT FALSE,
     status          CHARACTER VARYING(20) DEFAULT 'ACTIVE'
 );
 
@@ -145,6 +148,66 @@ CREATE TABLE activity_logs (
 );
 
 -- ============================================================
+-- DSLB OCCUPANCY TABLES
+-- ============================================================
+
+CREATE TABLE room_occupancy_current (
+    occ_id            CHARACTER VARYING(30) PRIMARY KEY,
+    room_id           CHARACTER VARYING(30) NOT NULL REFERENCES rooms(room_id)
+                        ON UPDATE CASCADE ON DELETE CASCADE,
+    confirmed_status  CHARACTER VARYING(30) NOT NULL
+                        CHECK (confirmed_status IN (
+                            'Kosong', 'Rendah', 'Sedang', 'Padat',
+                            'Tidak tersedia', 'Kapasitas belum dikonfigurasi'
+                        )),
+    candidate_status  CHARACTER VARYING(30)
+                        CHECK (candidate_status IS NULL OR candidate_status IN (
+                            'Kosong', 'Rendah', 'Sedang', 'Padat',
+                            'Tidak tersedia', 'Kapasitas belum dikonfigurasi'
+                        )),
+    candidate_count   INTEGER DEFAULT 0,
+    person_count      INTEGER CHECK (person_count IS NULL OR person_count >= 0),
+    capacity          INTEGER CHECK (capacity IS NULL OR capacity > 0),
+    occupancy_pct_raw DOUBLE PRECISION,
+    available_seats   INTEGER CHECK (available_seats IS NULL OR available_seats >= 0),
+    recommendations   JSONB DEFAULT '[]'::jsonb,
+    is_stale          BOOLEAN DEFAULT FALSE,
+    updated_at        TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (room_id)
+);
+
+CREATE TABLE room_occupancy_status (
+    history_id        CHARACTER VARYING(30) PRIMARY KEY,
+    room_id           CHARACTER VARYING(30) NOT NULL REFERENCES rooms(room_id)
+                        ON UPDATE CASCADE ON DELETE CASCADE,
+    status            CHARACTER VARYING(30) NOT NULL
+                        CHECK (status IN (
+                            'Kosong', 'Rendah', 'Sedang', 'Padat',
+                            'Tidak tersedia', 'Kapasitas belum dikonfigurasi'
+                        )),
+    person_count      INTEGER CHECK (person_count IS NULL OR person_count >= 0),
+    occupancy_pct_raw DOUBLE PRECISION,
+    reason            CHARACTER VARYING(50) NOT NULL DEFAULT 'status_change',
+    created_at        TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE room_recommendations_log (
+    reco_log_id       CHARACTER VARYING(30) PRIMARY KEY,
+    room_id           CHARACTER VARYING(30) NOT NULL REFERENCES rooms(room_id)
+                        ON UPDATE CASCADE ON DELETE CASCADE,
+    recommendations   JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at        TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE simulated_room_counts (
+    room_id           CHARACTER VARYING(30) NOT NULL PRIMARY KEY REFERENCES rooms(room_id)
+                        ON UPDATE CASCADE ON DELETE CASCADE,
+    person_count      INTEGER NOT NULL DEFAULT 0
+                        CHECK (person_count >= 0),
+    updated_at        TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
 -- INDEXES
 -- Applied on high-frequency filter columns to prevent
 -- full table scans when rendering dashboard charts.
@@ -167,6 +230,13 @@ CREATE INDEX idx_activity_logs_timestamp      ON activity_logs(timestamp);
 -- power_sensors
 CREATE INDEX idx_power_sensors_room_id        ON power_sensors(room_id);
 CREATE INDEX idx_power_sensors_read_at        ON power_sensors(read_at);
+
+-- DSLB
+CREATE INDEX idx_occ_current_room          ON room_occupancy_current(room_id);
+CREATE INDEX idx_occ_current_updated       ON room_occupancy_current(updated_at);
+CREATE INDEX idx_occ_status_room_time      ON room_occupancy_status(room_id, created_at);
+CREATE INDEX idx_reco_log_room_time        ON room_recommendations_log(room_id, created_at);
+CREATE INDEX idx_simulated_counts_room     ON simulated_room_counts(room_id);
 
 -- iot_devices
 CREATE INDEX idx_iot_devices_room_id          ON iot_devices(room_id);

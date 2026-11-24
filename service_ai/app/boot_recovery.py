@@ -17,6 +17,11 @@ try:
 except ImportError:
     from db_state import ensure_device_states_exist
 
+try:
+    from app.simulation_guard import is_simulated_room
+except ImportError:
+    from simulation_guard import is_simulated_room
+
 log = logging.getLogger(__name__)
 BOOT_RECOVERY_DELAY = float(os.getenv("BOOT_RECOVERY_DELAY", 15))
 
@@ -46,6 +51,10 @@ class BootRecoveryManager:
             self.restore_for_room(room_id)
 
     def restore_for_room(self, room_id: str):
+        if is_simulated_room(room_id):
+            log.info(f"🚫 [DSLB Guard] Skipping boot recovery for simulated room {room_id}")
+            return
+
         schedule_active = self._check_active_schedule(room_id)
         if schedule_active:
             log.info(f"📅 Room {room_id}: active schedule found → restore ON")

@@ -87,7 +87,7 @@ export default function ZoneConfiguration() {
   const originY = useRef(0);
   const tempRect = useRef<fabric.Rect | null>(null);
   const selectedIdRef = useRef<string | null>(null);
-  const [timeAgo, setTimeAgo] = useState('Belum disimpan');
+  const [timeAgo, setTimeAgo] = useState('Not saved yet');
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | 'all' | null>(null);
 
@@ -212,7 +212,7 @@ export default function ZoneConfiguration() {
       canvas.add(rect);
 
       // Add label
-      const text = new fabric.Text(`${z.zone_name} | x:${Math.round(z.x1_pct * 1920)}, y:${Math.round(z.y1_pct * 1080)}${mode==='preview'?' | Orang: ?':''}`, {
+      const text = new fabric.Text(`${z.zone_name} | x:${Math.round(z.x1_pct * 1920)}, y:${Math.round(z.y1_pct * 1080)}${mode==='preview'?' | People: ?':''}`, {
         left: z.x1_pct * cw,
         top: (z.y1_pct * ch) - 20,
         fontSize: 12,
@@ -381,7 +381,7 @@ export default function ZoneConfiguration() {
   useEffect(() => {
     const interval = setInterval(() => {
       if (lastSaved) {
-        setTimeAgo(`Terakhir diubah: ${formatDistanceToNow(lastSaved, { addSuffix: true })}`);
+        setTimeAgo(`Last modified: ${formatDistanceToNow(lastSaved, { addSuffix: true })}`);
       }
     }, 30000);
     return () => clearInterval(interval);
@@ -403,7 +403,7 @@ export default function ZoneConfiguration() {
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <div>
             <h1 className="text-[28px] font-heading font-extrabold text-neutral-900 mb-2 leading-none">
-              Konfigurasi Zona Deteksi
+              Detection Zone Configuration
             </h1>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1.5 px-3 py-1 bg-[#E8F5E9] text-primary rounded-full text-xs font-bold shadow-sm">
@@ -477,19 +477,19 @@ export default function ZoneConfiguration() {
                   <div className="flex items-center justify-center">
                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
                   </div>
-                  Gambar Zona
+                  Draw Zone
                 </button>
                 <button 
                   onClick={() => setMode('edit')}
                   className={`flex items-center gap-2.5 px-5 py-2 text-sm font-bold rounded-md transition-colors ${mode === 'edit' ? 'bg-white text-primary shadow-[0_1px_3px_rgba(0,0,0,0.05)]' : 'text-secondary hover:text-secondary-dark'}`}
                 >
-                  <Move size={16} /> Pindah / Ubah
+                  <Move size={16} /> Move / Edit
                 </button>
                 <button 
                   onClick={() => setMode('preview')}
                   className={`flex items-center gap-2.5 px-5 py-2 text-sm font-bold rounded-md transition-colors ${mode === 'preview' ? 'bg-white text-primary shadow-[0_1px_3px_rgba(0,0,0,0.05)]' : 'text-secondary hover:text-secondary-dark'}`}
                 >
-                  <Eye size={16} /> Preview Inferensi
+                  <Eye size={16} /> Inference Preview
                 </button>
               </div>
 
@@ -497,7 +497,7 @@ export default function ZoneConfiguration() {
                 onClick={handleClearAll}
                 className="flex items-center gap-2 text-tertiary px-4 py-2 text-sm font-bold hover:bg-red-50 rounded-md transition-colors"
               >
-                <Trash2 size={16} /> Hapus Semua
+                <Trash2 size={16} /> Delete All
               </button>
             </div>
 
@@ -514,7 +514,7 @@ export default function ZoneConfiguration() {
                ) : (
                  <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-neutral-900 text-white/60">
                    <Info size={32} className="mb-2 opacity-50" />
-                   <span className="text-sm font-semibold">Silakan pilih kamera terlebih dahulu</span>
+                   <span className="text-sm font-semibold">Please select a camera first</span>
                  </div>
                )}
 
@@ -526,7 +526,7 @@ export default function ZoneConfiguration() {
                {mode === 'draw' && (
                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-md text-white px-5 py-3 rounded-lg flex items-center gap-3 text-sm font-semibold border border-white/10 shadow-2xl z-20 pointer-events-none">
                    <MousePointer2 size={18} className="text-white/80" /> 
-                   <span>Klik dan seret untuk menggambar zona baru</span>
+                   <span>Click and drag to draw a new zone</span>
                  </div>
                )}
             </div>
@@ -545,10 +545,10 @@ export default function ZoneConfiguration() {
           {/* Right Column (Sidebar Configuration Panels) - 1 Column */}
           <div className="lg:col-span-1 flex flex-col gap-8 bg-[#F8FAFC] p-6 rounded-2xl border border-neutral-border/50">
             
-            {/* Panel: Daftar Zona */}
+            {/* Panel: Zone List */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-neutral-900 text-sm">Daftar Zona</h3>
+                <h3 className="font-bold text-neutral-900 text-sm">Zone List</h3>
                 <span className="px-2 py-1 bg-[#E2E8F0] text-secondary-dark font-extrabold text-[9px] rounded uppercase tracking-widest">{zonas.length} Total</span>
               </div>
 
@@ -593,26 +593,26 @@ export default function ZoneConfiguration() {
                 }}
                 className="w-full py-4 border-2 border-dashed border-secondary-light text-secondary-dark font-bold text-sm rounded-lg flex items-center justify-center gap-2 hover:bg-[#F1F5F9] hover:border-secondary transition-all"
               >
-                <Plus size={18} /> Tambah Zona Baru
+                <Plus size={18} /> Add New Zone
               </button>
             </div>
 
             <hr className="border-neutral-border/80" />
 
-            {/* Panel: Detail Zona Terpilih */}
+            {/* Panel: Selected Zone Details */}
             <div>
-               <h3 className="font-bold text-neutral-900 text-sm mb-6">Detail Zona Terpilih</h3>
+               <h3 className="font-bold text-neutral-900 text-sm mb-6">Selected Zone Details</h3>
                
                {selectedZoneData ? (
                  <>
                    <div className="mb-5">
-                     <label className="text-[10px] font-extrabold text-secondary uppercase tracking-widest mb-2 block">Nama Zona</label>
+                     <label className="text-[10px] font-extrabold text-secondary uppercase tracking-widest mb-2 block">Zone Name</label>
                      <div className="relative group">
                        <input 
                          className="w-full bg-[#E2E8F0]/60 border-none rounded-md px-3 py-2.5 text-sm font-bold text-neutral-900 focus:ring-1 focus:ring-primary outline-none transition-shadow pr-10"
                          value={selectedZoneData.zone_name}
                          onChange={(e) => updateZona(selectedId!, { zone_name: e.target.value })}
-                         placeholder="Masukkan nama zona..."
+                         placeholder="Enter zone name..."
                        />
                        <Pencil size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-light group-focus-within:text-primary transition-colors pointer-events-none" />
                      </div>
@@ -665,7 +665,7 @@ export default function ZoneConfiguration() {
                    </div>
 
                    <div className="mb-8">
-                     <label className="text-[10px] font-extrabold text-secondary uppercase tracking-widest mb-3 block">Warna Deteksi</label>
+                     <label className="text-[10px] font-extrabold text-secondary uppercase tracking-widest mb-3 block">Detection Color</label>
                      <div className="flex gap-3">
                         {['#1B4D1E', '#3B82F6', '#F59E0B', '#A855F7'].map(color => (
                           <div 
@@ -680,7 +680,7 @@ export default function ZoneConfiguration() {
                  </>
                ) : (
                  <div className="text-sm text-secondary text-center py-8">
-                   Pilih zona dari daftar atau gambar di canvas untuk melihat detail.
+                   Select a zone from the list or draw on canvas to view details.
                  </div>
                )}
 
@@ -689,7 +689,7 @@ export default function ZoneConfiguration() {
                  disabled={isSaving}
                  className="w-full bg-[#0A3A17] hover:bg-[#1B4D1E] text-white flex items-center justify-center gap-2 py-3.5 rounded-lg shadow-[0_4px_14px_rgba(10,58,23,0.2)] transition-all font-bold text-sm disabled:opacity-70"
                >
-                 <Database size={18} className="fill-white/10" /> {isSaving ? 'Menyimpan...' : 'Simpan ke Database'}
+                 <Database size={18} className="fill-white/10" /> {isSaving ? 'Saving...' : 'Save to Database'}
                </Button>
             </div>
           </div>
@@ -709,10 +709,10 @@ export default function ZoneConfiguration() {
           setDeleteAlertOpen(false);
           setDeleteTarget(null);
         }}
-        title={deleteTarget === 'all' ? "Hapus Semua Zona" : "Hapus Zona"}
-        description={deleteTarget === 'all' ? "Yakin ingin menghapus semua zona pada kamera ini? Tindakan ini tidak dapat dibatalkan." : "Yakin ingin menghapus zona ini? Tindakan ini tidak dapat dibatalkan."}
-        confirmText="Hapus"
-        cancelText="Batal"
+        title={deleteTarget === 'all' ? "Delete All Zones" : "Delete Zone"}
+        description={deleteTarget === 'all' ? "Are you sure you want to delete all zones on this camera? This action cannot be undone." : "Are you sure you want to delete this zone? This action cannot be undone."}
+        confirmText="Delete"
+        cancelText="Cancel"
       />
     </>
   );

@@ -2,8 +2,9 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
-import { Snowflake } from 'lucide-react';
+import { DoorOpen } from 'lucide-react';
 import { useSavingsBreakdown } from '../hooks';
+import { Skeleton, ErrorState, EmptyState } from '../../../components/ui/StateFeedback';
 
 interface SavingsBreakdownTableProps {
   filters: {
@@ -14,70 +15,139 @@ interface SavingsBreakdownTableProps {
 }
 
 export function SavingsBreakdownTable({ filters }: SavingsBreakdownTableProps) {
-  const { data: response, isLoading } = useSavingsBreakdown(filters);
+  const { data: response, isLoading, isError, refetch } = useSavingsBreakdown(filters);
   const breakdown = response || [];
 
-  if (isLoading) {
-    return <div className="text-center py-4">Loading savings breakdown...</div>;
-  }
-
   return (
-    <Card>
-      <CardHeader className="pb-4">
-        <CardTitle className="text-lg text-black">Savings Breakdown by Room</CardTitle>
+    <Card className="border-transparent shadow-sm">
+      <CardHeader className="pb-4 pt-6 px-6">
+        <CardTitle className="text-lg text-black font-heading font-bold">
+          Energy Breakdown per Room
+        </CardTitle>
       </CardHeader>
-      <CardContent>
-        <table className="w-full text-sm text-left">
-          <thead className="text-xs text-secondary font-bold uppercase tracking-wider border-b border-neutral-border">
-            <tr>
-              <th className="pb-3 px-2">Room</th>
-              <th className="pb-3 px-2">Total Energy</th>
-              <th className="pb-3 px-2">Saved Energy</th>
-              <th className="pb-3 px-2 text-right">Saving Ratio</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-border/50">
-            {breakdown.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="py-4 text-center text-secondary-light">No savings data available.</td>
-              </tr>
-            ) : (
-              breakdown.map((row, i) => {
-                const totalEnergy = row.total_wh 
-                  ? (row.total_wh >= 1000 
-                      ? `${(row.total_kwh ?? (row.total_wh / 1000)).toFixed(3)} kWh` 
-                      : `${row.total_wh.toFixed(1)} Wh`)
-                  : '0 Wh';
+      <CardContent className="px-6 pb-6">
+        {isLoading ? (
+          <div className="space-y-3 py-4">
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        ) : isError ? (
+          <ErrorState message="Failed to load room energy breakdown" onRetry={() => refetch()} />
+        ) : breakdown.length === 0 ? (
+          <EmptyState
+            message="No energy breakdown data"
+            description="No room power sensor data available for this time range."
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs text-secondary font-bold uppercase tracking-wider border-b border-neutral-border">
+                <tr>
+                  <th className="pb-3 px-3">Room</th>
+                  <th className="pb-3 px-3">Total Energy</th>
+                  <th className="pb-3 px-3">Baseline</th>
+                  <th className="pb-3 px-3">Difference vs Baseline</th>
+                  <th className="pb-3 px-3 text-right">Ratio</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-border/50">
+                {breakdown.map((row, i) => {
+                  if (!row.has_sensor) {
+                    return (
+                      <tr key={row.room_id || i} className="hover:bg-neutral/40 transition-colors">
+                        <td className="py-4 px-3 font-medium text-secondary-dark flex items-center">
+                          <DoorOpen className="w-4 h-4 mr-2.5 text-secondary-light" />
+                          <span>{row.room_name}</span>
+                          {row.is_simulated && (
+                            <Badge variant="outline" className="ml-2 text-[10px] uppercase font-bold tracking-wider text-amber-700 bg-amber-50 border-amber-200">
+                              SIMULATED
+                            </Badge>
+                          )}
+                        </td>
+                        <td className="py-4 px-3 text-secondary-light italic">No sensor</td>
+                        <td className="py-4 px-3 text-secondary-light italic">No sensor</td>
+                        <td className="py-4 px-3 text-secondary-light italic">No sensor</td>
+                        <td className="py-4 px-3 text-right text-secondary-light italic">No sensor</td>
+                      </tr>
+                    );
+                  }
 
-                const savedEnergyDisplay = row.has_savings_data 
-                  ? `${row.saved_watts?.toFixed(1) || 0} Wh` 
-                  : 'Belum tersedia';
+                  const actualDisplay =
+                    row.actual_kwh !== null && row.actual_kwh !== undefined
+                      ? `${row.actual_kwh.toFixed(3)} kWh`
+                      : '—';
 
-                const savingPercentage = row.has_savings_data 
-                  ? `${row.percentage || 0}%` 
-                  : 'N/A';
+                  const baselineDisplay =
+                    row.baseline_kwh !== null && row.baseline_kwh !== undefined
+                      ? `${row.baseline_kwh.toFixed(3)} kWh`
+                      : '—';
 
-                return (
-                  <tr key={row.room_id || i}>
-                    <td className="py-4 px-2 font-medium text-secondary-dark flex items-center">
-                      <Snowflake className="w-4 h-4 mr-3 text-primary" />
-                      {row.room_name}
-                    </td>
-                    <td className="py-4 px-2 text-secondary">{totalEnergy}</td>
-                    <td className="py-4 px-2 font-bold text-primary">
-                      {savedEnergyDisplay}
-                    </td>
-                    <td className="py-4 px-2 text-right">
-                      <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-transparent font-bold">
-                        {savingPercentage}
-                      </Badge>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                  const deltaDisplay =
+                    row.delta_kwh !== null && row.delta_kwh !== undefined
+                      ? `${row.delta_kwh > 0 ? '+' : ''}${row.delta_kwh.toFixed(3)} kWh`
+                      : '—';
+
+                  const ratioDisplay =
+                    row.baseline_kwh !== null &&
+                    row.baseline_kwh > 0 &&
+                    row.delta_kwh !== null &&
+                    row.delta_kwh !== undefined
+                      ? `${((row.delta_kwh / row.baseline_kwh) * 100).toFixed(1)}%`
+                      : '—';
+
+                  const isSaving = (row.delta_kwh || 0) > 0;
+                  const isWaste = (row.delta_kwh || 0) < 0;
+
+                  return (
+                    <tr key={row.room_id || i} className="hover:bg-neutral/40 transition-colors">
+                      <td className="py-4 px-3 font-semibold text-black flex items-center">
+                        <DoorOpen className="w-4 h-4 mr-2.5 text-primary-dark" />
+                        <span>{row.room_name}</span>
+                        {row.is_simulated && (
+                          <Badge variant="outline" className="ml-2 text-[10px] uppercase font-bold tracking-wider text-amber-700 bg-amber-50 border-amber-200">
+                            SIMULATED
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="py-4 px-3 text-secondary-dark font-medium">{actualDisplay}</td>
+                      <td className="py-4 px-3 text-secondary font-medium">{baselineDisplay}</td>
+                      <td
+                        className={`py-4 px-3 font-bold ${
+                          isSaving
+                            ? 'text-green-700'
+                            : isWaste
+                            ? 'text-red-700'
+                            : 'text-secondary-dark'
+                        }`}
+                      >
+                        {deltaDisplay}
+                      </td>
+                      <td className="py-4 px-3 text-right">
+                        {ratioDisplay !== '—' ? (
+                          <Badge
+                            className={`font-bold border-transparent ${
+                              isSaving
+                                ? 'bg-green-100 text-green-800'
+                                : isWaste
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-slate-100 text-slate-700'
+                            }`}
+                          >
+                            {ratioDisplay}
+                          </Badge>
+                        ) : (
+                          <span className="text-secondary-light">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

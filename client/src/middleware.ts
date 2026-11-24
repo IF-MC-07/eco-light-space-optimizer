@@ -50,8 +50,10 @@ export function middleware(request: NextRequest) {
 
   // Role-based access control for "mahasiswa" role
   if (token && role === 'mahasiswa' && isProtectedPage) {
-    const allowedForMahasiswa = ['/dashboard', '/lighting-ac', '/rooms', '/room-availability'];
-    const isAllowed = allowedForMahasiswa.some(route => pathname === route || pathname.startsWith(route + '/'));
+    const prefixRoutes = ['/dashboard', '/lighting-ac', '/room-availability'];
+    const isAllowed =
+      pathname === '/rooms' ||
+      prefixRoutes.some(route => pathname === route || pathname.startsWith(route + '/'));
     
     if (!isAllowed) {
       // Redirect mahasiswa away from admin-only pages to their default landing page

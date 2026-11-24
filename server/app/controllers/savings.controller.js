@@ -1,80 +1,85 @@
 import responseFormatter from '../utils/response.js';
-import db from '../models/index.js';
 import dayjs from 'dayjs';
-import { computeEnergyByRoom, computeEnergyTrend } from '../utils/energyAggregation.util.js';
+import { getEnergySummary, getWIBStartOfDay, getWIBEndOfDay } from '../services/energySummary.service.js';
+import { buildExplanation } from '../services/explanation.service.js';
 
 /* ==================== resolveRanges ==================== */
-const resolveRanges = async (range_type, start_date, end_date) => {
-  const latestReading = await db.PowerSensor.findOne({ order: [['read_at', 'DESC']] });
-  const referenceDate = latestReading ? dayjs(latestReading.read_at) : dayjs();
-
-  let currentStart, currentEnd, prevStart, prevEnd;
+export const resolveRanges = (range_type, start_date, end_date) => {
+  const now = new Date();
+  let from, to, granularity;
 
   switch (range_type) {
     case 'daily':
-      currentStart = referenceDate.startOf('day');
-      currentEnd = referenceDate.endOf('day');
-      prevStart = currentStart.subtract(1, 'day');
-      prevEnd = currentEnd.subtract(1, 'day');
+      from = getWIBStartOfDay(now);
+      to = getWIBEndOfDay(now);
+      granularity = 'hour';
       break;
     case 'weekly':
-      currentEnd = referenceDate.endOf('day');
-      currentStart = currentEnd.subtract(6, 'day').startOf('day');
-      prevEnd = currentStart.subtract(1, 'second');
-      prevStart = prevEnd.subtract(6, 'day').startOf('day');
+      // 7 hari kalender WIB utuh (6 hari lalu sampai hari ini)
+      from = getWIBStartOfDay(new Date(now.getTime() - 6 * 24 * 3600 * 1000));
+      to = getWIBEndOfDay(now);
+      granularity = 'day';
       break;
     case 'yearly':
-      currentEnd = referenceDate.endOf('day');
-      currentStart = currentEnd.subtract(364, 'day').startOf('day');
-      prevEnd = currentStart.subtract(1, 'second');
-      prevStart = prevEnd.subtract(364, 'day').startOf('day');
+      from = getWIBStartOfDay(new Date(now.getTime() - 364 * 24 * 3600 * 1000));
+      to = getWIBEndOfDay(now);
+      granularity = 'day';
       break;
     case 'custom':
       if (start_date && end_date) {
-        currentStart = dayjs(start_date).startOf('day');
-        currentEnd = dayjs(end_date).endOf('day');
-        const durationDays = currentEnd.diff(currentStart, 'day') + 1;
-        prevEnd = currentStart.subtract(1, 'second');
-        prevStart = prevEnd.subtract(durationDays - 1, 'day').startOf('day');
+        from = getWIBStartOfDay(start_date);
+        to = getWIBEndOfDay(end_date);
+        granularity = 'day';
       } else {
-        currentEnd = referenceDate.endOf('day');
-        currentStart = currentEnd.subtract(29, 'day').startOf('day');
-        prevEnd = currentStart.subtract(1, 'second');
-        prevStart = prevEnd.subtract(29, 'day').startOf('day');
+        from = getWIBStartOfDay(new Date(now.getTime() - 29 * 24 * 3600 * 1000));
+        to = getWIBEndOfDay(now);
+        granularity = 'day';
       }
       break;
     case 'monthly':
     default:
-      currentEnd = referenceDate.endOf('day');
-      currentStart = currentEnd.subtract(29, 'day').startOf('day');
-      prevEnd = currentStart.subtract(1, 'second');
-      prevStart = prevEnd.subtract(29, 'day').startOf('day');
+      from = getWIBStartOfDay(new Date(now.getTime() - 29 * 24 * 3600 * 1000));
+      to = getWIBEndOfDay(now);
+      granularity = 'day';
       break;
   }
 
-  return {
-    current: { start: currentStart.toDate(), end: currentEnd.toDate() },
-    previous: { start: prevStart.toDate(), end: prevEnd.toDate() },
-  };
+  return { from, to, granularity };
 };
 
 /* ==================== GET SUMMARY ==================== */
 export const getSummary = async (req, res, next) => {
   try {
-    const { range_type, start_date, end_date, room_id } = req.query;
-    const ranges = await resolveRanges(range_type, start_date, end_date);
+    const { range_type, start_date, end_date, room_id, include_simulated, include_partial } = req.query;
+    const { from, to, granularity } = resolveRanges(range_type, start_date, end_date);
 
-    const currentRows = await computeEnergyByRoom(db.sequelize, ranges.current.start, ranges.current.end, room_id || null);
-    const currentTotalKwh = currentRows.reduce((sum, r) => sum + (r.total_kwh || 0), 0);
+    const summary = await getEnergySummary({
+      from,
+      to,
+      granularity,
+      roomId: room_id || null,
+      includeSimulated: include_simulated === 'true',
+      includePartial: include_partial === 'true',
+    });
 
-    return responseFormatter.success(res, {
-      total_wh: parseFloat((currentTotalKwh * 1000).toFixed(2)),
-      total_kwh: parseFloat(currentTotalKwh.toFixed(4)),
-      saved_watts: null,
-      has_savings_data: false,
-      co2_saved_kg: 0,
-      cost_saved_idr: 0,
-    }, 'Success');
+    return responseFormatter.success(
+      res,
+      {
+        current_kwh: summary.totals.current_kwh,
+        baseline_kwh: summary.totals.baseline_kwh,
+        delta_kwh: summary.totals.delta_kwh,
+        delta_pct: summary.totals.delta_pct,
+        status: summary.totals.status,
+        coverage: summary.totals.coverage,
+        compared_buckets: summary.totals.compared_buckets,
+        total_buckets: summary.totals.total_buckets,
+        total_kwh: summary.totals.current_kwh,
+        total_wh: summary.totals.current_kwh !== null
+          ? Number((summary.totals.current_kwh * 1000).toFixed(2))
+          : null,
+      },
+      'Success'
+    );
   } catch (error) {
     next(error);
   }
@@ -83,40 +88,41 @@ export const getSummary = async (req, res, next) => {
 /* ==================== GET BREAKDOWN ==================== */
 export const getBreakdown = async (req, res, next) => {
   try {
-    const { range_type, start_date, end_date, room_id } = req.query;
-    const ranges = await resolveRanges(range_type, start_date, end_date);
+    const { range_type, start_date, end_date, room_id, include_simulated, include_partial } = req.query;
+    const { from, to, granularity } = resolveRanges(range_type, start_date, end_date);
 
-    const [energyRows, rooms] = await Promise.all([
-      computeEnergyByRoom(db.sequelize, ranges.current.start, ranges.current.end, room_id || null),
-      db.Room.findAll({ attributes: ['room_id', 'room_name'], raw: true }),
-    ]);
+    const summary = await getEnergySummary({
+      from,
+      to,
+      granularity,
+      roomId: room_id || null,
+      includeSimulated: include_simulated === 'true',
+      includePartial: include_partial === 'true',
+    });
 
-    const roomNameMap = Object.fromEntries(rooms.map(r => [r.room_id, r.room_name]));
+    const formatted = summary.by_room.map((r) => {
+      const actualKwh = r.actual_kwh;
+      const baselineKwh = r.baseline_kwh;
+      const deltaKwh = r.delta_kwh;
 
-    const formatted = energyRows.map(r => {
-      const totalWh = r.total_wh || 0;
-      const totalKwh = r.total_kwh || 0;
-
-      let totalEnergyDisplay = '0 Wh';
-      if (totalWh > 0) {
-        totalEnergyDisplay = totalWh >= 1000 
-          ? `${totalKwh.toFixed(3)} kWh` 
-          : `${totalWh.toFixed(1)} Wh`;
+      let percentage = null;
+      if (baselineKwh !== null && baselineKwh > 0 && deltaKwh !== null) {
+        percentage = Number(((deltaKwh / baselineKwh) * 100).toFixed(1));
       }
 
       return {
         room_id: r.room_id,
-        room_name: roomNameMap[r.room_id] || 'Unknown',
-        total_kwh: totalKwh,
-        total_wh: totalWh,
-        total_energy: totalEnergyDisplay,
-        saved_watts: null,
-        saved_kwh: null,
-        has_savings_data: false,        // ← diperbaiki (plural)
-        percentage: null,
-        note: "Fitur penghematan otomatis belum aktif"
+        room_name: r.room_name,
+        is_simulated: r.is_simulated ?? false,
+        actual_kwh: actualKwh,
+        baseline_kwh: baselineKwh,
+        delta_kwh: deltaKwh,
+        has_sensor: r.has_sensor,
+        total_kwh: actualKwh,
+        total_wh: actualKwh !== null ? Number((actualKwh * 1000).toFixed(2)) : null,
+        percentage,
       };
-    }).sort((a, b) => b.total_wh - a.total_wh);
+    });
 
     return responseFormatter.success(res, formatted, 'Success');
   } catch (error) {
@@ -127,28 +133,28 @@ export const getBreakdown = async (req, res, next) => {
 /* ==================== GET TREND ==================== */
 export const getTrend = async (req, res, next) => {
   try {
-    const { range_type, start_date, end_date, room_id } = req.query;
-    const ranges = await resolveRanges(range_type, start_date, end_date);
+    const { range_type, start_date, end_date, room_id, include_simulated, include_partial } = req.query;
+    const { from, to, granularity } = resolveRanges(range_type, start_date, end_date);
 
-    const granularity = range_type === 'daily' ? 'hour' : 'day';
-    const rows = await computeEnergyTrend(db.sequelize, ranges.current.start, ranges.current.end, granularity, room_id || null);
-
-    const formatted = rows.map(r => {
-      const bucketDate = dayjs(r.bucket);
-      const isDaily = range_type === 'daily';
-
-      let label = isDaily ? bucketDate.format('HH:00') : bucketDate.format('MMM DD');
-
-      return {
-        date: r.bucket,
-        label,
-        value: isDaily ? r.total_wh : r.total_kwh,
-        unit: isDaily ? 'Wh' : 'kWh',
-        total_kwh: r.total_kwh,
-        total_wh: r.total_wh,
-        saved_watts: 0,
-      };
+    const summary = await getEnergySummary({
+      from,
+      to,
+      granularity,
+      roomId: room_id || null,
+      includeSimulated: include_simulated === 'true',
+      includePartial: include_partial === 'true',
     });
+
+    const isDaily = granularity === 'hour';
+    const formatted = summary.series.map((s) => ({
+      date: s.bucket,
+      period: isDaily ? dayjs(s.bucket).format('HH:00') : dayjs(s.bucket).format('DD MMM'),
+      actual_kwh: s.actual_kwh,
+      baseline_kwh: s.baseline_kwh,
+      partial: s.partial ?? false,
+      actual: s.actual_kwh,
+      baseline: s.baseline_kwh,
+    }));
 
     return responseFormatter.success(res, formatted, 'Success');
   } catch (error) {
@@ -156,80 +162,85 @@ export const getTrend = async (req, res, next) => {
   }
 };
 
-/* ==================== GET YOY (Period Comparison) ==================== */
+/* ==================== GET YOY ==================== */
 export const getYoY = async (req, res, next) => {
   try {
-    const { range_type, start_date, end_date, room_id } = req.query;
-    const ranges = await resolveRanges(range_type, start_date, end_date);
+    const { range_type, start_date, end_date, room_id, include_simulated, include_partial } = req.query;
+    const { from, to, granularity } = resolveRanges(range_type, start_date, end_date);
 
-    const [currentRows, previousRows] = await Promise.all([
-      computeEnergyByRoom(db.sequelize, ranges.current.start, ranges.current.end, room_id || null),
-      computeEnergyByRoom(db.sequelize, ranges.previous.start, ranges.previous.end, room_id || null),
-    ]);
+    const summary = await getEnergySummary({
+      from,
+      to,
+      granularity,
+      roomId: room_id || null,
+      includeSimulated: include_simulated === 'true',
+      includePartial: include_partial === 'true',
+    });
 
-    const currentTotalKwh = currentRows.reduce((s, r) => s + (r.total_kwh || 0), 0);
-    const prevTotalKwh = previousRows.reduce((s, r) => s + (r.total_kwh || 0), 0);
+    const insights = buildExplanation(summary);
 
-    const currentTotalWh = currentTotalKwh * 1000;
-    const prevTotalWh = prevTotalKwh * 1000;
-
-    const MIN_MEANINGFUL_BASELINE_WH = 0.5;
-    const NEUTRAL_THRESHOLD_WH = 1.0;
-
-    let status = 'insufficient_baseline';
-    let changePercentage = null;
-    let diffWh = null;
-    let displayPercentage = null;
-
-    if (prevTotalWh >= MIN_MEANINGFUL_BASELINE_WH) {
-      diffWh = prevTotalWh - currentTotalWh;
-      const rawPct = (diffWh / prevTotalWh) * 100;
-
-      displayPercentage = Math.abs(rawPct) > 500 
-        ? (rawPct > 0 ? 500 : -500) 
-        : parseFloat(rawPct.toFixed(1));
-
-      if (Math.abs(diffWh) <= NEUTRAL_THRESHOLD_WH) {
-        status = 'neutral';
-        displayPercentage = 0;
-      } else if (diffWh > 0) {
-        status = 'saving';
-      } else {
-        status = 'waste';
-      }
-    }
-
-    return responseFormatter.success(res, {
-      current_period: {
-        start: ranges.current.start,
-        end: ranges.current.end,
-        total_kwh: parseFloat(currentTotalKwh.toFixed(4)),
-        total_wh: parseFloat(currentTotalWh.toFixed(2)),
+    return responseFormatter.success(
+      res,
+      {
+        status: summary.totals.status,
+        current_kwh: summary.totals.current_kwh,
+        baseline_kwh: summary.totals.baseline_kwh,
+        delta_kwh: summary.totals.delta_kwh,
+        change_percentage: summary.totals.delta_pct,
+        coverage: summary.totals.coverage,
+        compared_buckets: summary.totals.compared_buckets,
+        total_buckets: summary.totals.total_buckets,
+        meta: summary.meta,
+        insights,
+        current_period: {
+          start: from,
+          end: to,
+          total_kwh: summary.totals.current_kwh,
+          total_wh: summary.totals.current_kwh !== null
+            ? Number((summary.totals.current_kwh * 1000).toFixed(2))
+            : null,
+        },
+        previous_period: {
+          total_kwh: summary.totals.baseline_kwh,
+          total_wh: summary.totals.baseline_kwh !== null
+            ? Number((summary.totals.baseline_kwh * 1000).toFixed(2))
+            : null,
+        },
       },
-      previous_period: {
-        start: ranges.previous.start,
-        end: ranges.previous.end,
-        total_kwh: parseFloat(prevTotalKwh.toFixed(4)),
-        total_wh: parseFloat(prevTotalWh.toFixed(2)),
-      },
-      difference_wh: diffWh !== null ? parseFloat(diffWh.toFixed(2)) : null,
-      change_percentage: displayPercentage,
-      status,
-      debug_info: {
-        prev_kwh: parseFloat(prevTotalKwh.toFixed(4)),
-        current_kwh: parseFloat(currentTotalKwh.toFixed(4)),
-        prev_wh: parseFloat(prevTotalWh.toFixed(2)),
-        raw_change_pct: prevTotalWh > 0 ? parseFloat(((prevTotalWh - currentTotalWh) / prevTotalWh * 100).toFixed(1)) : null
-      }
-    }, 'Success');
+      'Success'
+    );
   } catch (error) {
-    console.error('Error in getYoY:', error);
+    next(error);
+  }
+};
+
+/* ==================== GET EXPLANATION ==================== */
+export const getExplanation = async (req, res, next) => {
+  try {
+    const { range_type, start_date, end_date, room_id, include_simulated, include_partial } = req.query;
+    const { from, to, granularity } = resolveRanges(range_type, start_date, end_date);
+
+    const summary = await getEnergySummary({
+      from,
+      to,
+      granularity,
+      roomId: room_id || null,
+      includeSimulated: include_simulated === 'true',
+      includePartial: include_partial === 'true',
+    });
+
+    const insights = buildExplanation(summary);
+    return responseFormatter.success(res, { insights }, 'Success');
+  } catch (error) {
     next(error);
   }
 };
 
 /* ==================== GET POWER STATS ==================== */
 export const getPowerStats = async (req, res, next) => {
-  // TODO: Isi dengan kode lama jika diperlukan
-  return responseFormatter.success(res, { message: "Power stats belum diimplementasikan" }, 'Success');
+  return responseFormatter.success(
+    res,
+    { message: 'Power stats didelegasikan ke getEnergySummary' },
+    'Success'
+  );
 };

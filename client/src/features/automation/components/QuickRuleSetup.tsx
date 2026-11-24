@@ -7,7 +7,7 @@ import { useCreateSchedule } from '../hooks';
 import { useRooms } from '../../rooms/hooks';
 
 export function QuickRuleSetup() {
-  const [trigger, setTrigger] = useState('Time of day (08:00 AM)');
+  const [trigger, setTrigger] = useState('Time of day (08:00)');
   const [action, setAction] = useState('Activate Morning Scene');
   const [deploying, setDeploying] = useState(false);
   const [message, setMessage] = useState('');
@@ -52,7 +52,7 @@ export function QuickRuleSetup() {
               onChange={(e) => setTrigger(e.target.value)}
               className="w-full appearance-none bg-[#F1F5F9] border-2 border-transparent rounded-2xl py-4 pl-5 pr-12 text-sm font-bold text-secondary-dark focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white focus:border-primary/20 transition-all cursor-pointer"
             >
-              <option value="Time of day (08:00 AM)">Time of day (08:00 AM)</option>
+              <option value="Time of day (08:00)">Time of day (08:00)</option>
               <option value="Motion detected in Zone">Motion detected in Zone</option>
               <option value="Ambient Light < 20%">Ambient Light &lt; 20%</option>
             </select>

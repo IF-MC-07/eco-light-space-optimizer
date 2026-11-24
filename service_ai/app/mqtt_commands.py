@@ -8,9 +8,11 @@ from dotenv import load_dotenv
 try:
     from app.mqtt_subscriber import mqtt_client
     from app.zona_loader import get_db_connection
+    from app.simulation_guard import is_simulated_room
 except ImportError:
     from mqtt_subscriber import mqtt_client
     from zona_loader import get_db_connection
+    from simulation_guard import is_simulated_room
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -18,10 +20,13 @@ logger = logging.getLogger(__name__)
 class MQTTCommander:
     def send_light_command(self, room_id: str, relay_channel: int, command: str, zone_id: int, zone_name: str, source: str = "ai_decision"):
         """
-
         Sends light control command to ESP32 via MQTT.
         Topic: devices/{room_id}/light/{relay_channel}
         """
+        if is_simulated_room(room_id):
+            logger.info(f"🚫 [DSLB Guard] Skipping light command for simulated room {room_id} (channel {relay_channel})")
+            return
+
         topic = f"devices/{room_id}/light/{relay_channel}"
         payload = {
             "command": command,
@@ -45,6 +50,10 @@ class MQTTCommander:
         Sends AC control command to ESP32 via MQTT.
         Topic: devices/{room_id}/ac
         """
+        if is_simulated_room(room_id):
+            logger.info(f"🚫 [DSLB Guard] Skipping AC command for simulated room {room_id}")
+            return
+
         topic = f"devices/{room_id}/ac"
         payload = {
             "command": command,
@@ -66,6 +75,10 @@ class MQTTCommander:
         Sends a request to ESP32 to get current status.
         Topic: devices/{room_id}/status/request
         """
+        if is_simulated_room(room_id):
+            logger.info(f"🚫 [DSLB Guard] Skipping status request for simulated room {room_id}")
+            return
+
         topic = f"devices/{room_id}/status/request"
         payload = {
             "room_id": room_id,

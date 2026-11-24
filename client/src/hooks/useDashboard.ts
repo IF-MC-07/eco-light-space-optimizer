@@ -12,7 +12,7 @@ export const useDashboard = () => {
       const response = await api.get('/dashboard/summary');
       setData(response.data.data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Gagal mengambil data dashboard');
+      setError(err.response?.data?.message || 'Failed to fetch dashboard data');
     } finally {
       setLoading(false);
     }

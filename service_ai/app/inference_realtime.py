@@ -16,12 +16,14 @@ try:
     from app.mqtt_subscriber import mqtt_client
     from app.decision_engine import decision_engine
     from app.log_writer import write_detection_logs
+    from app.occupancy_store import record_count
 except ImportError:
     from zona_loader import ambil_zona_dari_db, titik_di_zona
     from camera_loader import get_camera_stream_source, get_active_camera_sources
     from mqtt_subscriber import mqtt_client
     from decision_engine import decision_engine
     from log_writer import write_detection_logs
+    from occupancy_store import record_count
 
 load_dotenv()
 
@@ -46,12 +48,83 @@ MODEL_PATH         = os.getenv("MODEL_PATH", "yolov8n.pt")
 API_URL            = os.getenv("API_URL", "http://localhost:5000/api")
 CAMERA_SECRET_KEY  = os.getenv("CAMERA_SECRET_KEY")
 
+_imgsz_warned: set = set()
+
+def _parse_imgsz(val):
+    if val is None:
+        return None
+    if isinstance(val, int):
+        if val > 0:
+            return val
+        repr_val = repr(val)
+        if repr_val not in _imgsz_warned:
+            _imgsz_warned.add(repr_val)
+            log.warning(f"⚠️ INFERENCE_IMGSZ tidak valid: {val!r}, diabaikan")
+        return None
+    if isinstance(val, str):
+        s = val.strip()
+        if not s:
+            return None
+        try:
+            parsed = int(s)
+            if parsed > 0:
+                return parsed
+            if s not in _imgsz_warned:
+                _imgsz_warned.add(s)
+                log.warning(f"⚠️ INFERENCE_IMGSZ tidak valid: {val!r}, diabaikan")
+            return None
+        except ValueError:
+            if s not in _imgsz_warned:
+                _imgsz_warned.add(s)
+                log.warning(f"⚠️ INFERENCE_IMGSZ tidak valid: {val!r}, diabaikan")
+            return None
+    repr_val = repr(val)
+    if repr_val not in _imgsz_warned:
+        _imgsz_warned.add(repr_val)
+        log.warning(f"⚠️ INFERENCE_IMGSZ tidak valid: {val!r}, diabaikan")
+    return None
+
+def get_inference_imgsz():
+    """Mengembalikan ukuran imgsz inferensi (int positif atau None)."""
+    return _parse_imgsz(os.getenv("INFERENCE_IMGSZ"))
+
+def get_fallback_model_path():
+    """Mengembalikan path model fallback dari env FALLBACK_MODEL_PATH.
+    - None jika env tidak diatur atau kosong (fallback nonaktif).
+    - String path jika env berisi path non-kosong (fallback aktif).
+    """
+    env_val = os.getenv("FALLBACK_MODEL_PATH")
+    if env_val is None:
+        return None
+    env_val = env_val.strip()
+    if env_val == "":
+        return None
+    return env_val
+
+def get_predict_kwargs():
+    """Mengembalikan argumen kwargs untuk predict().
+    Jika INFERENCE_IMGSZ diatur (positif), imgsz disertakan; jika tidak, tidak dikirim.
+    """
+    kwargs = {
+        "conf": CONF_THRESHOLD,
+        "iou": IOU_THRESHOLD,
+        "classes": [0],
+        "verbose": False,
+        "save": False,
+        "save_txt": False,
+    }
+    imgsz = get_inference_imgsz()
+    if imgsz is not None:
+        kwargs["imgsz"] = imgsz
+    return kwargs
+
 # Fix untuk RTSP timeout (tambahkan stimeout agar tidak hang 30 detik)
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|stimeout;5000000|timeout;5000000"
 
 # ─── Shared Model + Lock ─────────────────────────────────────────────────────
 _model_primary = None
 _model_fallback = None
+_models_loaded = False
 _model_lock = threading.Lock()
 _frame_buffer = {}
 _frame_buffer_lock = threading.Lock()
@@ -74,11 +147,11 @@ def _store_frame(camera_id: str, frame, annotated, zones, count):
         
 
 def get_model():
-    global _model_primary, _model_fallback
+    global _model_primary, _model_fallback, _models_loaded
     
-    if _model_primary is None and _model_fallback is None:
+    if not _models_loaded or (_model_primary is None and _model_fallback is None):
         primary_path = os.getenv("MODEL_PATH", "yolov8n.pt")
-        fallback_path = "app/models/best.pt"
+        fallback_path = get_fallback_model_path()
         
         # Load Primary Model
         try:
@@ -90,13 +163,27 @@ def get_model():
             _model_primary = None
 
         # Load Fallback Model
-        try:
-            log.info(f"🔃 Loading Fallback YOLOv8 model from {fallback_path}...")
-            _model_fallback = YOLO(fallback_path)
-            log.info("✅ Fallback Model loaded.")
-        except Exception as e:
-            log.error(f"❌ Fallback model load failed: {e}")
+        if fallback_path is None:
             _model_fallback = None
+            log.info("ℹ️ fallback dinonaktifkan")
+        else:
+            try:
+                log.info(f"🔃 Loading Fallback YOLOv8 model from {fallback_path}...")
+                _model_fallback = YOLO(fallback_path)
+                log.info("✅ Fallback Model loaded.")
+            except Exception as e:
+                log.error(f"❌ Fallback model load failed: {e}")
+                _model_fallback = None
+                
+        _models_loaded = True
+
+        fallback_desc = fallback_path if fallback_path else "dinonaktifkan"
+        eff_imgsz = get_inference_imgsz()
+        imgsz_desc = eff_imgsz if eff_imgsz is not None else "default"
+        log.info(
+            f"ℹ️ Model loaded: primary={primary_path}, fallback={fallback_desc}, "
+            f"conf={CONF_THRESHOLD}, iou={IOU_THRESHOLD}, imgsz={imgsz_desc}"
+        )
             
     return _model_primary, _model_fallback
 
@@ -269,30 +356,21 @@ def camera_worker(camera_id: str, ip_address: str, mqtt_handler: MQTTHandler, st
                 primary_model, fallback_model = get_model()
                 
                 results = None
+                predict_kwargs = get_predict_kwargs()
                 
-                # 1. Coba deteksi menggunakan model Primary (best.pt)
+                # 1. Coba deteksi menggunakan model Utama (MODEL_PATH)
                 if primary_model is not None:
                     results = primary_model.predict(
                         frame,
-                        conf=CONF_THRESHOLD,
-                        iou=IOU_THRESHOLD,
-                        classes=[0],
-                        verbose=False,
-                        save=False,
-                        save_txt=False,
+                        **predict_kwargs,
                     )
                 
-                # 2. Jika Primary gagal mendeteksi orang (kosong), gunakan Fallback (yolov8n.pt)
+                # 2. Model fallback dari FALLBACK_MODEL_PATH dan hanya dipakai bila model utama menghasilkan nol box (atau gagal)
                 if fallback_model is not None:
                     if results is None or len(results[0].boxes) == 0:
                         results = fallback_model.predict(
                             frame,
-                            conf=CONF_THRESHOLD,
-                            iou=IOU_THRESHOLD,
-                            classes=[0],
-                            verbose=False,
-                            save=False,
-                            save_txt=False,
+                            **predict_kwargs,
                         )
                         
                 if results is None:
@@ -306,6 +384,11 @@ def camera_worker(camera_id: str, ip_address: str, mqtt_handler: MQTTHandler, st
         height, width = frame.shape[:2]
         count = hitung_per_zona(results[0].boxes, zones, width, height)
         status = "ON" if count["total"] > 0 else "OFF"
+
+        try:
+            record_count(camera_id, int(count["total"]))
+        except Exception as e:
+            log.warning(f"⚠️ [{camera_id}] DSLB record_count error: {e}")
 
         now2 = time.time()
         last_decision_call = _maybe_process_decision(

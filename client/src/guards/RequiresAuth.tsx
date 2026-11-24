@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useMe } from '@/features/auth/hooks';
 
-const MAHASISWA_ALLOWED_ROUTES = ['/dashboard', '/lighting-ac', '/rooms', '/room-availability'];
+const MAHASISWA_PREFIX_ROUTES = ['/dashboard', '/lighting-ac', '/room-availability'];
 
 export default function RequiresAuth({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -13,9 +13,11 @@ export default function RequiresAuth({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     if (!isLoading && role === 'mahasiswa') {
-      const isAllowed = MAHASISWA_ALLOWED_ROUTES.some(route => 
-        pathname === route || pathname?.startsWith(route + '/')
-      );
+      const isAllowed =
+        pathname === '/rooms' ||
+        MAHASISWA_PREFIX_ROUTES.some(
+          (route) => pathname === route || pathname?.startsWith(route + '/')
+        );
       if (!isAllowed) {
         router.push('/dashboard');
       }

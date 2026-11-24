@@ -53,7 +53,7 @@ export function UserFilters({ onFilterChange }: UserFiltersProps) {
         >
           <option value="">All Roles</option>
           <option value="admin">Admin</option>
-          <option value="mahasiswa">Mahasiswa</option>
+          <option value="mahasiswa">Student</option>
         </select>
         <div className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-dark pointer-events-none">
           <ChevronDown className="w-4 h-4" />

@@ -163,7 +163,7 @@ export default function RoomManagement({ roomId }: RoomManagementProps) {
         />
         <RoomStatCard
           title="Climate Control"
-          value="23°C"
+          value="No data"
           icon={<Thermometer className="w-4 h-4" />}
           iconBgClass="bg-[#EDE9FE]"
           iconColorClass="text-[#7C3AED]"
@@ -171,7 +171,7 @@ export default function RoomManagement({ roomId }: RoomManagementProps) {
         />
         <RoomStatCard
           title="Device Health"
-          value="99%"
+          value="No data"
           icon={<ShieldCheck className="w-4 h-4" />}
           iconBgClass="bg-[#F1F5F9]"
           iconColorClass="text-[#0F172A]"
@@ -180,31 +180,72 @@ export default function RoomManagement({ roomId }: RoomManagementProps) {
       </div>
 
       {/* Vision System Section */}
-      {cameraDevice && (
-        <div className="w-full bg-gradient-to-r from-[#F8FAFC] to-[#F1F5F9] rounded-2xl p-6 border border-neutral-border flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+      {!cameraDevice ? (
+        <div className="w-full bg-[#F8FAFC] rounded-2xl p-6 border border-neutral-border flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
           <div className="flex items-center gap-6">
-            <div className="w-16 h-16 bg-primary-dark rounded-xl flex items-center justify-center text-white shadow-md">
+            <div className="w-16 h-16 bg-slate-200 rounded-xl flex items-center justify-center text-slate-500 shadow-sm">
               <Video className="w-8 h-8" />
             </div>
             <div>
               <h3 className="text-xl font-bold text-secondary-dark leading-tight">
-                Vision System Active
+                No Camera Available
               </h3>
               <p className="text-secondary-light text-sm">
-                Real-time occupancy monitoring & space zone optimization
+                Camera is not configured for this room.
               </p>
             </div>
           </div>
-          <button
-            onClick={() =>
-              router.push(`/zone-configuration/${cameraDevice.device_id}`)
-            }
-            className="w-full md:w-auto px-6 py-3 bg-white border-2 border-primary-dark text-primary-dark rounded-xl font-bold hover:bg-primary-dark hover:text-white transition-all flex items-center justify-center gap-2 shadow-sm"
-          >
-            <LayoutGrid className="w-4 h-4" />
-            Configure Space Zones
-          </button>
         </div>
+      ) : (
+        (() => {
+          const isCamActive =
+            cameraDevice.status?.toUpperCase() === "ACTIVE" ||
+            cameraDevice.status?.toLowerCase() === "aktif";
+
+          return (
+            <div className="w-full bg-gradient-to-r from-[#F8FAFC] to-[#F1F5F9] rounded-2xl p-6 border border-neutral-border flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+              <div className="flex items-center gap-6">
+                <div
+                  className={`w-16 h-16 rounded-xl flex items-center justify-center text-white shadow-md ${
+                    isCamActive ? "bg-primary-dark" : "bg-slate-500"
+                  }`}
+                >
+                  <Video className="w-8 h-8" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-bold text-secondary-dark leading-tight">
+                      {isCamActive ? "Vision System Active" : "Vision System Offline"}
+                    </h3>
+                    <span
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded-md border uppercase tracking-wider ${
+                        isCamActive
+                          ? "bg-[#dcfce7] text-[#166534] border-[#bbf7d0]"
+                          : "bg-[#fee2e2] text-[#991b1b] border-[#fecaca]"
+                      }`}
+                    >
+                      {isCamActive ? "Active" : "Offline"}
+                    </span>
+                  </div>
+                  <p className="text-secondary-light text-sm mt-0.5">
+                    {isCamActive
+                      ? "Occupancy monitoring and space zone optimization are running in real-time."
+                      : "Surveillance camera is disconnected or disabled."}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() =>
+                  router.push(`/zone-configuration/${cameraDevice.device_id}`)
+                }
+                className="w-full md:w-auto px-6 py-3 bg-white border-2 border-primary-dark text-primary-dark rounded-xl font-bold hover:bg-primary-dark hover:text-white transition-all flex items-center justify-center gap-2 shadow-sm"
+              >
+                <LayoutGrid className="w-4 h-4" />
+                Configure Space Zones
+              </button>
+            </div>
+          );
+        })()
       )}
 
       {/* Devices Table Section */}

@@ -1,0 +1,356 @@
+{
+  "seed_rooms": [
+    {
+      "room_id": "ROM-s0000001",
+      "room_name": "Sim A",
+      "building": "Gedung Sim 1",
+      "floor": "1",
+      "capacity": 20,
+      "location": "Gedung Sim 1",
+      "status": "ACTIVE",
+      "is_simulated": true
+    },
+    {
+      "room_id": "ROM-s0000002",
+      "room_name": "Sim B",
+      "building": "Gedung Sim 1",
+      "floor": "2",
+      "capacity": 20,
+      "location": "Gedung Sim 1",
+      "status": "ACTIVE",
+      "is_simulated": true
+    },
+    {
+      "room_id": "ROM-s0000003",
+      "room_name": "Sim C",
+      "building": "Gedung Sim 1",
+      "floor": "3",
+      "capacity": 40,
+      "location": "Gedung Sim 1",
+      "status": "ACTIVE",
+      "is_simulated": true
+    },
+    {
+      "room_id": "ROM-s0000004",
+      "room_name": "Sim D",
+      "building": "Gedung Sim 2",
+      "floor": "1",
+      "capacity": 30,
+      "location": "Gedung Sim 2",
+      "status": "ACTIVE",
+      "is_simulated": true
+    },
+    {
+      "room_id": "ROM-s0000005",
+      "room_name": "Sim E",
+      "building": "Gedung Sim 2",
+      "floor": "2",
+      "capacity": 30,
+      "location": "Gedung Sim 2",
+      "status": "ACTIVE",
+      "is_simulated": true
+    },
+    {
+      "room_id": "ROM-s0000006",
+      "room_name": "Sim F",
+      "building": "Gedung Sim 2",
+      "floor": "3",
+      "capacity": null,
+      "location": "Gedung Sim 2",
+      "status": "ACTIVE",
+      "is_simulated": true
+    }
+  ],
+  "scenarios": [
+    {
+      "id": 1,
+      "name": "semua_kosong",
+      "title": "Semua kosong",
+      "description": "0,0,0,0,0,0 -> A-E Kosong; F Kapasitas belum dikonfigurasi; semua rekomendasi kosong.",
+      "is_timed": false,
+      "counts": {
+        "ROM-s0000001": 0,
+        "ROM-s0000002": 0,
+        "ROM-s0000003": 0,
+        "ROM-s0000004": 0,
+        "ROM-s0000005": 0,
+        "ROM-s0000006": 0
+      },
+      "expected": {
+        "ROM-s0000001": { "status": "Kosong", "display_pct": 0.0, "recommendations": [] },
+        "ROM-s0000002": { "status": "Kosong", "display_pct": 0.0, "recommendations": [] },
+        "ROM-s0000003": { "status": "Kosong", "display_pct": 0.0, "recommendations": [] },
+        "ROM-s0000004": { "status": "Kosong", "display_pct": 0.0, "recommendations": [] },
+        "ROM-s0000005": { "status": "Kosong", "display_pct": 0.0, "recommendations": [] },
+        "ROM-s0000006": { "status": "Kapasitas belum dikonfigurasi", "display_pct": null, "recommendations": [] }
+      }
+    },
+    {
+      "id": 2,
+      "name": "satu_padat",
+      "title": "Satu padat",
+      "description": "18,3,8,10,0,2 -> A Padat 90%. Rekomendasi A = [B 15%, C 20%, E 0%] (B dan C gedung sama; E gedung lain).",
+      "is_timed": false,
+      "counts": {
+        "ROM-s0000001": 18,
+        "ROM-s0000002": 3,
+        "ROM-s0000003": 8,
+        "ROM-s0000004": 10,
+        "ROM-s0000005": 0,
+        "ROM-s0000006": 2
+      },
+      "expected": {
+        "ROM-s0000001": {
+          "status": "Padat",
+          "display_pct": 90.0,
+          "recommendation_ids": ["ROM-s0000002", "ROM-s0000003", "ROM-s0000005"]
+        },
+        "ROM-s0000002": { "status": "Rendah", "display_pct": 15.0 },
+        "ROM-s0000003": { "status": "Rendah", "display_pct": 20.0 },
+        "ROM-s0000004": { "status": "Rendah", "display_pct": 33.3 },
+        "ROM-s0000005": { "status": "Kosong", "display_pct": 0.0 },
+        "ROM-s0000006": { "status": "Kapasitas belum dikonfigurasi", "display_pct": null }
+      }
+    },
+    {
+      "id": 3,
+      "name": "satu_gedung_penuh",
+      "title": "Satu gedung penuh",
+      "description": "18,16,32,6,15,1 -> A, B, C Padat (90%, 80%, 80%); D Rendah 20%; E Sedang 50%. Rekomendasi A, B, dan C masing-masing = [D, E].",
+      "is_timed": false,
+      "counts": {
+        "ROM-s0000001": 18,
+        "ROM-s0000002": 16,
+        "ROM-s0000003": 32,
+        "ROM-s0000004": 6,
+        "ROM-s0000005": 15,
+        "ROM-s0000006": 1
+      },
+      "expected": {
+        "ROM-s0000001": { "status": "Padat", "display_pct": 90.0, "recommendation_ids": ["ROM-s0000004", "ROM-s0000005"] },
+        "ROM-s0000002": { "status": "Padat", "display_pct": 80.0, "recommendation_ids": ["ROM-s0000004", "ROM-s0000005"] },
+        "ROM-s0000003": { "status": "Padat", "display_pct": 80.0, "recommendation_ids": ["ROM-s0000004", "ROM-s0000005"] },
+        "ROM-s0000004": { "status": "Rendah", "display_pct": 20.0 },
+        "ROM-s0000005": { "status": "Sedang", "display_pct": 50.0 },
+        "ROM-s0000006": { "status": "Kapasitas belum dikonfigurasi", "display_pct": null }
+      }
+    },
+    {
+      "id": 4,
+      "name": "semua_padat",
+      "title": "Semua padat",
+      "description": "20,15,30,23,30,5 -> A 100%, B 75%, C 75%, D 76,6%, E 100%, semuanya Padat; F tanpa kapasitas. Semua rekomendasi kosong dengan pesan jelas, bukan error.",
+      "is_timed": false,
+      "counts": {
+        "ROM-s0000001": 20,
+        "ROM-s0000002": 15,
+        "ROM-s0000003": 30,
+        "ROM-s0000004": 23,
+        "ROM-s0000005": 30,
+        "ROM-s0000006": 5
+      },
+      "expected": {
+        "ROM-s0000001": { "status": "Padat", "display_pct": 100.0, "recommendation_ids": [] },
+        "ROM-s0000002": { "status": "Padat", "display_pct": 75.0, "recommendation_ids": [] },
+        "ROM-s0000003": { "status": "Padat", "display_pct": 75.0, "recommendation_ids": [] },
+        "ROM-s0000004": { "status": "Padat", "display_pct": 76.6, "recommendation_ids": [] },
+        "ROM-s0000005": { "status": "Padat", "display_pct": 100.0, "recommendation_ids": [] },
+        "ROM-s0000006": { "status": "Kapasitas belum dikonfigurasi", "display_pct": null, "recommendation_ids": [] }
+      }
+    },
+    {
+      "id": 5,
+      "name": "batas_status",
+      "title": "Batas status",
+      "description": "7,8,30,22,23,1 -> A Rendah 35%; B Sedang 40% (tepat); C Padat 75% (tepat); D Sedang 73,3%; E Padat 76,6%. Rekomendasi C = [A, B, D]; rekomendasi E = [D, A, B].",
+      "is_timed": false,
+      "counts": {
+        "ROM-s0000001": 7,
+        "ROM-s0000002": 8,
+        "ROM-s0000003": 30,
+        "ROM-s0000004": 22,
+        "ROM-s0000005": 23,
+        "ROM-s0000006": 1
+      },
+      "expected": {
+        "ROM-s0000001": { "status": "Rendah", "display_pct": 35.0 },
+        "ROM-s0000002": { "status": "Sedang", "display_pct": 40.0 },
+        "ROM-s0000003": { "status": "Padat", "display_pct": 75.0, "recommendation_ids": ["ROM-s0000001", "ROM-s0000002", "ROM-s0000004"] },
+        "ROM-s0000004": { "status": "Sedang", "display_pct": 73.3 },
+        "ROM-s0000005": { "status": "Padat", "display_pct": 76.6, "recommendation_ids": ["ROM-s0000004", "ROM-s0000001", "ROM-s0000002"] },
+        "ROM-s0000006": { "status": "Kapasitas belum dikonfigurasi", "display_pct": null }
+      }
+    },
+    {
+      "id": 6,
+      "name": "tie_break",
+      "title": "Tie-break",
+      "description": "18,4,8,6,6,0 -> A Padat. B, C, D, E semuanya 20%. Rekomendasi A = [C, B, D] (sama persen: kursi terbanyak dulu C 32 sisa sebelum B 16 sisa; lalu gedung lain D sebelum E karena nama).",
+      "is_timed": false,
+      "counts": {
+        "ROM-s0000001": 18,
+        "ROM-s0000002": 4,
+        "ROM-s0000003": 8,
+        "ROM-s0000004": 6,
+        "ROM-s0000005": 6,
+        "ROM-s0000006": 0
+      },
+      "expected": {
+        "ROM-s0000001": {
+          "status": "Padat",
+          "display_pct": 90.0,
+          "recommendation_ids": ["ROM-s0000003", "ROM-s0000002", "ROM-s0000004"]
+        }
+      }
+    },
+    {
+      "id": 7,
+      "name": "f_bukan_kandidat",
+      "title": "F bukan kandidat",
+      "description": "18,19,40,0,30,0 -> A, B, C, E Padat; D Kosong; F Kapasitas belum dikonfigurasi. Rekomendasi A, B, C, dan E masing-masing = [D].",
+      "is_timed": false,
+      "counts": {
+        "ROM-s0000001": 18,
+        "ROM-s0000002": 19,
+        "ROM-s0000003": 40,
+        "ROM-s0000004": 0,
+        "ROM-s0000005": 30,
+        "ROM-s0000006": 0
+      },
+      "expected": {
+        "ROM-s0000001": { "status": "Padat", "display_pct": 90.0, "recommendation_ids": ["ROM-s0000004"] },
+        "ROM-s0000002": { "status": "Padat", "display_pct": 95.0, "recommendation_ids": ["ROM-s0000004"] },
+        "ROM-s0000003": { "status": "Padat", "display_pct": 100.0, "recommendation_ids": ["ROM-s0000004"] },
+        "ROM-s0000004": { "status": "Kosong", "display_pct": 0.0 },
+        "ROM-s0000005": { "status": "Padat", "display_pct": 100.0, "recommendation_ids": ["ROM-s0000004"] },
+        "ROM-s0000006": { "status": "Kapasitas belum dikonfigurasi", "display_pct": null }
+      }
+    },
+    {
+      "id": 8,
+      "name": "data_basi",
+      "title": "Data basi (berwaktu)",
+      "description": "awal 18,3,1,10,0,2 -> rekomendasi A = [C 2,5%, B 15%, E 0%]. Simulator berhenti menyegarkan C; setelah lebih dari DSLB_STALE_SECONDS, C Tidak tersedia dan rekomendasi A = [B, E, D].",
+      "is_timed": true,
+      "steps": [
+        {
+          "step_name": "initial",
+          "offset_seconds": 0,
+          "counts": { "ROM-s0000001": 18, "ROM-s0000002": 3, "ROM-s0000003": 1, "ROM-s0000004": 10, "ROM-s0000005": 0, "ROM-s0000006": 2 },
+          "expected_recommendations_A": ["ROM-s0000003", "ROM-s0000002", "ROM-s0000005"]
+        },
+        {
+          "step_name": "c_stale",
+          "offset_seconds": 65,
+          "counts": { "ROM-s0000001": 18, "ROM-s0000002": 3, "ROM-s0000004": 10, "ROM-s0000005": 0, "ROM-s0000006": 2 },
+          "stale_rooms": ["ROM-s0000003"],
+          "expected_status_C": "Tidak tersedia",
+          "expected_recommendations_A": ["ROM-s0000002", "ROM-s0000005", "ROM-s0000004"]
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "name": "outlier_single",
+      "title": "Outlier (berwaktu) - Satu Sampel",
+      "description": "A bertahan 18; satu sampel 3 lalu kembali 18 -> status terkonfirmasi A tetap Padat, tidak ada baris riwayat status_change baru.",
+      "is_timed": true,
+      "steps": [
+        { "step": 1, "count_A": 18, "expected_confirmed_status": "Padat" },
+        { "step": 2, "count_A": 3, "expected_confirmed_status": "Padat" },
+        { "step": 3, "count_A": 18, "expected_confirmed_status": "Padat" }
+      ]
+    },
+    {
+      "id": "9b",
+      "name": "outlier_double",
+      "title": "Outlier (berwaktu) - Dua Sampel Berturut-turut",
+      "description": "A bertahan 18 lalu dua sampel 3 berturut-turut lalu kembali 18, kapasitas 20, DSLB_SMOOTHING_WINDOW=3 dan DSLB_CONFIRM_CYCLES=2. Dua sampel berturut-turut menyebabkan median turun ke 3 (Rendah) dan terkonfirmasi, lalu pulih kembali ke Padat.",
+      "is_timed": true,
+      "steps": [
+        { "cycle": 1, "sample": 18, "window": [18, 18, 18], "median": 18, "classified": "Padat", "candidate": null, "cand_count": 0, "confirmed": "Padat" },
+        { "cycle": 2, "sample": 3, "window": [18, 18, 3], "median": 18, "classified": "Padat", "candidate": null, "cand_count": 0, "confirmed": "Padat" },
+        { "cycle": 3, "sample": 3, "window": [18, 3, 3], "median": 3, "classified": "Rendah", "candidate": "Rendah", "cand_count": 1, "confirmed": "Padat" },
+        { "cycle": 4, "sample": 18, "window": [3, 3, 18], "median": 3, "classified": "Rendah", "candidate": null, "cand_count": 0, "confirmed": "Rendah" },
+        { "cycle": 5, "sample": 18, "window": [3, 18, 18], "median": 18, "classified": "Padat", "candidate": "Padat", "cand_count": 1, "confirmed": "Rendah" },
+        { "cycle": 6, "sample": 18, "window": [18, 18, 18], "median": 18, "classified": "Padat", "candidate": null, "cand_count": 0, "confirmed": "Padat" }
+      ]
+    },
+    {
+      "id": 10,
+      "name": "perubahan_menetap",
+      "title": "Perubahan menetap (berwaktu)",
+      "description": "A dari 3 ke 18 -> status terkonfirmasi Padat pada siklus ketiga setelah sampel baru pertama (sekitar 30 detik pada siklus 15 detik).",
+      "is_timed": true,
+      "steps": [
+        { "step": 1, "count_A": 3, "expected_confirmed_status": "Rendah" },
+        { "step": 2, "count_A": 18, "expected_confirmed_status": "Rendah" },
+        { "step": 3, "count_A": 18, "expected_confirmed_status": "Padat" }
+      ]
+    },
+    {
+      "id": 11,
+      "name": "melebihi_kapasitas",
+      "title": "Melebihi kapasitas",
+      "description": "26,3,8,10,0,2 -> A Padat, persen mentah 130, tampilan 100, kursi 0, log WARNING sekali. Rekomendasi A = [B, C, E].",
+      "is_timed": false,
+      "counts": {
+        "ROM-s0000001": 26,
+        "ROM-s0000002": 3,
+        "ROM-s0000003": 8,
+        "ROM-s0000004": 10,
+        "ROM-s0000005": 0,
+        "ROM-s0000006": 2
+      },
+      "expected": {
+        "ROM-s0000001": {
+          "status": "Padat",
+          "raw_pct": 130.0,
+          "display_pct": 100.0,
+          "available_seats": 0,
+          "recommendation_ids": ["ROM-s0000002", "ROM-s0000003", "ROM-s0000005"]
+        }
+      }
+    },
+    {
+      "id": 12,
+      "name": "pemulihan_setelah_basi",
+      "title": "Pemulihan setelah basi (berwaktu)",
+      "description": "B basi lalu pulih -> bacaan valid pertama langsung diadopsi tanpa siklus konfirmasi.",
+      "is_timed": true,
+      "steps": [
+        { "step": 1, "room": "ROM-s0000002", "count": 16, "status": "Padat" },
+        { "step": 2, "room": "ROM-s0000002", "stale": true, "status": "Tidak tersedia" },
+        { "step": 3, "room": "ROM-s0000002", "count": 4, "status": "Rendah" }
+      ]
+    },
+    {
+      "id": 13,
+      "name": "simulasi_dimatikan",
+      "title": "Simulasi dimatikan",
+      "description": "Asal ruangan nyata Padat, semua kandidat is_simulated, dengan DSLB_INCLUDE_SIMULATED=false -> rekomendasi kosong.",
+      "is_timed": false,
+      "include_simulated": false,
+      "expected_recommendations": []
+    },
+    {
+      "id": 14,
+      "name": "gedung_tidak_diketahui",
+      "title": "Gedung tidak diketahui",
+      "description": "Asal X (building NULL, kap 20, 18 orang); kandidat P (G1, kap 20, 5 orang), Q (G2, kap 20, 2 orang), R (NULL, kap 20, 1 orang) -> urutan [R 5%, Q 10%, P 25%]; alasan ketiga kandidat adalah 'gedung tidak diketahui' karena gedung asal tidak diketahui.",
+      "is_timed": false,
+      "origin": { "room_id": "ROM-X", "building": null, "floor": "1", "capacity": 20, "person_count": 18 },
+      "candidates": [
+        { "room_id": "ROM-P", "room_name": "P", "building": "G1", "floor": "1", "capacity": 20, "person_count": 5 },
+        { "room_id": "ROM-Q", "room_name": "Q", "building": "G2", "floor": "1", "capacity": 20, "person_count": 2 },
+        { "room_id": "ROM-R", "room_name": "R", "building": null, "floor": "1", "capacity": 20, "person_count": 1 }
+      ],
+      "expected_order": ["ROM-R", "ROM-Q", "ROM-P"],
+      "expected_reasons": {
+        "ROM-R": "gedung tidak diketahui",
+        "ROM-Q": "gedung tidak diketahui",
+        "ROM-P": "gedung tidak diketahui"
+      }
+    }
+  ]
+}

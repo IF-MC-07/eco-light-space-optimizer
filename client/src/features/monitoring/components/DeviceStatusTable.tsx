@@ -1,9 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
-import { DoorOpen, MoreVertical, Lightbulb, Wind, Wifi, ShieldAlert } from 'lucide-react';
+import { DoorOpen, MoreVertical, Lightbulb, Wind, Cpu, ShieldAlert } from 'lucide-react';
 import { useMonitoring } from '../../../hooks/useMonitoring';
+import { useDevices as useIotDevices } from '../../../features/iot-device/hooks';
+import { usePowerSensors } from '../../../features/energy-monitor/hooks';
 import { useMe } from '../../../features/auth/hooks';
 import { serverAPI } from '../../../lib/api';
+
+function formatRelativeTime(dateString?: string | null): string {
+  if (!dateString) return 'No data';
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  if (isNaN(diffMs) || diffMs < 0) return 'Just now';
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
+}
 
 const StatusBadge = ({ status }: { status: string }) => {
   const isAktif = ['aktif', 'active', 'ACTIVE', 'AKTIF'].includes(status.toLowerCase());
@@ -17,7 +34,51 @@ const StatusBadge = ({ status }: { status: string }) => {
 export function DeviceStatusTable() {
   const { fetchDevices, updateDevice } = useMonitoring();
   const { data: userData } = useMe();
+  const { data: iotDevicesRes } = useIotDevices();
+  const { data: powerSensorsRes } = usePowerSensors();
   const [devices, setDevices] = useState<any[]>([]);
+
+  const rawIotDevices = (iotDevicesRes as any)?.data || iotDevicesRes || [];
+  const rawSensors = (powerSensorsRes as any)?.data || powerSensorsRes || [];
+  const esp32Devices = Array.isArray(rawIotDevices)
+    ? rawIotDevices.filter((d: any) => (d.type || d.device_type || '').toUpperCase() === 'ESP32')
+    : [];
+
+  // Pengecekan per kontroler ESP32: bila pembacaan sensor daya (read_at) di ruangan yang sama
+  // lebih baru daripada last_seen ESP32, tampilkan waktu pembacaan itu sebagai "pembacaan daya terakhir"
+  const controllerStatuses = esp32Devices.map((d: any) => {
+    const espTime = d.last_seen ? new Date(d.last_seen).getTime() : 0;
+    const espRoomId = String(d.room_id || '');
+    const roomSensors = Array.isArray(rawSensors)
+      ? rawSensors.filter((s: any) => String(s.room_id) === espRoomId)
+      : [];
+    const sensorTimestamps = roomSensors
+      .map((s: any) => (s.read_at ? new Date(s.read_at).getTime() : 0))
+      .filter((t: number) => !isNaN(t) && t > 0);
+    const latestSensorTime = sensorTimestamps.length > 0 ? Math.max(...sensorTimestamps) : 0;
+
+    const isPowerReading = latestSensorTime > espTime;
+    const effectiveTime = isPowerReading ? latestSensorTime : espTime;
+
+    return {
+      deviceId: d.device_id,
+      roomId: espRoomId,
+      time: effectiveTime,
+      isPowerReading,
+      status: (d.status || '').toLowerCase(),
+    };
+  });
+
+  const validStatuses = controllerStatuses.filter((c) => c.time > 0);
+  const latestStatus = validStatuses.length > 0
+    ? validStatuses.reduce((prev, curr) => (curr.time > prev.time ? curr : prev))
+    : null;
+
+  const ageMinutes = latestStatus?.time ? Math.floor((Date.now() - latestStatus.time) / 60000) : Infinity;
+  // Jangan menyiratkan kontroler online bila hanya last_seen yang lama (> 30 menit)
+  const isStale = ageMinutes > 30;
+  const isOffline = latestStatus?.status === 'offline';
+  const showWarning = isStale || isOffline;
 
   const role = userData?.user?.role;
   const isAdmin = role === 'admin';
@@ -145,11 +206,30 @@ export function DeviceStatusTable() {
             Real-time synchronization with ESP32 nodes over MQTT. Click individual components to override.
           </p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-semibold border border-green-200">
-          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-          <Wifi size={12} className="text-green-600" />
-          <span>MQTT Broker Active</span>
-        </div>
+        {latestStatus && latestStatus.time > 0 && (
+          <div className="flex flex-col items-end gap-0.5">
+            <div
+              className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border ${
+                showWarning
+                  ? 'bg-amber-50 text-amber-800 border-amber-200'
+                  : 'bg-slate-50 text-slate-700 border-slate-200'
+              }`}
+            >
+              <span
+                className={`w-2 h-2 rounded-full ${showWarning ? 'bg-amber-500' : 'bg-emerald-500'}`}
+              ></span>
+              <Cpu size={12} className={showWarning ? 'text-amber-600' : 'text-slate-600'} />
+              <span>
+                {latestStatus.isPowerReading
+                  ? `Last power reading ${formatRelativeTime(new Date(latestStatus.time).toISOString())}`
+                  : `Last controller connection ${formatRelativeTime(new Date(latestStatus.time).toISOString())}`}
+              </span>
+            </div>
+            <span className="text-[10px] text-slate-400 pr-2">
+              based on last status message
+            </span>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="p-0">
         <div className="overflow-x-auto">
@@ -169,6 +249,13 @@ export function DeviceStatusTable() {
                 const isAcActive = device.ac_status === 'Active';
                 const isDeviceActive = ['aktif', 'active', 'ACTIVE', 'AKTIF'].includes(device.device_status);
 
+                const rowStatus = controllerStatuses.find(
+                  (c) => String(c.deviceId) === String(device.device_id) || (device.room_id && String(c.roomId) === String(device.room_id))
+                );
+                const rowTimingText = rowStatus && rowStatus.time > 0
+                  ? `${rowStatus.isPowerReading ? 'Last power reading' : 'Last connected'} ${formatRelativeTime(new Date(rowStatus.time).toISOString())}`
+                  : null;
+
                 return (
                   <tr key={device.device_id} className="hover:bg-neutral/30 transition-colors">
                     <td className="py-5 px-6 font-semibold text-black flex items-center gap-3">
@@ -178,6 +265,9 @@ export function DeviceStatusTable() {
                       <div className="flex flex-col">
                         <span className="text-sm font-bold text-slate-800">{device.room_name}</span>
                         <span className="text-[10px] text-secondary-light font-mono font-medium">{device.device_id}</span>
+                        {rowTimingText && (
+                          <span className="text-[10px] text-slate-400 mt-0.5">{rowTimingText}</span>
+                        )}
                       </div>
                     </td>
                     <td className="py-5 px-6">
@@ -284,7 +374,7 @@ export function DeviceStatusTable() {
               {devices.length === 0 && (
                 <tr>
                   <td colSpan={5} className="py-10 text-center text-slate-400 font-semibold">
-                    No devices registered.
+                    No devices registered. Add devices via the Room Management page.
                   </td>
                 </tr>
               )}

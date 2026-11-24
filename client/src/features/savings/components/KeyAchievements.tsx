@@ -1,7 +1,9 @@
 "use client";
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
-import { useSavingsYoY, useSavingsSummary } from '../hooks';
+import { useSavingsYoY } from '../hooks';
+import { Skeleton, ErrorState } from '../../../components/ui/StateFeedback';
+import type { Insight } from '../types';
 
 interface KeyAchievementsProps {
   filters: {
@@ -11,22 +13,79 @@ interface KeyAchievementsProps {
   };
 }
 
-export function KeyAchievements({ filters }: KeyAchievementsProps) {
-  const { data: yoy, isLoading: isYoyLoading } = useSavingsYoY(filters);
-  const { data: summary, isLoading: isSummaryLoading } = useSavingsSummary(filters);
+function InsightEvidenceDisclosure({ evidence }: { evidence: Record<string, any> }) {
+  const [open, setOpen] = useState(false);
 
-  if (isYoyLoading || isSummaryLoading) {
-    return <div className="text-center py-10 text-xs text-secondary">Loading achievements...</div>;
+  if (!evidence) return null;
+
+  return (
+    <div className="mt-2 text-xs">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="text-[11px] font-bold text-primary-dark hover:underline flex items-center gap-1"
+      >
+        <span>{open ? '▾' : '▸'}</span>
+        <span>View calculation basis</span>
+      </button>
+
+      {open && (
+        <div className="mt-2 p-2.5 bg-neutral-50 border border-neutral-border/70 rounded-xl font-mono text-[11px] space-y-1 text-secondary-dark">
+          <div className="flex justify-between border-b border-neutral-border/40 pb-1">
+            <span className="text-secondary font-sans font-semibold">Rule ID:</span>
+            <span className="font-bold text-black">{evidence.rule_id || '—'}</span>
+          </div>
+          {evidence.threshold !== undefined && (
+            <div className="flex justify-between border-b border-neutral-border/40 pb-1">
+              <span className="text-secondary font-sans font-semibold">Threshold Applied:</span>
+              <span className="font-bold text-black">{String(evidence.threshold)}</span>
+            </div>
+          )}
+          <div className="pt-1">
+            <span className="text-secondary font-sans font-semibold block mb-1">Evidence:</span>
+            <pre className="bg-white p-2 rounded border border-neutral-border/50 text-[10px] overflow-x-auto text-black">
+              {JSON.stringify(evidence, null, 2)}
+            </pre>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function KeyAchievements({ filters }: KeyAchievementsProps) {
+  const { data: yoy, isLoading, isError, refetch } = useSavingsYoY(filters);
+
+  if (isLoading) {
+    return (
+      <Card className="border-transparent shadow-sm">
+        <CardHeader className="pb-4 pt-6 px-6">
+          <CardTitle className="text-lg text-black font-heading font-bold">Key Insights</CardTitle>
+        </CardHeader>
+        <CardContent className="px-6 pb-6">
+          <div className="space-y-4">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
-  const changePct = yoy?.change_percentage ?? 0;
-  const status = yoy?.status || 'neutral';
-  const kwhSaved = summary ? (summary.total_saved_watts || 0) / 1000 : 0;
-  const co2SavedKg = summary ? (summary.co2_saved_kg || 0) : 0;
+  if (isError) {
+    return (
+      <Card className="border-transparent shadow-sm">
+        <CardHeader className="pb-4 pt-6 px-6">
+          <CardTitle className="text-lg text-black font-heading font-bold">Key Insights</CardTitle>
+        </CardHeader>
+        <CardContent className="px-6 pb-6">
+          <ErrorState message="Failed to load savings insights" onRetry={() => refetch()} />
+        </CardContent>
+      </Card>
+    );
+  }
 
-  // Dynamically compute equivalent units
-  const laptopHours = Math.round(kwhSaved * 66.7); // 1 kWh runs a typical laptop for ~66.7 hours
-  const treesPlanted = (co2SavedKg * 0.045).toFixed(1); // 1 kg CO2 is roughly offset by 0.045 trees/year
+  const insights: Insight[] = yoy?.insights || [];
 
   return (
     <Card className="border-transparent shadow-sm">
@@ -34,43 +93,54 @@ export function KeyAchievements({ filters }: KeyAchievementsProps) {
         <CardTitle className="text-lg text-black font-heading font-bold">Key Insights</CardTitle>
       </CardHeader>
       <CardContent className="px-6 pb-6">
-        <ul className="space-y-5">
-          <li className="flex items-start">
-            <span className={`mt-1.5 mr-3 w-2 h-2 rounded-full ${status === 'saving' ? 'bg-green-500' : status === 'waste' ? 'bg-red-500' : 'bg-primary'} flex-shrink-0`}></span>
-            <div className="text-xs text-secondary-dark leading-relaxed">
-              {status === 'saving' ? (
-                <>
-                  <p><span className="font-bold text-green-700">Energy Saving (-{changePct}%):</span> Energy consumption decreased compared to the previous period due to effective automation rules.</p>
-                  <p className="mt-1 text-[11px] text-green-800 font-semibold">Action: Maintain current automation rules and replicate eco-templates to other rooms.</p>
-                </>
-              ) : status === 'waste' ? (
-                <>
-                  <p><span className="font-bold text-red-700">Energy Waste (+{Math.abs(changePct)}%):</span> Energy consumption increased due to extended AC cooling duration or active lighting in unoccupied rooms.</p>
-                  <p className="mt-1 text-[11px] text-red-800 font-semibold">Action: Enable automation schedules (08:00 AM - 05:00 PM) & set AC temperature to 24°C.</p>
-                </>
-              ) : (
-                <>
-                  <p><span className="font-bold text-black">Stable Consumption:</span> Energy consumption remains at a normal and stable baseline compared to the previous period.</p>
-                  <p className="mt-1 text-[11px] text-secondary font-semibold">Action: Apply ambient light dimming thresholds for further efficiency.</p>
-                </>
-              )}
-            </div>
-          </li>
-          
-          <li className="flex items-start">
-            <span className="mt-1.5 mr-3 w-2 h-2 rounded-full bg-primary flex-shrink-0"></span>
-            <p className="text-xs text-secondary-dark leading-relaxed">
-              System optimization prevented up to <span className="font-bold text-black">{co2SavedKg.toFixed(2)} kg</span> of CO2 emissions.
-            </p>
-          </li>
+        {insights.length === 0 ? (
+          <p className="text-xs text-secondary-light italic">
+            No analytical insights triggered for this period.
+          </p>
+        ) : (
+          <ul className="space-y-5">
+            {insights.map((insight, idx) => {
+              const isSuccess = insight.severity === 'success';
+              const isWarning = insight.severity === 'warning' || insight.severity === 'error';
+              const isInfo = insight.severity === 'info';
 
-          <li className="flex items-start">
-            <span className="mt-1.5 mr-3 w-2 h-2 rounded-full bg-primary flex-shrink-0"></span>
-            <p className="text-xs text-secondary-dark leading-relaxed">
-              Total energy saved is equivalent to offsetting <span className="font-bold text-black">{treesPlanted} trees</span> or powering a laptop for <span className="font-bold text-black">{laptopHours} hours</span>.
-            </p>
-          </li>
-        </ul>
+              const dotColor = isSuccess
+                ? 'bg-green-500'
+                : isWarning
+                ? 'bg-red-500'
+                : isInfo
+                ? 'bg-blue-500'
+                : 'bg-primary';
+
+              const titleColor = isSuccess
+                ? 'text-green-700'
+                : isWarning
+                ? 'text-red-700'
+                : isInfo
+                ? 'text-blue-700'
+                : 'text-black';
+
+              return (
+                <li key={`${insight.rule_id}-${idx}`} className="flex items-start">
+                  <span className={`mt-1.5 mr-3 w-2 h-2 rounded-full ${dotColor} flex-shrink-0`} />
+                  <div className="text-xs text-secondary-dark leading-relaxed flex-1">
+                    <p>
+                      <span className={`font-bold ${titleColor}`}>{insight.title}: </span>
+                      {insight.message}
+                    </p>
+                    {insight.recommendation && (
+                      <p className="mt-1 text-[11px] text-secondary-dark font-medium">
+                        <span className="font-bold text-black">Action: </span>
+                        {insight.recommendation}
+                      </p>
+                    )}
+                    <InsightEvidenceDisclosure evidence={insight.evidence} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </CardContent>
     </Card>
   );
